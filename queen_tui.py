@@ -49,7 +49,16 @@ def printCom():
     print(50*"=")
 
 
-########################
+##########################
+### INTERNAL FUNCTIONS ###
+
+# monkeypatch the print statement
+_print = print 
+def print(*args, **kw):
+    # add current filename in front
+    _print(f"{os.path.basename(__file__)}: ", end='')
+    _print(*args, **kw)
+
 
 if __name__ == "__main__":
     main()

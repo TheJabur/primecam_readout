@@ -12,6 +12,7 @@
 ### IMPORTS ###
 import alcove
 import redis
+import os
 
 
 #########################
@@ -46,6 +47,13 @@ com = {
 
 ##########################
 ### INTERNAL FUNCTIONS ###
+
+# monkeypatch the print statement
+_print = print 
+def print(*args, **kw):
+    # add current filename in front
+    _print(f"{os.path.basename(__file__)}: ", end='')
+    _print(*args, **kw)
 
 def callCom(key):
     '''execute a queen command function by key'''

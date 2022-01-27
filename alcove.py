@@ -10,7 +10,7 @@
 ###############
 ### IMPORTS ###
 
-#
+import os
 
 
 #########################
@@ -35,6 +35,12 @@ com = {
 ##########################
 ### INTERNAL FUNCTIONS ###
 
+# monkeypatch the print statement
+_print = print 
+def print(*args, **kw):
+    _print(f"{os.path.basename(__file__)}: ", end='')
+    _print(*args, **kw)
+
 def callCom(key):
     # dictionary keys are stored as integers
     # but redis may convert to string
@@ -42,5 +48,5 @@ def callCom(key):
     if key in com:  # check if command allowed
         com[key]()  # execute command
     else:
-        print('Invalid key: '+key)
+        print('Invalid key: '+str(key))
 
