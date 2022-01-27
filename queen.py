@@ -20,7 +20,14 @@ import redis
 def alcoveCommand(key, board):
     '''send an alcove command to given board'''
 
-    # by redis
+    # each board should have its own channel
+        # how do we get a list of available boards?
+    # plus at least one all boards channel
+    # for testing we'll just use a single channel
+
+    channels = 'test'
+    r,p = connectRedis()
+    r.publish('test', key)
 
 def testFunc1():
     '''test function 1'''
@@ -42,14 +49,14 @@ com = {
 
 def callCom(key):
     '''execute a queen command function by key'''
-    
+
     if key in com:
         com[key]()
     else:
         print('Invalid key: '+key)
 
-# def attachRedis():
-#     ''''''
-#     r = redis.Redis(host='localhost')
-#     p = r.pubsub(ignore_subscribe_messages = True)
-
+def connectRedis(host='localhost', port=6379):
+    '''connect to redis server'''
+    r = redis.Redis(host=host, port=port, db=0)
+    p = r.pubsub()
+    return r, p

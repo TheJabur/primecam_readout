@@ -11,6 +11,7 @@
 
 import queen
 import alcove
+import sys
 
 
 ##########################
@@ -18,10 +19,18 @@ import alcove
 
 def main():
     '''run when this script directly accessed'''
-    
-    printCom()
-    key = 31
-    queen.callCom(key)
+
+
+    if len(sys.argv) == 1: # no cli args
+        printCom()
+    else:
+        # consider how we want to implement cli args
+        # for now simply assuming a single arg
+        # do we want to check the arg here?
+        key = sys.argv[1]
+        queen.alcoveCommand(key, board=None)
+
+    #queen.callCom(key)
 
 
 ######################
