@@ -12,6 +12,7 @@
 import queen
 import alcove
 import sys
+import os
 
 
 ##########################
@@ -28,7 +29,7 @@ def main():
         # for now simply assuming a single arg
         # do we want to check the arg here?
         key = sys.argv[1]
-        queen.alcoveCommand(key, board=None)
+        queen.alcoveCommand(key, board=1) # board is hardcoded for now
 
     #queen.callCom(key)
 

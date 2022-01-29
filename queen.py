@@ -21,14 +21,20 @@ import os
 def alcoveCommand(key, board):
     '''send an alcove command to given board'''
 
-    # each board should have its own channel
+    # each board should have its own sub channel
+    # plus it's own pub channel
         # how do we get a list of available boards?
     # plus at least one all boards channel
+    # plus a returns channel
     # for testing we'll just use a single channel
 
-    channels = 'test'
     r,p = connectRedis()
-    r.publish('test', key)
+    r.publish(f'board_{board}', key)
+
+    # what if we want to return something on command execution?
+    # the queen should listen after it publishes
+    # for a success or some sort of return
+    # what if there is no published message from the board(s)?
 
 def testFunc1():
     '''test function 1'''
