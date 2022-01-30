@@ -10,7 +10,6 @@
 
 ###############
 ### IMPORTS ###
-import alcove
 import redis
 import os
 
@@ -18,23 +17,32 @@ import os
 #########################
 ### COMMAND FUNCTIONS ###
 
-def alcoveCommand(key, board):
-    '''send an alcove command to given board'''
+def alcoveCommand(key, bid):
+    '''send an alcove command to given board
+    key: command key
+    bid: board identifier'''
 
     # each board should have its own sub channel
     # plus it's own pub channel
         # how do we get a list of available boards?
     # plus at least one all boards channel
     # plus a returns channel
-    # for testing we'll just use a single channel
+
+    # queen should be listening all the time
+    # but for now lets start listening on this boards channel
+    # right before pushing the message
+    # and then stop after we receive a reply
+        # what if there is no reply?
+    # eventually implement a listening thread
 
     r,p = connectRedis()
-    r.publish(f'board_{board}', key)
+    p.psubscribe(f'board_rets_{bid}')
+    r.publish(f'board_{bid}', key)
 
-    # what if we want to return something on command execution?
-    # the queen should listen after it publishes
-    # for a success or some sort of return
-    # what if there is no published message from the board(s)?
+    for new_message in p.listen():
+        print(new_message)
+        if new_message['type'] == 'pmessage':
+            break
 
 def testFunc1():
     '''test function 1'''

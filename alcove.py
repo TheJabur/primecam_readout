@@ -35,6 +35,7 @@ def boardTemps():
 def my_alcove_func_2():
     '''silly test function 2'''
     print('my_alcove_func_2() called')
+    return 'my_alcove_func_2() called'
 
 # official list of alcove commands
 # alcove command keys start at 10

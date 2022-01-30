@@ -21,6 +21,9 @@ import os
 def main():
     '''run when this script directly accessed'''
 
+    # there's no way to access queen functions yet
+    # eventually will have a cli arg to specify
+    # for now the cli arg is assumed to be an alcove command key
 
     if len(sys.argv) == 1: # no cli args
         printCom()
@@ -29,7 +32,7 @@ def main():
         # for now simply assuming a single arg
         # do we want to check the arg here?
         key = sys.argv[1]
-        queen.alcoveCommand(key, board=1) # board is hardcoded for now
+        queen.alcoveCommand(key, bid=1) # board is hardcoded for now
 
     #queen.callCom(key)
 
@@ -44,7 +47,7 @@ def printCom():
     print("queen commands available (command : name):")
     for key in queen.com.keys():
         print(f"{key} : {queen.com[key].__name__}")
-    print("\nalcove commands available (use alcoveCommand()) (command : name):")
+    print("\nalcove commands available (command : name):")
     for key in alcove.com.keys():
         print(f"{key} : {alcove.com[key].__name__}")
     print(50*"=")
