@@ -44,6 +44,14 @@ def alcoveCommand(key, bid):
         if new_message['type'] == 'pmessage':
             break
 
+# thread = p.run_in_thread(sleep_time=0.001)
+# thread.stop()
+# def custom_handler(message):
+#        # do_something with the message
+#        print(message)
+# p.psubscribe(**{'hello*':custom_handler})
+# thread = p.run_in_thread(sleep_time=0.001)
+
 def testFunc1():
     '''test function 1'''
 

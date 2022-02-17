@@ -14,37 +14,21 @@
 import alcove
 import redis
 import os
+import config_board as cfg
 
 
 ######################
 ### MAIN EXECUTION ###
 
 def main():   
-    # think about how the boards get bid, server details, channels
-     
-    bid = 1                           # board identifier
-
-    host = 'localhost'                # redis server details
-    port = 6379
-    db = 0
-
+    bid = cfg.bid                     # board identifier
     chan_subs = [                     # listening channels
-        f'board_{bid}', 
-        'all_boards'] 
+        f'board_{bid}',                # this boards private listening channel
+        'all_boards']                  # an all-boards listening channel
     chan_pubs = f'board_rets_{bid}'   # talking channel
-    # any other channels?
 
     # make a connection to redis-server
-    r = redis.Redis(host=host, port=port, db=db)
-    p = r.pubsub()
-
-# thread = p.run_in_thread(sleep_time=0.001)
-# thread.stop()
-# def custom_handler(message):
-#        # do_something with the message
-#        print(message)
-# p.psubscribe(**{'hello*':custom_handler})
-# thread = p.run_in_thread(sleep_time=0.001)
+    r,p = connectRedis()
 
     # subscribe and listen for redis messages
     p.psubscribe(chan_subs)
@@ -64,6 +48,7 @@ def main():
         ret = alcove.callCom(key)
         if ret is not None: # publish returns to pub channel
                 # note that default return is None
+            # TYPE CHECKING ON chan_pubs and ret
             r.publish(chan_pubs, ret)
 
 
@@ -79,6 +64,12 @@ def print(*args, **kw):
     # add current filename in front
     _print(f"{os.path.basename(__file__)}: ", end='')
     _print(*args, **kw)
+
+def connectRedis():
+    '''connect to redis server'''
+    r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
+    p = r.pubsub()
+    return r, p
 
 
 if __name__ == "__main__":
