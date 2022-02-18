@@ -68,7 +68,9 @@ def callCom(key):
             ret = com[key]()
             print(f'command {key} executed')
         except BaseException as e: # if there's an exception
-            ret = e                # we'll return the exception
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(e).__name__, e.args)
+            ret = message          # we'll return the exception
 
     if ret is not None:
         print(ret) # print the return (monkeypatched to log)
