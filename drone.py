@@ -34,24 +34,25 @@ def main():
     p.psubscribe(chan_subs)
     for new_message in p.listen():
         # how do we exit out of listening mode?
-            # can also do this in a thread
-        print(new_message) 
-        # remove this later since it's logged by Redis(?)
 
-        # assuming that any message is a command
-        # the command key is then the data of the message
-            # we'll have to think about this
+        # remove this later since it's logged by Redis(?)
+        print(new_message) 
+    
+        # only pmessage are commands
+        if new_message['type'] != 'pmessage':
+            continue
+
+        # the command is the data of a pmessage
         key = int(new_message['data'])
 
         # ask alcove to execute the command
-        print(f"executing command: {key}")
+        print(f"executing command: {key}...")
         ret = alcove.callCom(key)
-        if ret is not None: # publish returns to pub channel
-                # note that default return is None
-            # TYPE CHECKING ON chan_pubs and ret
-            r.publish(chan_pubs, ret)
-
-
+        # todo: TYPE CHECKING ON chan_pubs and ret
+        if ret is None: # note that default return is None
+            ret = f"command {key} executed."
+        r.publish(chan_pubs, ret) 
+            
 
 ##########################
 ### INTERNAL FUNCTIONS ###

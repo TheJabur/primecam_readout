@@ -96,8 +96,7 @@ def processCommand(args):
     elif args.queen:    # a queen command
         queen.callCom(key)
     elif args.all:      # an all-boards commands
-        # build all board command functionality
-        print("all-board command functionality missing.")
+        queen.alcoveCommand(key, all_boards=True)
     elif args.bid:      # a single board command
         queen.alcoveCommand(key, bid=args.bid)
 

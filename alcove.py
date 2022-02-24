@@ -34,8 +34,8 @@ def boardTemps():
     
 def my_alcove_func_2():
     '''silly test function 2'''
-    print('my_alcove_func_2() called')
-    return 'my_alcove_func_2() called'
+    print('...')
+    return 'silly return'
 
 # official list of alcove commands
 # alcove command keys start at 10
@@ -66,12 +66,11 @@ def callCom(key):
     else: # attempt command execution
         try: # if successful, we'll return what the command returns
             ret = com[key]()
-            print(f'command {key} executed')
         except BaseException as e: # if there's an exception
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
             ret = message          # we'll return the exception
 
     if ret is not None:
-        print(ret) # print the return (monkeypatched to log)
+        print(f"{com[key].__name__}: {ret}") # print the return (monkeypatched to log)
     return ret # and send it back

@@ -17,32 +17,33 @@ import os
 #########################
 ### COMMAND FUNCTIONS ###
 
-def alcoveCommand(key, bid):
+def alcoveCommand(key, bid, all_boards=False):
     '''send an alcove command to given board
     key: command key
-    bid: board identifier'''
-
-    # each board should have its own sub channel
-    # plus it's own pub channel
-        # how do we get a list of available boards?
-    # plus at least one all boards channel
-    # plus a returns channel
-
-    # queen should be listening all the time
-    # but for now lets start listening on this boards channel
-    # right before pushing the message
-    # and then stop after we receive a reply
-        # what if there is no reply?
-    # eventually implement a listening thread
+    bid: board identifier
+    all_boards: send to all boards instead of bid'''
 
     r,p = connectRedis()
-    p.psubscribe(f'board_rets_{bid}')
-    r.publish(f'board_{bid}', key)
 
-    for new_message in p.listen():
-        print(new_message)
-        if new_message['type'] == 'pmessage':
-            break
+    if all_boards:
+        #p.psubscribe(f'board_rets_*')     # all bid return channels
+        # don't listen for responses
+        # they will go into the log from the monitoring version of queen
+        r.publish(f'all_boards', key)     # send command
+        
+    else: # send to a single board: bid
+        p.psubscribe(f'board_rets_{bid}') # bid return channel
+        r.publish(f'board_{bid}', key)    # send command
+        for new_message in p.listen():    # listen for a return
+            # add a timeout?
+            if new_message['type'] == 'pmessage':
+                print(new_message['data'].decode('utf-8'))
+                break # stop listening; we only expect a single response
+
+# add monitoring functionality:
+    # always listening to all channels
+    # log all messages
+    # send notifications for important things
 
 # thread = p.run_in_thread(sleep_time=0.001)
 # thread.stop()
@@ -60,10 +61,10 @@ def testFunc1():
 # official list of queen commands
 # combined with alcove commands
 # alcove command keys start at 10
-# queen command keys start at 30
+# queen command keys start at 20
 com = {
-    30:alcoveCommand,
-    31:testFunc1
+    20:alcoveCommand,
+    21:testFunc1
 }
 
 
@@ -87,6 +88,7 @@ def callCom(key):
 
 def connectRedis(host='localhost', port=6379):
     '''connect to redis server'''
+
     r = redis.Redis(host=host, port=port, db=0)
     p = r.pubsub()
     return r, p
