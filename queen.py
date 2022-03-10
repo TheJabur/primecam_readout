@@ -12,6 +12,14 @@
 ### IMPORTS ###
 import redis
 import os
+import logging
+
+
+##############
+### CONFIG ###
+
+# logging.basicConfig(filename='queen.log', encoding='utf-8', level=logging.DEBUG)
+logging.basicConfig(filename='queen.log', level=logging.DEBUG)
 
 
 #########################
@@ -75,12 +83,17 @@ com = {
 _print = print 
 def print(*args, **kw):
     # add current filename in front
-    _print(f"{os.path.basename(__file__)}: ", end='')
+    # _print(f"{os.path.basename(__file__)}: ", end='')
+    # _print(*args, **kw)
+    # arg0 = f"{os.path.basename(__file__)}: "
+    args = (f"{os.path.basename(__file__)}: ",) + args
     _print(*args, **kw)
+    logging.info(' '.join(args))
 
 def callCom(key):
     '''execute a queen command function by key'''
 
+    # add print statements
     if key in com:
         com[key]()
     else:

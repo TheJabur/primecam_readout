@@ -12,6 +12,13 @@
 
 import os
 import numpy as np
+import logging
+
+
+##############
+### CONFIG ###
+
+logging.basicConfig(filename='alcove.log', level=logging.DEBUG)
 
 
 #########################
@@ -51,9 +58,9 @@ com = {
 # monkeypatch the print statement
 _print = print 
 def print(*args, **kw):
-    # add current filename in front
-    _print(f"{os.path.basename(__file__)}: ", end='')
-    _print(*args, **kw)
+    args = (f"{os.path.basename(__file__)}: ",) + args # add file
+    _print(*args, **kw)            # print to terminal
+    logging.info(' '.join(args))   # log to file
 
 def callCom(key):
     # dictionary keys are stored as integers
