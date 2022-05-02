@@ -18,7 +18,10 @@ import logging
 ##############
 ### CONFIG ###
 
-logging.basicConfig(filename='queen.log', level=logging.DEBUG)
+logging.basicConfig(
+    filename='queen.log', level=logging.DEBUG,
+    style='{', datefmt='%Y-%m-%d %H:%M:%S', format='{asctime} {levelname} {filename}:{lineno}: {message}'
+)
 
 
 #########################
@@ -84,7 +87,6 @@ com = {
 # monkeypatch the print statement
 _print = print 
 def print(*args, **kw):
-    args = (f"{os.path.basename(__file__)}: ",) + args # add file
     _print(*args, **kw)            # print to terminal
     logging.info(' '.join(args))   # log to file
 
