@@ -91,11 +91,23 @@ def print(*args, **kw):
 def callCom(key):
     '''execute a queen command function by key'''
 
-    # add print statements
-    if key in com:
-        com[key]()
+    # dictionary keys are stored as integers
+    # but redis may convert to string
+    key = int(key)                       # want int for com
+    
+    if key not in com:                   # invalid command
+        print('invalid key: '+str(key))
+
     else:
-        print('Invalid key: '+key)
+        try:                             # attempt to run command
+            ret = com[key]()
+        except BaseException as e: 
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(e).__name__, e.args)
+            ret = message
+
+        if ret is not None:              # default success return is None
+            print(f"{com[key].__name__}: {ret}") # monkeypatched to log
 
 def connectRedis(host='localhost', port=6379):
     '''connect to redis server'''

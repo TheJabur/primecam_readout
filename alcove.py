@@ -65,19 +65,21 @@ def print(*args, **kw):
 def callCom(key):
     # dictionary keys are stored as integers
     # but redis may convert to string
-    key = int(key)  # force key to be int
+    key = int(key)                       # want int for com
     
-    if key not in com:  # check if command allowed
-        ret = 'invalid key: '+str(key) # otherwise we'll return this
+    if key not in com:                   # invalid command
+        ret = 'invalid key: '+str(key)
+        print(ret)
 
-    else: # attempt command execution
-        try: # if successful, we'll return what the command returns
+    else:
+        try:                             # attempt command
             ret = com[key]()
-        except BaseException as e: # if there's an exception
+        except BaseException as e:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
-            ret = message          # we'll return the exception
+            ret = message
 
-        if ret is not None:
-            print(f"{com[key].__name__}: {ret}") # print the return (monkeypatched to log)
-    return ret # and send it back
+        if ret is not None:              # default success return is None
+            print(f"{com[key].__name__}: {ret}") # monkeypatched to log
+
+    return ret
