@@ -18,14 +18,13 @@ import logging
 ##############
 ### CONFIG ###
 
-# logging.basicConfig(filename='queen.log', encoding='utf-8', level=logging.DEBUG)
 logging.basicConfig(filename='queen.log', level=logging.DEBUG)
 
 
 #########################
 ### COMMAND FUNCTIONS ###
 
-def alcoveCommand(key, bid, all_boards=False):
+def alcoveCommand(key, bid=None, all_boards=False):
     '''send an alcove command to given board
     key: command key
     bid: board identifier
@@ -38,7 +37,10 @@ def alcoveCommand(key, bid, all_boards=False):
         # don't listen for responses
         # they will go into the log from the monitoring version of queen
         r.publish(f'all_boards', key)     # send command
-        
+    
+    elif bid is None:
+        print('error: if all_boards is not True then must provide a bid')
+
     else: # send to a single board: bid
         p.psubscribe(f'board_rets_{bid}') # bid return channel
         r.publish(f'board_{bid}', key)    # send command
@@ -82,13 +84,9 @@ com = {
 # monkeypatch the print statement
 _print = print 
 def print(*args, **kw):
-    # add current filename in front
-    # _print(f"{os.path.basename(__file__)}: ", end='')
-    # _print(*args, **kw)
-    # arg0 = f"{os.path.basename(__file__)}: "
-    args = (f"{os.path.basename(__file__)}: ",) + args
-    _print(*args, **kw)
-    logging.info(' '.join(args))
+    args = (f"{os.path.basename(__file__)}: ",) + args # add file
+    _print(*args, **kw)            # print to terminal
+    logging.info(' '.join(args))   # log to file
 
 def callCom(key):
     '''execute a queen command function by key'''

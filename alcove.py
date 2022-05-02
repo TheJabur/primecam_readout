@@ -78,6 +78,6 @@ def callCom(key):
             message = template.format(type(e).__name__, e.args)
             ret = message          # we'll return the exception
 
-    if ret is not None:
-        print(f"{com[key].__name__}: {ret}") # print the return (monkeypatched to log)
+        if ret is not None:
+            print(f"{com[key].__name__}: {ret}") # print the return (monkeypatched to log)
     return ret # and send it back
