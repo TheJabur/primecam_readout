@@ -28,7 +28,7 @@ def main():
     if args.commands:
         printCom()
 
-    # execute if a command from cli
+    # attempt command execution
     else:
         processCommand(args)
 
@@ -43,7 +43,8 @@ def printCom():
     print("queen commands available (command : name):")
     for key in queen.com.keys():
         print(f"{key} : {queen.com[key].__name__}")
-    print("\nalcove commands available (command : name):")
+    print("")
+    print("alcove commands available (command : name):")
     for key in alcove.com.keys():
         print(f"{key} : {alcove.com[key].__name__}")
     print(50*"=")

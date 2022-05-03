@@ -20,7 +20,8 @@ import logging
 
 logging.basicConfig(
     filename='queen.log', level=logging.DEBUG,
-    style='{', datefmt='%Y-%m-%d %H:%M:%S', format='{asctime} {levelname} {filename}:{lineno}: {message}'
+    style='{', datefmt='%Y-%m-%d %H:%M:%S', 
+    format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
 
 
@@ -53,18 +54,29 @@ def alcoveCommand(key, bid=None, all_boards=False):
                 print(new_message['data'].decode('utf-8'))
                 break # stop listening; we only expect a single response
 
-# add monitoring functionality:
-    # always listening to all channels
-    # log all messages
-    # send notifications for important things
+def listenMode():
+    '''listen for Redis messages in thread'''
+    # the only way to stop listening is to kill process
 
-# thread = p.run_in_thread(sleep_time=0.001)
-# thread.stop()
-# def custom_handler(message):
-#        # do_something with the message
-#        print(message)
-# p.psubscribe(**{'hello*':custom_handler})
-# thread = p.run_in_thread(sleep_time=0.001)
+    r,p = connectRedis()
+
+    def handleMessage(message):
+        '''actions to take on receiving message'''
+        if message['type'] == 'pmessage':
+            print(message['data'].decode('utf-8')) # log/print message
+            notificationHandler(message)  # send important notifications
+
+    p.psubscribe(**{'board_rets_*':handleMessage}) # all board return chans
+    thread = p.run_in_thread(sleep_time=2) # move listening to thread
+        # sleep_time is a socket timeout
+         # too low and it will bog down server
+         # can be set to None but may cause issues
+         # more research is recommended
+    print('The Queen is listening...') 
+
+    # todo
+     # when do we stop listening?
+     # thread.stop()
 
 def testFunc1():
     '''test function 1'''
@@ -77,7 +89,8 @@ def testFunc1():
 # queen command keys start at 20
 com = {
     20:alcoveCommand,
-    21:testFunc1
+    21:listenMode,
+    22:testFunc1
 }
 
 
@@ -117,3 +130,12 @@ def connectRedis(host='localhost', port=6379):
     r = redis.Redis(host=host, port=port, db=0)
     p = r.pubsub()
     return r, p
+
+def notificationHandler(message):
+    '''process given messages for sending notifications to end-users'''
+
+    print("notificationHandler(): Not implemented yet!")
+    # todo
+     # look through given message[s?]
+     # and look through configured notifications
+     # and send emails as appropriate
