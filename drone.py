@@ -14,7 +14,7 @@
 import alcove
 import redis
 import os
-import config_board as cfg
+import _cfg_board as cfg
 
 
 ######################
@@ -48,7 +48,7 @@ def main():
         # ask alcove to execute the command
         print(f"executing command: {key}...")
         ret = alcove.callCom(key)
-        # todo: TYPE CHECKING ON chan_pubs and ret
+        
         if ret is None: # note that default return is None
             ret = f"command {key} executed."
         r.publish(chan_pubs, ret) 
