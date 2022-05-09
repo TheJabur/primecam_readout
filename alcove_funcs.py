@@ -1,6 +1,21 @@
+########################################################
+### Remote-side functions module.                    ###
+### Stores board and processing related functions.   ###
+###                                                  ###
+### James Burgoyne jburgoyne@phas.ubc.ca             ###
+### CCAT Prime 2022                                  ###
+########################################################
+
+#############################################################
+### NOTE that all import statements are done IN FUNCTIONS ###
+### This is to improve portability and function clarity.  ###
+#############################################################
+
 def boardTemps():
     '''temperatures from the board sensors
     return: tuple of int'''
+
+    import numpy as np
 
     def calc_temp(raw):
         # Calculate temperature in Celsius from raw 16 bit ADC values
