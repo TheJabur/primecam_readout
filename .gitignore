@@ -42,3 +42,7 @@ cython_debug/
 
 # logfiles
 *.log
+
+
+# Apple config files
+.DS_store
