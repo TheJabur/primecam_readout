@@ -10,9 +10,10 @@
 
 ###############
 ### IMPORTS ###
+
 import redis
-import os
 import logging
+import queen_commands.test_functions as test
 
 
 ##############
@@ -23,6 +24,17 @@ logging.basicConfig(
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
     format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
+
+# official list of queen commands
+# combined with alcove commands
+# alcove command keys start at 10
+# queen command keys start at 20
+def _com():
+    return {
+        20:alcoveCommand,
+        21:listenMode,
+        22:test.testFunc1
+    }
 
 
 #########################
@@ -78,21 +90,6 @@ def listenMode():
      # when do we stop listening?
      # thread.stop()
 
-def testFunc1():
-    '''test function 1'''
-
-    print('testFunc1() called') 
-
-# official list of queen commands
-# combined with alcove commands
-# alcove command keys start at 10
-# queen command keys start at 20
-com = {
-    20:alcoveCommand,
-    21:listenMode,
-    22:testFunc1
-}
-
 
 ##########################
 ### INTERNAL FUNCTIONS ###
@@ -139,3 +136,9 @@ def notificationHandler(message):
      # look through given message[s?]
      # and look through configured notifications
      # and send emails as appropriate
+
+
+############
+### INIT ###
+
+com = _com()

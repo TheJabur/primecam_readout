@@ -9,6 +9,8 @@
 #############################################################
 ### NOTE that all import statements are done IN FUNCTIONS ###
 ### This is to improve portability and function clarity.  ###
+### If function performance becomes an issue              ###
+### then move the import to just above the function.      ###
 #############################################################
 
 def boardTemps():

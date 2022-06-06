@@ -100,7 +100,7 @@ def processCommand(args):
         queen.alcoveCommand(key, all_boards=True)
     elif args.bid:      # a single board command
         queen.alcoveCommand(key, bid=args.bid)
-
+        
 
 if __name__ == "__main__":
     main()
