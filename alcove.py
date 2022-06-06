@@ -10,8 +10,9 @@
 ###############
 ### IMPORTS ###
 
-import alcove_funcs
 import logging
+import alcove_commands.test_functions as test
+import alcove_commands.board_utilities as utils
 
 
 ##############
@@ -21,14 +22,13 @@ logging.basicConfig(filename='alcove.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
 
-
-#########################
-### COMMAND FUNCTIONS ###
-
-com = { 
-    10:alcove_funcs.boardTemps, 
-    11:alcove_funcs.my_alcove_func_2
-}
+# official list of alcove commands
+# alcove command keys start at 10
+def _com():
+    return { 
+        10:utils.boardTemps, 
+        11:test.my_alcove_func_2
+    }
 
 
 ##########################
@@ -61,3 +61,9 @@ def callCom(key):
             print(f"{com[key].__name__}: {ret}") # monkeypatched to log
 
     return ret
+
+
+############
+### INIT ###
+
+com = _com()

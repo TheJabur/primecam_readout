@@ -1,6 +1,6 @@
 ########################################################
-### Remote-side functions module.                    ###
-### Stores board and processing related functions.   ###
+### ALCOVE (remote-side)                             ###
+### Board utility tools.                             ###
 ###                                                  ###
 ### James Burgoyne jburgoyne@phas.ubc.ca             ###
 ### CCAT Prime 2022                                  ###
@@ -29,8 +29,3 @@ def boardTemps():
     pl_temp_raw = np.loadtxt("/sys/bus/iio/devices/iio:device0/in_temp2_pl_temp_raw",dtype="int32")
     
     return calc_temp(ps_temp_raw), calc_temp(pl_temp_raw)
-    
-def my_alcove_func_2():
-    '''silly test function 2'''
-    print('...')
-    return 'silly return'
