@@ -13,6 +13,7 @@
 
 import redis
 import logging
+
 import queen_commands.test_functions as test
 
 
@@ -59,12 +60,18 @@ def alcoveCommand(key, bid=None, all_boards=False):
 
     else: # send to a single board: bid
         p.psubscribe(f'board_rets_{bid}') # bid return channel
-        r.publish(f'board_{bid}', key)    # send command
-        for new_message in p.listen():    # listen for a return
-            # add a timeout?
-            if new_message['type'] == 'pmessage':
-                print(new_message['data'].decode('utf-8'))
-                break # stop listening; we only expect a single response
+        num_clients = r.publish(f'board_{bid}', key) # send command
+
+        if num_clients == 0: # no one listening!
+            # This may mean the board has crashed
+            print(f"No client received this command!")
+
+        else:
+            for new_message in p.listen(): # listen for a return
+                # add a timeout?
+                if new_message['type'] == 'pmessage':
+                    print(new_message['data'].decode('utf-8'))
+                    break # stop listening; we only expect a single response
 
 def listenMode():
     '''listen for Redis messages in thread'''
@@ -119,6 +126,9 @@ def callCom(key):
             ret = message
 
         if ret is not None:              # default success return is None
+            # what if ret is not a string, e.g. data?
+            # can we signal that in the ret or need to check?
+            # and then what to do with them?
             print(f"{com[key].__name__}: {ret}") # monkeypatched to log
 
 def connectRedis(host='localhost', port=6379):
