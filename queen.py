@@ -13,6 +13,7 @@
 
 import redis
 import logging
+import uuid
 
 import queen_commands.test_functions as test
 
@@ -47,27 +48,30 @@ def alcoveCommand(key, bid=None, all_boards=False):
     bid: board identifier
     all_boards: send to all boards instead of bid'''
 
-    r,p = connectRedis()
+    r,p = connectRedis()  # redis and pubsub objects
+    cid = uuid.uuid4()    # unique command id
 
     if all_boards:
         #p.psubscribe(f'board_rets_*')     # all bid return channels
         # don't listen for responses
         # they will go into the log from the monitoring version of queen
-        r.publish(f'all_boards', key)     # send command
+        num_clients = r.publish(f'all_boards', key)     # send command
+        print(f"{num_clients} received this command. Returns will be logged.")
     
     elif bid is None:
-        print('error: if all_boards is not True then must provide a bid')
+        print('Error: If all_boards is not True then must provide a bid')
 
     else: # send to a single board: bid
-        p.psubscribe(f'board_rets_{bid}') # bid return channel
-        num_clients = r.publish(f'board_{bid}', key) # send command
+        chanid = f'{bid}_{cid}'
+        p.psubscribe(f'board_rets_{chanid}')            # return channel
+        num_clients = r.publish(f'board_{chanid}', key) # send command
 
         if num_clients == 0: # no one listening!
             # This may mean the board has crashed
             print(f"No client received this command!")
 
         else:
-            for new_message in p.listen(): # listen for a return
+            for new_message in p.listen():              # listen for a return
                 # add a timeout?
                 if new_message['type'] == 'pmessage':
                     print(new_message['data'].decode('utf-8'))
@@ -115,7 +119,7 @@ def callCom(key):
     key = int(key)                       # want int for com
     
     if key not in com:                   # invalid command
-        print('invalid key: '+str(key))
+        print('Invalid key: '+str(key))
 
     else:
         try:                             # attempt to run command

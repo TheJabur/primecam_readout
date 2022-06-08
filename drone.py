@@ -21,36 +21,34 @@ import _cfg_board as cfg
 ### MAIN EXECUTION ###
 
 def main():   
-    bid = cfg.bid                     # board identifier
-    chan_subs = [                     # listening channels
-        f'board_{bid}',                # this boards private listening channel
-        'all_boards']                  # an all-boards listening channel
-    chan_pubs = f'board_rets_{bid}'   # talking channel
+    bid = cfg.bid                       # board identifier
+    chan_subs = [                       # listening channels
+        f'board_{bid}_*',               # this boards listening channels
+        'all_boards']                   # an all-boards listening channel
 
-    # make a connection to redis-server
-    r,p = connectRedis()
+    r,p = connectRedis()                # redis and pubsub objects
 
     # subscribe and listen for redis messages
+    # currently, only way to exit out of listen mode is CTRL-c
+    # think about alternatives
     p.psubscribe(chan_subs)
     for new_message in p.listen():
-        # how do we exit out of listening mode?
+        print(new_message)              # output to terminal/log
 
-        # remove this later since it's logged by Redis(?)
-        print(new_message) 
-    
-        # only pmessage are commands
         if new_message['type'] != 'pmessage':
-            continue
+            continue                    # only pmessage are commands
+        channel = new_message['channel'].decode('utf-8')
+        key = int(new_message['data'])  # the command num
 
-        # the command is the data of a pmessage
-        key = int(new_message['data'])
-
-        # ask alcove to execute the command
         print(f"executing command: {key}...")
-        ret = alcove.callCom(key)
-        
-        if ret is None: # note that default return is None
+        ret = alcove.callCom(key)       # execute the command
+                
+        if ret is None:                 # default return is None
             ret = f"command {key} executed."
+
+        cid = channel.split('_')[-1]    # recover cid from channel
+        chanid = f'{bid}_{cid}'         # rebuild chanid
+        chan_pubs = f'board_rets_{chanid}' # talking channel
         r.publish(chan_pubs, ret) 
             
 
