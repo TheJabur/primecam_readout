@@ -18,8 +18,10 @@ import alcove_commands.board_utilities as utils
 ##############
 ### CONFIG ###
 
-logging.basicConfig(filename='logs/alcove.log', level=logging.DEBUG,
-    style='{', datefmt='%Y-%m-%d %H:%M:%S', format='{asctime} {levelname} {filename}:{lineno}: {message}'
+logging.basicConfig(
+    filename='logs/board.log', level=logging.DEBUG,
+    style='{', datefmt='%Y-%m-%d %H:%M:%S', 
+    format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
 
 # official list of alcove commands

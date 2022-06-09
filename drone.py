@@ -27,7 +27,7 @@ import _cfg_board as cfg
 ### CONFIG ###
 
 logging.basicConfig(
-    filename='logs/drone.log', level=logging.DEBUG,
+    filename='logs/board.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
     format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
