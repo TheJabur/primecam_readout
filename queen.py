@@ -12,9 +12,11 @@
 ### IMPORTS ###
 
 import redis
+import numpy as np
 import logging
 import uuid
 import pickle
+import tempfile
 
 import queen_commands.test_functions as test
 
@@ -75,10 +77,19 @@ def alcoveCommand(key, bid=None, all_boards=False):
             for new_message in p.listen():              # listen for a return
                 # add a timeout?
                 if new_message['type'] == 'pmessage':
-                    #msg = new_message['data'].decode('utf-8')
-                    msg = new_message['data']
-                    dat = pickle.loads(msg) # assuming msg is pickled
-                    print(dat) # this only makes sense if string
+                    dat = pickle.loads(new_message['data']) # assuming msg is pickled
+
+                    if isinstance(dat, str):            # print only if string
+                        print(dat) 
+
+                    elif isinstance(dat, np.ndarray): # save arrays to tmp file
+                        with tempfile.NamedTemporaryFile(dir='tmp', suffix='.npy', delete=False) as tf:
+                            np.save(tf, dat)
+
+                    else: # write other types to tmp file
+                        with tempfile.NamedTemporaryFile(dir='tmp', delete=False) as tf:
+                            tf.write(pickle.dumps(dat))
+
                     break # stop listening; we only expect a single response
 
 def listenMode():

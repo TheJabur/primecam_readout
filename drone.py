@@ -125,7 +125,7 @@ def publishResponse(resp, r, bid, cid):
 
     print(f"Sending response... ", end="")
     try: #####
-        r.publish(chan_pubs, ret)
+        r.publish(chan_pubs, ret)       # publish with redis
     except Exception as e:
         _print("Failed.")
         logging.info(f'Publish response failed.')
