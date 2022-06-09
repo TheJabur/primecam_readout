@@ -14,6 +14,7 @@
 import redis
 import logging
 import uuid
+import pickle
 
 import queen_commands.test_functions as test
 
@@ -74,7 +75,10 @@ def alcoveCommand(key, bid=None, all_boards=False):
             for new_message in p.listen():              # listen for a return
                 # add a timeout?
                 if new_message['type'] == 'pmessage':
-                    print(new_message['data'].decode('utf-8'))
+                    #msg = new_message['data'].decode('utf-8')
+                    msg = new_message['data']
+                    dat = pickle.loads(msg) # assuming msg is pickled
+                    print(dat) # this only makes sense if string
                     break # stop listening; we only expect a single response
 
 def listenMode():
