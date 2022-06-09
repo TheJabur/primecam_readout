@@ -16,9 +16,21 @@
 import alcove
 import redis
 import os
+import logging
 import pickle
 
 import _cfg_board as cfg
+
+
+
+##############
+### CONFIG ###
+
+logging.basicConfig(
+    filename='logs/drone.log', level=logging.DEBUG,
+    style='{', datefmt='%Y-%m-%d %H:%M:%S', 
+    format='{asctime} {levelname} {filename}:{lineno}: {message}'
+)
 
 
 
@@ -78,18 +90,20 @@ def listenMode(r, p, bid, chan_subs):
 
 
 def executeCommand(com_num):
-    print(f"Executing command: {com_num}... ", end="")
-    try:
+    print(f"Executing command: {com_num}... ")
+    try: #####
         ret = alcove.callCom(com_num)   # execute the command
 
     except Exception as e:              # command execution failed
         ret = f"Command execution error: {e}"
-        print("Failed.")
+        print(f"Command {com_num} execution failed.")
+        logging.info('Command {com_num} execution failed.')
 
     else:                               # command execution successful
         if ret is None:                 # default return is None (success)
             ret = f"Command {com_num} executed." # success ack.
-        print("Done.")
+        print(f"Command {com_num} execution done.")
+        logging.info(f'Command {com_num} execution successful.')
 
     return ret
 
@@ -99,22 +113,25 @@ def publishResponse(resp, r, bid, cid):
     chan_pubs = f'board_rets_{chanid}'  # talking channel
 
     print(f"Preparing response... ", end="")
-    try:
+    try: #####
         ret = pickle.dumps(resp)        # pickle serializes to bytes obj.
         # this is needed because redis pubsub only allows bytes objects
     except Exception as e:
-        print("Failed.")
+        _print("Failed.")
+        logging.info(f'Publish response failed.')
         return                          # exit: need ret to send
     else:
-        print("Done.")
+        _print("Done.")
 
     print(f"Sending response... ", end="")
-    try:
+    try: #####
         r.publish(chan_pubs, ret)
     except Exception as e:
-        print("Failed.")
+        _print("Failed.")
+        logging.info(f'Publish response failed.')
     else:
-        print(f"Done.")
+        _print(f"Done.")
+        logging.info(f'Publish response successful.')
 
 
 
