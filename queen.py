@@ -8,8 +8,10 @@
 ########################################################
 
 
+
 ###############
 ### IMPORTS ###
+
 
 import redis
 import numpy as np
@@ -21,14 +23,17 @@ import tempfile
 import queen_commands.test_functions as test
 
 
+
 ##############
 ### CONFIG ###
+
 
 logging.basicConfig(
     filename='logs/queen.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
     format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
+
 
 # official list of queen commands
 # combined with alcove commands
@@ -42,89 +47,82 @@ def _com():
     }
 
 
+
 #########################
 ### COMMAND FUNCTIONS ###
 
-def alcoveCommand(key, bid=None, all_boards=False):
+
+def alcoveCommand(com_num, bid=None, all_boards=False):
     '''send an alcove command to given board
-    key: command key
+    com_num: command number
     bid: board identifier
     all_boards: send to all boards instead of bid'''
 
-    r,p = connectRedis()  # redis and pubsub objects
-    cid = uuid.uuid4()    # unique command id
+    ## Connect to Redis server
+    print(f"Connecting to Redis server... ", end="")
+    try:
+        r,p = _connectRedis()  # redis and pubsub objects
+    except Exception as e: return _fail(e, f'Failed to connect to Redis server.')
+    else: _success("Connected to Redis server.")
 
+    ## Send to all boards
     if all_boards:
         #p.psubscribe(f'board_rets_*')     # all bid return channels
         # don't listen for responses
         # they will go into the log from the monitoring version of queen
-        num_clients = r.publish(f'all_boards', key)     # send command
-        print(f"{num_clients} received this command. Returns will be logged.")
-    
-    elif bid is None:
-        print('Error: If all_boards is not True then must provide a bid')
 
-    else: # send to a single board: bid
-        chanid = f'{bid}_{cid}'
-        p.psubscribe(f'board_rets_{chanid}')            # return channel
-        num_clients = r.publish(f'board_{chanid}', key) # send command
+        ## Publish command to all boards
+        print(f"Publishing command {com_num} to all boards... ", end="")
+        try:
+            num_clients = r.publish(f'all_boards', com_num)     # send command
+        except Exception as e: return _fail(e, f'Failed to publish command.')
+        else: _success("Published command.")
+
+        print(f"{num_clients} received this command. Returns will be logged.")
+        return True # done
+
+    ## Send to a single board
+    else:
+
+        ## Generate unique channel ID
+        print(f"Generating unique channel ID... ", end="")
+        try:
+            cid = uuid.uuid4() # unique string
+            chanid = f'{bid}_{cid}'
+        except Exception as e: return _fail(e, f'Failed to generate unique channel ID.')
+        else: _success("Generated unique channel ID.")
+
+        ## Publish command to single board
+        print(f"Publishing command {com_num} to board {bid}... ", end="")
+        try:
+            p.psubscribe(f'board_rets_{chanid}')            # return channel
+            num_clients = r.publish(f'board_{chanid}', com_num) # send command
+        except Exception as e: return _fail(e, f'Failed to publish command.')
+        else: _success("Published command.")
 
         if num_clients == 0: # no one listening!
             # This may mean the board has crashed
             print(f"No client received this command!")
+            return True
 
-        else:
-            for new_message in p.listen():              # listen for a return
-                # add a timeout?
-                if new_message['type'] == 'pmessage':
-                    dat = pickle.loads(new_message['data']) # assuming msg is pickled
+        ## Listen for a response
+        print(f"Listening for a response... ", end="")
+        for new_message in p.listen():              # listen for a return
+            if new_message['type'] != 'pmessage': continue # not correct message
+            _success("Response received.")
 
-                    if isinstance(dat, str):            # print only if string
-                        print(dat) 
+            # add a timeout?
 
-                    elif isinstance(dat, np.ndarray): # save arrays to tmp file
-                        with tempfile.NamedTemporaryFile(dir='tmp', suffix='.npy', delete=False) as tf:
-                            np.save(tf, dat)
+            ## Process response
+            print(f"Processing response... ", end="")
+            try:
+                _processCommandReturn(new_message['data'])
+            except Exception as e: return _fail(e, f'Failed to process response.')
+            else: _success("Processed response.")
 
-                    else: # write other types to tmp file
-                        with tempfile.NamedTemporaryFile(dir='tmp', delete=False) as tf:
-                            tf.write(pickle.dumps(dat))
+            # stop listening; we only expect a single response
+            return True # done
 
-                    break # stop listening; we only expect a single response
-
-def listenMode():
-    '''listen for Redis messages in thread'''
-    # the only way to stop listening is to kill process
-
-    r,p = connectRedis()
-
-    def handleMessage(message):
-        '''actions to take on receiving message'''
-        if message['type'] == 'pmessage':
-            print(message['data'].decode('utf-8')) # log/print message
-            notificationHandler(message)  # send important notifications
-
-    p.psubscribe(**{'board_rets_*':handleMessage}) # all board return chans
-    thread = p.run_in_thread(sleep_time=2) # move listening to thread
-        # sleep_time is a socket timeout
-         # too low and it will bog down server
-         # can be set to None but may cause issues
-         # more research is recommended
-    print('The Queen is listening...') 
-
-    # todo
-     # when do we stop listening?
-     # thread.stop()
-
-
-##########################
-### INTERNAL FUNCTIONS ###
-
-# monkeypatch the print statement
-_print = print 
-def print(*args, **kw):
-    _print(*args, **kw)            # print to terminal
-    logging.info(' '.join(args))   # log to file
 
 def callCom(key):
     '''execute a queen command function by key'''
@@ -150,14 +148,84 @@ def callCom(key):
             # and then what to do with them?
             print(f"{com[key].__name__}: {ret}") # monkeypatched to log
 
-def connectRedis(host='localhost', port=6379):
+
+def listenMode():
+    '''listen for Redis messages in thread'''
+    # the only way to stop listening is to kill process
+
+    r,p = connectRedis()
+
+    def handleMessage(message):
+        '''actions to take on receiving message'''
+        if message['type'] == 'pmessage':
+            print(message['data'].decode('utf-8')) # log/print message
+            _notificationHandler(message)  # send important notifications
+
+    p.psubscribe(**{'board_rets_*':handleMessage}) # all board return chans
+    thread = p.run_in_thread(sleep_time=2) # move listening to thread
+        # sleep_time is a socket timeout
+         # too low and it will bog down server
+         # can be set to None but may cause issues
+         # more research is recommended
+    print('The Queen is listening...') 
+
+    # todo
+     # when do we stop listening?
+     # thread.stop()
+
+
+
+##########################
+### INTERNAL FUNCTIONS ###
+
+
+# monkeypatch the print statement
+_print = print 
+def print(*args, **kw):
+    _print(*args, **kw)            # print to terminal
+    logging.info(' '.join(args))   # log to file
+
+
+def _success(msg):
+    _print("Done.")
+    if msg is not None: logging.info(msg)
+
+
+def _fail(e, msg=None):
+    _print("Failed.")
+    if msg is not None: logging.info(msg)
+    logging.error(e)
+    return e
+
+
+def _connectRedis(host='localhost', port=6379):
     '''connect to redis server'''
 
     r = redis.Redis(host=host, port=port, db=0)
     p = r.pubsub()
     return r, p
 
-def notificationHandler(message):
+
+def _processCommandReturn(dat):
+    '''Process the return data from a command.'''
+
+    dat = pickle.loads(dat)                # assuming msg is pickled
+
+    if isinstance(dat, str):            # print only if string
+        print(dat) 
+
+    elif isinstance(dat, np.ndarray):   # save arrays to tmp .npy file
+        with tempfile.NamedTemporaryFile(dir='tmp', suffix='.npy', delete=False) as tf:
+            np.save(tf, dat)
+
+    else:                               # write other types to tmp file
+        with tempfile.NamedTemporaryFile(dir='tmp', delete=False) as tf:
+            tf.write(pickle.dumps(dat))
+
+    # note that these tmp files are not currently ever cleared out
+
+
+def _notificationHandler(message):
     '''process given messages for sending notifications to end-users'''
 
     print("notificationHandler(): Not implemented yet!")
@@ -165,6 +233,7 @@ def notificationHandler(message):
      # look through given message[s?]
      # and look through configured notifications
      # and send emails as appropriate
+
 
 
 ############
