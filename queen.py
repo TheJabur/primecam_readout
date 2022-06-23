@@ -20,6 +20,8 @@ import uuid
 import pickle
 import tempfile
 
+import _cfg_queen as cfg
+
 import queen_commands.test_functions as test
 
 
@@ -201,7 +203,7 @@ def _fail(e, msg=None):
 def _connectRedis(host='localhost', port=6379):
     '''connect to redis server'''
 
-    r = redis.Redis(host=host, port=port, db=0)
+    r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
     p = r.pubsub()
     return r, p
 
