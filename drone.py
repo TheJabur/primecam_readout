@@ -81,18 +81,24 @@ def listenMode(r, p, bid, chan_subs):
             continue                    # skip this message
 
         channel = new_message['channel'].decode('utf-8')
-        com_num = int(new_message['data'])  # the command num
         cid = channel.split('_')[-1]    # recover cid from channel
 
-        com_ret = executeCommand(com_num) # attempt execution
+        payload = new_message['data'].decode('utf-8')
+        try:
+            com_num, args, kwargs = payloadToCom(payload) # split payload into command
+            print(com_num, args, kwargs)
+            com_ret = executeCommand(com_num, args, kwargs) # attempt execution
+        except Exception as e:
+            com_ret = f"Payload error ({payload}): {e}"
+            print(com_ret)
         
         publishResponse(com_ret, r, bid, cid) # send response
 
 
-def executeCommand(com_num):
+def executeCommand(com_num, args, kwargs):
     print(f"Executing command: {com_num}... ")
     try: #####
-        ret = alcove.callCom(com_num)   # execute the command
+        ret = alcove.callCom(com_num, args, kwargs)   # execute the command
 
     except Exception as e:              # command execution failed
         ret = f"Command execution error: {e}"
@@ -132,6 +138,42 @@ def publishResponse(resp, r, bid, cid):
     else:
         _print(f"Done.")
         logging.info(f'Publish response successful.')
+
+
+def listToArgsAndKwargs(l):
+    '''Split a list into args and kwargs.
+    l: List to split.
+    Returns args (list) and kwargs (dictionary).'''
+
+    args = []
+    kwargs = {}
+    while len(l)>0:
+        v = l.pop(0)
+
+        # if this doesn't have a dash in front
+        # or theres no more items
+        # or the next item has a dash in front
+        if v[0]!='-' or len(l)==0 or l[0][0]=='-':
+            args.append(v)             # then this is an arg
+
+        else:
+            v = v.lstrip('-')          # remove dashes in front
+            kwargs[v] = l.pop(0)       # this is a kwarg
+
+    return args, kwargs
+
+
+def payloadToCom(payload):
+    '''Convert payload to com_num, args, kwargs.
+    payload: Command string data.
+        Payload format: [com_num] [positional arguments] [named arguments].
+        Named arguments format: -[argument name] [value].'''
+    
+    paylist = payload.split()
+    com_num = int(paylist.pop(0)) # assuming first item is com_num
+    args, kwargs = listToArgsAndKwargs(paylist)
+    
+    return com_num, args, kwargs
 
 
 

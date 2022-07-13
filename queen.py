@@ -54,11 +54,12 @@ def _com():
 ### COMMAND FUNCTIONS ###
 
 
-def alcoveCommand(com_num, bid=None, all_boards=False):
-    '''send an alcove command to given board
-    com_num: command number
-    bid: board identifier
-    all_boards: send to all boards instead of bid'''
+def alcoveCommand(com_num, bid=None, all_boards=False, args=None):
+    '''Send an alcove command to given board.
+    com_num: Command number.
+    bid: Board identifier.
+    all_boards: Send to all boards instead of bid.
+    args: String command arguments.'''
 
     ## Connect to Redis server
     print(f"Connecting to Redis server... ", end="")
@@ -66,6 +67,13 @@ def alcoveCommand(com_num, bid=None, all_boards=False):
         r,p = _connectRedis()  # redis and pubsub objects
     except Exception as e: return _fail(e, f'Failed to connect to Redis server.')
     else: _success("Connected to Redis server.")
+
+    ## build payload
+    # payload consists of commmand number and arguments
+    if args is None:
+        payload = com_num
+    else:
+        payload = f"{com_num} {args}"
 
     ## Send to all boards
     if all_boards:
@@ -76,7 +84,7 @@ def alcoveCommand(com_num, bid=None, all_boards=False):
         ## Publish command to all boards
         print(f"Publishing command {com_num} to all boards... ", end="")
         try:
-            num_clients = r.publish(f'all_boards', com_num)     # send command
+            num_clients = r.publish(f'all_boards', payload)     # send command
         except Exception as e: return _fail(e, f'Failed to publish command.')
         else: _success("Published command.")
 
@@ -98,7 +106,7 @@ def alcoveCommand(com_num, bid=None, all_boards=False):
         print(f"Publishing command {com_num} to board {bid}... ", end="")
         try:
             p.psubscribe(f'board_rets_{chanid}')            # return channel
-            num_clients = r.publish(f'board_{chanid}', com_num) # send command
+            num_clients = r.publish(f'board_{chanid}', payload) # send command
         except Exception as e: return _fail(e, f'Failed to publish command.')
         else: _success("Published command.")
 
@@ -126,8 +134,10 @@ def alcoveCommand(com_num, bid=None, all_boards=False):
             return True # done
 
 
-def callCom(key):
+def callCom(key, args=None):
     '''execute a queen command function by key'''
+
+    # ADD ARGS FUNCTIONALITY
 
     # dictionary keys are stored as integers
     # but redis may convert to string

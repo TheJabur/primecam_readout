@@ -9,6 +9,7 @@
 ###############
 ### IMPORTS ###
 
+from re import A
 import queen
 import alcove
 import os
@@ -73,6 +74,8 @@ def setupArgparse():
     # add arguments
     parser.add_argument("-c",       # command
         type=int, help="command")
+    parser.add_argument("--args",   # command arguments string
+        type=str, help="command arguments string")
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument("--commands",
         action="store_true", help="list of available commands")
@@ -82,7 +85,7 @@ def setupArgparse():
         action="store_true", help="all boards")
     target.add_argument("--queen",  # queen command
         action="store_true", help="queen command")
-
+   
     # return arguments values
     return parser.parse_args()
 
@@ -95,11 +98,11 @@ def processCommand(args):
     if not key:         # no command given
         printCom()
     elif args.queen:    # a queen command
-        queen.callCom(key)
+        queen.callCom(key, args=args.args)
     elif args.all:      # an all-boards commands
-        queen.alcoveCommand(key, all_boards=True)
+        queen.alcoveCommand(key, all_boards=True, args=args.args)
     elif args.bid:      # a single board command
-        queen.alcoveCommand(key, bid=args.bid)
+        queen.alcoveCommand(key, bid=args.bid, args=args.args)
         
 
 if __name__ == "__main__":

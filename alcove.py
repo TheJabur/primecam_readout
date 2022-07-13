@@ -32,7 +32,8 @@ def _com():
         10:utils.boardTemps, 
         12:single_chan.writeVnaComb,
         13:single_chan.writeTestTone,
-        14:single_chan.getAdcData
+        14:single_chan.getAdcData,
+        15:test.test_function_1
     }
 
 
@@ -45,7 +46,7 @@ def print(*args, **kw):
     _print(*args, **kw)            # print to terminal
     logging.info(' '.join(args))   # log to file
 
-def callCom(key):
+def callCom(key, args, kwargs):
     # dictionary keys are stored as integers
     # but redis may convert to string
     key = int(key)                       # want int for com
@@ -56,7 +57,7 @@ def callCom(key):
 
     else:
         try:                             # attempt command
-            ret = com[key]()
+            ret = com[key](*args, **kwargs)
         except BaseException as e:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
