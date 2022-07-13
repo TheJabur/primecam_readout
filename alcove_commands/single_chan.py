@@ -355,3 +355,7 @@ def writeTestTone():
 
 def getAdcData():
     return get_snap_data(0)
+
+
+def getSnapData(mux_sel):
+    return get_snap_data(mux_sel)
