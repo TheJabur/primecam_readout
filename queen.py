@@ -134,31 +134,53 @@ def alcoveCommand(com_num, bid=None, all_boards=False, args=None):
             return True # done
 
 
-def callCom(key, args=None):
+def callCom(com_num, args=None):
     '''execute a queen command function by key'''
-
-    # ADD ARGS FUNCTIONALITY
 
     # dictionary keys are stored as integers
     # but redis may convert to string
-    key = int(key)                       # want int for com
-    
-    if key not in com:                   # invalid command
-        print('Invalid key: '+str(key))
+    # key = int(key)                       # want int for com
 
+    if com_num not in com:               # invalid command
+        print('Invalid command: '+str(com_num))
+        return
+
+    ## build payload
+    # payload consists of commmand number and arguments
+    if args is None:
+        payload = com_num
     else:
-        try:                             # attempt to run command
-            ret = com[key]()
-        except BaseException as e: 
-            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(e).__name__, e.args)
-            ret = message
+        payload = f"{com_num} {args}"
+        
+    try:
+        com_num, args, kwargs = payloadToCom(payload) # split payload into command
+        ret = com[com_num](*args, **kwargs)
+    except BaseException as e: 
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(e).__name__, e.args)
+        ret = message
 
-        if ret is not None:              # default success return is None
-            # what if ret is not a string, e.g. data?
-            # can we signal that in the ret or need to check?
-            # and then what to do with them?
-            print(f"{com[key].__name__}: {ret}") # monkeypatched to log
+    if ret is not None:              # default success return is None
+        # what if ret is not a string, e.g. data?
+        # can we signal that in the ret or need to check?
+        # and then what to do with them?
+        print(f"{com[com_num].__name__}: {ret}") # monkeypatched to log
+    
+
+
+    # else:
+    #     try:                             # attempt to run command
+    #         ret = com[key](*args, **kwargs)
+    #     except BaseException as e: 
+    #         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+    #         message = template.format(type(e).__name__, e.args)
+    #         ret = message
+
+    #     if ret is not None:              # default success return is None
+    #         # what if ret is not a string, e.g. data?
+    #         # can we signal that in the ret or need to check?
+    #         # and then what to do with them?
+    #         print(f"{com[key].__name__}: {ret}") # monkeypatched to log
 
 
 def listenMode():
@@ -245,6 +267,42 @@ def _notificationHandler(message):
      # look through given message[s?]
      # and look through configured notifications
      # and send emails as appropriate
+
+
+def listToArgsAndKwargs(l):
+    '''Split a list into args and kwargs.
+    l: List to split.
+    Returns args (list) and kwargs (dictionary).'''
+
+    args = []
+    kwargs = {}
+    while len(l)>0:
+        v = l.pop(0)
+
+        # if this doesn't have a dash in front
+        # or theres no more items
+        # or the next item has a dash in front
+        if v[0]!='-' or len(l)==0 or l[0][0]=='-':
+            args.append(v)             # then this is an arg
+
+        else:
+            v = v.lstrip('-')          # remove dashes in front
+            kwargs[v] = l.pop(0)       # this is a kwarg
+
+    return args, kwargs
+
+
+def payloadToCom(payload):
+    '''Convert payload to com_num, args, kwargs.
+    payload: Command string data.
+        Payload format: [com_num] [positional arguments] [named arguments].
+        Named arguments format: -[argument name] [value].'''
+    
+    paylist = payload.split()
+    com_num = int(paylist.pop(0)) # assuming first item is com_num
+    args, kwargs = listToArgsAndKwargs(paylist)
+    
+    return com_num, args, kwargs
 
 
 
