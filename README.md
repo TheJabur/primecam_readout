@@ -11,6 +11,7 @@ See /docs for more information about this project.
 - **alcove_tui.py**: A terminal interface to alcove.py.
 - **/alcove_commands**: Modules containing the functions to perform board tasks.
     - **board_utilities.py**: Basic board utility tools.
+    - **single_chan.py**: Gateware functions.
     - **test_functions.py**: Testing functions.
 - **/queen_commands**: Modules containing the functions to perform server tasks.
     - **test_functions**: Testing functions.
