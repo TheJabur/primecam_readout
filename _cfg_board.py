@@ -5,7 +5,7 @@
 bid = 1
 
 ## redis server configuration
-host = 'localhost'
-# host = '192.168.2.81'
+#host = 'localhost'
+host = '192.168.2.80'
 port = 6379
 db = 0

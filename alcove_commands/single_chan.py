@@ -2,14 +2,13 @@
 #####################
 # Global attributes #
 #####################
-
-try: 
+try:
+    import xrfdc
     from pynq import Overlay
     firmware = Overlay("single_chan_4eth_v8p2.bit",ignore_version=True, download=False)
 except Exception as e: 
     firmware = None
     print(f"Error loading firmware: {e}")
-
 
 
 ######################
@@ -20,7 +19,7 @@ except Exception as e:
 def set_NCLO(lofreq):
 
     import xrfdc
-
+    
     rf_data_conv = firmware.usp_rf_data_converter_0
     rf_data_conv.adc_tiles[0].blocks[0].MixerSettings['Freq']=lofreq
     rf_data_conv.dac_tiles[1].blocks[3].MixerSettings['Freq']=lofreq
@@ -329,11 +328,58 @@ def get_snap_data(mux_sel):
     
     return I, Q
 
+def sweep( f_center, freqs):
+    
+    import numpy as np
+    
+    """
+    
+    """
+    N_steps =  500 #
+    tone_diff = np.diff(freqs)[0]/1e6 # MHz
+    flo_step = tone_diff/N_steps
+    flo_start = f_center - tone_diff/2. #256
+    flo_stop =  f_center + tone_diff/2. #256
+
+    flos = np.arange(flo_start, flo_stop, flo_step)
+
+    def temp(lofreq):
+        set_NCLO(lofreq)
+        # Read values and trash initial read, suspecting linear delay is cause..
+        Naccums = 5
+        I, Q = [], []
+        for i in range(Naccums):
+            It, Qt = getSnapData(3)
+            I.append(It)
+            Q.append(Qt)
+        I = np.array(I)
+        Q = np.array(Q)
+        Imed = np.median(I,axis=0)
+        Qmed = np.median(Q,axis=0)
+
+        Z = Imed + 1j*Qmed
+        Z = Z[0:len(freqs)]
+
+        print(".", end="")
+        return Z
+
+    sweep_Z = np.array([
+        temp(lofreq)
+        for lofreq in flos
+    ])
+
+    f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
+    sweep_Z_f = sweep_Z.T.flatten()
+
+    ## SAVE f and sweep_Z_f TO LOCAL FILES
+    # SHOULD BE ABLE TO SAVE TARG OR VNA
+    # WITH TIMESTAMP
+
+    return (f, sweep_Z_f)
 
 #####################
 # Command Functions #
 #####################
-
 
 def writeVnaComb():
 
@@ -342,7 +388,7 @@ def writeVnaComb():
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqs = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=True, verbose=False)
     load_bin_list(freqs)
     load_waveform_into_mem(freqs, LUT_I, LUT_Q, DDS_I, DDS_Q)
-
+    np.save("freqs.npy",freqs) 
 
 def writeTestTone():
 
@@ -356,6 +402,21 @@ def writeTestTone():
 def getAdcData():
     return get_snap_data(0)
 
-
 def getSnapData(mux_sel):
-    return get_snap_data(mux_sel)
+    return get_snap_data(int(mux_sel))
+
+def vnaSweep(f_center=600):
+    
+    import numpy as np
+    
+    """
+    vnaSweep: perform a stepped frequency sweep centered at f_center \\
+            save result as s21.npy file
+
+    f_center: center frequency for sweep in [MHz]
+
+    """
+    freqs = np.load("freqs.npy")
+    f, Z = sweep(f_center, freqs)
+    np.save("s21.npy", np.array((f, Z)))
+    print("s21.npy saved.")

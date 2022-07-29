@@ -34,7 +34,8 @@ def _com():
         13:single_chan.writeTestTone,
         14:single_chan.getAdcData,
         15:test.test_function_1,
-        16:single_chan.getSnapData
+        16:single_chan.getSnapData,
+        17:single_chan.vnaSweep
     }
 
 
