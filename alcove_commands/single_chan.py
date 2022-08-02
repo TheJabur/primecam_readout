@@ -328,45 +328,25 @@ def get_snap_data(mux_sel):
     
     return I, Q
 
-def sweep( f_center, freqs):
-    
+def sweep(f_center, freqs, N_steps):
+    '''Perform a stepped frequency sweep centered at f_center.
+    f_center: (float) Center frequency for sweep in [MHz].
+    freqs:    (1D array of floats) .
+    N_steps:  (int) .'''
+
     import numpy as np
-    
-    """
-    
-    """
-    N_steps =  500 #
+
     tone_diff = np.diff(freqs)[0]/1e6 # MHz
-    flo_step = tone_diff/N_steps
-    flo_start = f_center - tone_diff/2. #256
-    flo_stop =  f_center + tone_diff/2. #256
+    flos = np.arange(f_center-tone_diff/2., f_center+tone_diff/2., tone_diff/N_steps)
 
-    flos = np.arange(flo_start, flo_stop, flo_step)
-
-    def temp(lofreq):
+    def ZforLoFreq(lofreq, Naccums=5):
         set_NCLO(lofreq)
-        # Read values and trash initial read, suspecting linear delay is cause..
-        Naccums = 5
-        I, Q = [], []
-        for i in range(Naccums):
-            It, Qt = getSnapData(3)
-            I.append(It)
-            Q.append(Qt)
-        I = np.array(I)
-        Q = np.array(Q)
-        Imed = np.median(I,axis=0)
-        Qmed = np.median(Q,axis=0)
-
+        IQ = [getSnapData(3) for i in range(Naccums)]
+        Imed,Qmed = np.median(IQ, axis=0)
         Z = Imed + 1j*Qmed
-        Z = Z[0:len(freqs)]
-
-        print(".", end="")
-        return Z
-
-    sweep_Z = np.array([
-        temp(lofreq)
-        for lofreq in flos
-    ])
+        # print(".", end="")
+        return Z[0:len(freqs)]
+    sweep_Z = np.array([ZforLoFreq(lofreq) for lofreq in flos])
 
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
     sweep_Z_f = sweep_Z.T.flatten()
@@ -406,17 +386,17 @@ def getSnapData(mux_sel):
     return get_snap_data(int(mux_sel))
 
 def vnaSweep(f_center=600):
-    
-    import numpy as np
-    
     """
     vnaSweep: perform a stepped frequency sweep centered at f_center \\
             save result as s21.npy file
 
     f_center: center frequency for sweep in [MHz]
-
     """
+
+    import numpy as np
+
     freqs = np.load("freqs.npy")
-    f, Z = sweep(f_center, freqs)
+    f, Z = sweep(f_center, freqs, N_steps=500)
     np.save("s21.npy", np.array((f, Z)))
-    print("s21.npy saved.")
+    return "s21.npy saved on board."
+    # print("s21.npy saved.")
