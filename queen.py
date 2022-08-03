@@ -232,7 +232,7 @@ def _fail(e, msg=None):
     return e
 
 
-def _connectRedis(host='localhost', port=6379):
+def _connectRedis():
     '''connect to redis server'''
 
     r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
