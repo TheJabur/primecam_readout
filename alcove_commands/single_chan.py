@@ -396,7 +396,7 @@ def vnaSweep(f_center=600):
     import numpy as np
 
     freqs = np.load("freqs.npy")
-    f, Z = sweep(f_center, freqs, N_steps=500)
+    f, Z = sweep(int(f_center), freqs, N_steps=500)
     np.save("s21.npy", np.array((f, Z)))
     return "s21.npy saved on board."
     # print("s21.npy saved.")
