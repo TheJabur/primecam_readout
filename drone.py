@@ -16,10 +16,14 @@
 import alcove
 import redis
 import os
+import sys
+import importlib
 import logging
 import pickle
+import argparse
 
 import _cfg_board as cfg
+# import _cfg_drone done in main()
 
 
 
@@ -39,6 +43,17 @@ logging.basicConfig(
 
 
 def main():   
+
+    args = setupArgparse()              # get command line arguments
+
+    modifyConfig(args)
+
+    # droneConfig(args.drid)              # process drone config
+    
+    # import _cfg_drone.py as cfg_dr      # import drone config module
+    # cfg.drid = cfg_dr.drid              # update drone identifier in config
+
+    drid = cfg.drid                     # drone identifier
     bid = cfg.bid                       # board identifier
     chan_subs = [                       # listening channels
         f'board_{bid}_*',               # this boards listening channels
@@ -63,6 +78,33 @@ def print(*args, **kw):
     # add current filename in front
     _print(f"{os.path.basename(__file__)}: ", end='')
     _print(*args, **kw)
+
+
+def setupArgparse():
+    '''Setup the argparse arguments'''
+
+    parser = argparse.ArgumentParser(
+        description='Terminal interface to drone script.')
+
+    # add arguments
+    parser.add_argument(                # positional, required, 1-4
+        "drid", type=int, help="drone id", choices=range(1,4+1))
+   
+    # return arguments values
+    return parser.parse_args()
+
+
+def modifyConfig(args):
+    '''modify config level variables'''
+
+    ## project root directory
+    cfg.root_dir = os.getcwd()          # assuming this file lives in root dir
+
+    ## drone config
+    drid = args.drid
+    sys.path.append(f'{cfg.root_dir}/drones/drone{drid}')
+    cfg_dr = importlib.import_module(f'_cfg_drone{drid}')
+    cfg.drid = cfg_dr.drid              # update drone identifier in config
 
 
 def connectRedis():

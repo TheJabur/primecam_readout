@@ -13,7 +13,6 @@
 ### then move the import to just above the function.      ###
 #############################################################
 
-test_var_1 = 7
 
 def boardTemps():
     '''temperatures from the board sensors

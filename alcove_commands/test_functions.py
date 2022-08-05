@@ -15,6 +15,9 @@
 
 
 def test_function_1(arg1=None, arg2=None):
-    ret = f"arg1={arg1}, arg2={arg2}"
+
+    import _cfg_board as cfg
+
+    ret = f"drid={cfg.drid}, arg1={arg1}, arg2={arg2}"
     print(ret)
     return ret
