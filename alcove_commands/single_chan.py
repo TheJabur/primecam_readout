@@ -3,6 +3,7 @@
 # Global attributes #
 #####################
 try:
+    import _cfg_board as cfg
     import xrfdc
     from pynq import Overlay
     firmware = Overlay("single_chan_4eth_v8p2.bit",ignore_version=True, download=False)
@@ -360,6 +361,7 @@ def sweep(f_center, freqs, N_steps):
 #####################
 # Command Functions #
 #####################
+# Arguments are given as strings!
 
 def writeVnaComb():
 
@@ -395,8 +397,9 @@ def vnaSweep(f_center=600):
 
     import numpy as np
 
-    freqs = np.load("freqs.npy")
-    f, Z = sweep(int(f_center), freqs, N_steps=500)
-    np.save("s21.npy", np.array((f, Z)))
+    f_center = int(f_center)
+
+    freqs = np.load("freqs.npy") # these should be moved to drone directory?
+    f, Z = sweep(f_center, freqs, N_steps=500)
+    np.save(f'{cfg.drone_dir}/s21.npy', np.array((f, Z)))
     return "s21.npy saved on board."
-    # print("s21.npy saved.")

@@ -46,14 +46,8 @@ def main():
 
     args = setupArgparse()              # get command line arguments
 
-    modifyConfig(args)
+    modifyConfig(args)                  # modify execution level configs
 
-    # droneConfig(args.drid)              # process drone config
-    
-    # import _cfg_drone.py as cfg_dr      # import drone config module
-    # cfg.drid = cfg_dr.drid              # update drone identifier in config
-
-    drid = cfg.drid                     # drone identifier
     bid = cfg.bid                       # board identifier
     chan_subs = [                       # listening channels
         f'board_{bid}_*',               # this boards listening channels
@@ -100,11 +94,15 @@ def modifyConfig(args):
     ## project root directory
     cfg.root_dir = os.getcwd()          # assuming this file lives in root dir
 
+    ## drone directory
+    cfg.drone_dir = f'{cfg.root_dir}/drones/drone{args.drid}'
+
     ## drone config
-    drid = args.drid
-    sys.path.append(f'{cfg.root_dir}/drones/drone{drid}')
-    cfg_dr = importlib.import_module(f'_cfg_drone{drid}')
-    cfg.drid = cfg_dr.drid              # update drone identifier in config
+    sys.path.append(cfg.drone_dir)
+    cfg_dr = importlib.import_module(f'_cfg_drone{args.drid}')
+
+    ## drone identifier
+    cfg.drid = cfg_dr.drid
 
 
 def connectRedis():

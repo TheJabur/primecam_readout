@@ -18,6 +18,7 @@ db = 0
 #########################
 
 root_dir = ''
+drone_dir = ''
 
 ## drone identifier
 drid = 0
