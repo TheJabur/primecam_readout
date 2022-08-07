@@ -9,7 +9,7 @@
 ###############
 ### IMPORTS ###
 
-from re import A
+# from re import A
 import queen
 import alcove
 import os
@@ -73,18 +73,18 @@ def setupArgparse():
 
     # add arguments
     parser.add_argument("-c",       # command
-        type=int, help="command")
+        type=int, help="command to send or execute (int)")
     parser.add_argument("--args",   # command arguments string
-        type=str, help="command arguments string")
+        type=str, help="arguments to send with command (string), e.g. 'val1' or '-arg1 val1' or 'val1 -arg2 val2'")
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument("--commands",
-        action="store_true", help="list of available commands")
+        action="store_true", help="list all available commands")
     target.add_argument("--bid",    # board bid
-        type=int, help="board bid")
+        type=int, help="send command to board with this bid")
     target.add_argument("--all",    # all boards
-        action="store_true", help="all boards")
+        action="store_true", help="send command to all boards")
     target.add_argument("--queen",  # queen command
-        action="store_true", help="queen command")
+        action="store_true", help="execute this command locally in queen")
    
     # return arguments values
     return parser.parse_args()
