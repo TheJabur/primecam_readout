@@ -35,7 +35,8 @@ def _com():
         14:single_chan.getAdcData,
         15:test.test_function_1,
         16:single_chan.getSnapData,
-        17:single_chan.vnaSweep
+        17:single_chan.vnaSweep,
+        18:single_chan.findResonators
     }
 
 

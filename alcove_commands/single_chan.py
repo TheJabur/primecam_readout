@@ -358,6 +358,50 @@ def sweep(f_center, freqs, N_steps):
 
     return (f, sweep_Z_f)
 
+def variationInS21m(S21m):
+    '''Find small signal variation in S21 complex modulus.
+    S21m: 1D array of S21 complex modulus floats.
+    This has only been tested on fake data with <2000 resonators.'''
+
+    import numpy as np
+
+    w = 10                      # min of 10 for reasonable results
+    l = len(S21m)
+    while l%w != 0:             # need w to be a factor of len(S21m) for reshape
+        w += 1
+        if w>l: raise("Error: No width found!")
+
+    x = np.reshape(S21m, (len(S21m)//w, w))
+
+    vars = np.std(x, axis=1)    # variation in each bin
+    var = np.median(vars)       # median of variations
+    
+    return var
+
+def resonatorIndicesInS21(Z):
+    """
+    Find the indices in given complex S21 values for resonator peaks.
+    Z: Complex S21 values.
+    """
+
+    import numpy as np
+    import scipy.signal
+
+    # complex modulus
+    sig = -np.abs(Z)              # find_peaks looks at positive peaks
+
+    var  = variationInS21m(sig)
+    prom = 3*var
+
+    i_peaks = scipy.signal.find_peaks(
+        x          = sig,       
+        prominence = prom,        # 
+        height     = (np.nanmin(sig), np.nanmax(sig)-prom)
+    )[0]                          # [0] is peaks, [1] is properties
+
+    return i_peaks
+
+
 #####################
 # Command Functions #
 #####################
@@ -403,3 +447,19 @@ def vnaSweep(f_center=600):
     f, Z = sweep(f_center, freqs, N_steps=500)
     np.save(f'{cfg.drone_dir}/s21.npy', np.array((f, Z)))
     return "s21.npy saved on board."
+
+def findResonators():
+    """
+    Find the resonator peak frequencies in previously saved s21.npy file.
+    This is untested, as are the functions it relies on.
+    """
+    
+    import numpy as np
+
+    # load S21 complex mags (Z) and frequencies (f) from file
+    f, Z = np.load(f'{cfg.drone_dir}/s21.npy')
+
+    i_peaks = resonatorIndicesInS21(Z)
+    f_res = f[i_peaks]
+
+    return f_res
