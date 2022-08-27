@@ -391,7 +391,7 @@ def resonatorIndicesInS21(Z):
     sig = -np.abs(Z)              # find_peaks looks at positive peaks
 
     var  = variationInS21m(sig)
-    prom = 3*var
+    prom = 10*var
 
     i_peaks = scipy.signal.find_peaks(
         x          = sig,       
