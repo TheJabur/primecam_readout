@@ -14,10 +14,20 @@
 #############################################################
 
 
-def test_function_1(arg1=None, arg2=None):
+def testFunction1(arg1=None, arg2=None):
 
     import _cfg_board as cfg
 
     ret = f"drid={cfg.drid}, arg1={arg1}, arg2={arg2}"
-    print(ret)
+    print(f"returning: {ret}")
+    return ret
+
+
+def testFunction2(key):
+
+    import drone
+
+    ret = drone.getKeyValue(key)
+    print(f"returning: {ret}")
+
     return ret

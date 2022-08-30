@@ -45,7 +45,9 @@ def _com():
     return {
         20:alcoveCommand,
         21:listenMode,
-        22:test.testFunc1
+        22:test.testFunc1,
+        23:getKeyValue,
+        24:setKeyValue
     }
 
 
@@ -184,10 +186,12 @@ def callCom(com_num, args=None):
 
 
 def listenMode():
-    '''listen for Redis messages in thread'''
+    """
+    Listen for Redis messages in thread.
+    """
     # the only way to stop listening is to kill process
 
-    r,p = connectRedis()
+    r,p = _connectRedis()
 
     def handleMessage(message):
         '''actions to take on receiving message'''
@@ -206,6 +210,27 @@ def listenMode():
     # todo
      # when do we stop listening?
      # thread.stop()
+
+
+def getKeyValue(key):
+    """
+    GET the value of given key.
+    """
+
+    r,p = _connectRedis()
+    ret = r.get(bytes(key, encoding='utf-8')).decode('utf-8')
+
+    print(ret) # log/print message
+    _notificationHandler(ret)  # send important notifications
+
+
+def setKeyValue(key, value):
+    """
+    SET the given value for the given key.
+    """
+
+    r,p = _connectRedis()
+    r.set(bytes(key, encoding='utf-8'), bytes(value, encoding='utf-8'))   
 
 
 

@@ -204,16 +204,38 @@ def listToArgsAndKwargs(l):
 
 
 def payloadToCom(payload):
-    '''Convert payload to com_num, args, kwargs.
-    payload: Command string data.
-        Payload format: [com_num] [positional arguments] [named arguments].
-        Named arguments format: -[argument name] [value].'''
+    """
+    Convert payload to com_num, args, kwargs.
+        payload: Command string data.
+            Payload format: [com_num] [positional arguments] [named arguments].
+            Named arguments format: -[argument name] [value].
+    """
     
     paylist = payload.split()
     com_num = int(paylist.pop(0)) # assuming first item is com_num
     args, kwargs = listToArgsAndKwargs(paylist)
     
     return com_num, args, kwargs
+
+
+def getKeyValue(key):
+    """
+    GET the value of given key.
+    """
+
+    r,p = connectRedis()
+    ret = r.get(bytes(key, encoding='utf-8')).decode('utf-8')
+
+    return ret
+
+
+def setKeyValue(key, value):
+    """
+    SET the given value for the given key.
+    """
+
+    r,p = connectRedis()
+    r.set(bytes(key, encoding='utf-8'), bytes(value, encoding='utf-8'))   
 
 
 
