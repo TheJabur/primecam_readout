@@ -48,14 +48,19 @@ def main():
 
     modifyConfig(args)                  # modify execution level configs
 
-    bid = cfg.bid                       # board identifier
+    bid  = cfg.bid                      # board identifier
+    drid = cfg.drid                     # drone identifier
     chan_subs = [                       # listening channels
         f'board_{bid}_*',               # this boards listening channels
+        f'board_{bid}.{drid}_*',        # this drones listening channels
         'all_boards']                   # an all-boards listening channel
+
+    print(chan_subs)
 
     r,p = connectRedis()                # redis and pubsub objects
 
-    listenMode(r, p, bid, chan_subs)    # listen for redis messages
+    # listenMode(r, p, bid, chan_subs)    # listen for redis messages
+    listenMode(r, p, chan_subs)
     # currently, only way to exit out of listen mode is CTRL-c
             
 
@@ -112,7 +117,8 @@ def connectRedis():
     return r, p
 
 
-def listenMode(r, p, bid, chan_subs):
+# def listenMode(r, p, bid, chan_subs):
+def listenMode(r, p, chan_subs):
     p.psubscribe(chan_subs)             # channels to listen to
     for new_message in p.listen():      # infinite listening loop
         print(new_message)              # output message to term/log
@@ -120,8 +126,9 @@ def listenMode(r, p, bid, chan_subs):
         if new_message['type'] != 'pmessage': # not a command
             continue                    # skip this message
 
-        channel = new_message['channel'].decode('utf-8')
-        cid = channel.split('_')[-1]    # recover cid from channel
+        chan_sub = new_message['channel'].decode('utf-8')
+        # channel = new_message['channel'].decode('utf-8')
+        # cid = channel.split('_')[-1]    # recover cid from channel
 
         payload = new_message['data'].decode('utf-8')
         try:
@@ -132,7 +139,8 @@ def listenMode(r, p, bid, chan_subs):
             com_ret = f"Payload error ({payload}): {e}"
             print(com_ret)
         
-        publishResponse(com_ret, r, bid, cid) # send response
+        # publishResponse(com_ret, r, bid, cid) # send response
+        publishResponse(com_ret, r, chan_sub) # send response
 
 
 def executeCommand(com_num, args, kwargs):
@@ -154,9 +162,11 @@ def executeCommand(com_num, args, kwargs):
     return ret
 
 
-def publishResponse(resp, r, bid, cid):
-    chanid = f'{bid}_{cid}'             # rebuild chanid
-    chan_pubs = f'board_rets_{chanid}'  # talking channel
+# def publishResponse(resp, r, bid, cid):
+def publishResponse(resp, r, chan_sub):
+    # chanid = f'{bid}_{cid}'             # rebuild chanid
+    # chan_pubs = f'board_rets_{chanid}'  # talking channel
+    chan_pub = f'rets_{chan_sub}'
 
     print(f"Preparing response... ", end="")
     try: #####
@@ -171,7 +181,8 @@ def publishResponse(resp, r, bid, cid):
 
     print(f"Sending response... ", end="")
     try: #####
-        r.publish(chan_pubs, ret)       # publish with redis
+        # r.publish(chan_pubs, ret)       # publish with redis
+        r.publish(chan_pub, ret)       # publish with redis
     except Exception as e:
         _print("Failed.")
         logging.info(f'Publish response failed.')

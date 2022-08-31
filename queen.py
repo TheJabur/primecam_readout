@@ -56,11 +56,12 @@ def _com():
 ### COMMAND FUNCTIONS ###
 
 
-def alcoveCommand(com_num, bid=None, all_boards=False, args=None):
+def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
     '''Send an alcove command to given board.
     com_num: Command number.
     bid: Board identifier.
-    all_boards: Send to all boards instead of bid.
+    drid: Drone identifier (1-4). Requires bid to be set.
+    all_boards: Send to all boards instead of bid/drid.
     args: String command arguments.'''
 
     ## Connect to Redis server
@@ -94,21 +95,24 @@ def alcoveCommand(com_num, bid=None, all_boards=False, args=None):
         return True # done
 
     ## Send to a single board
-    else:
+    elif bid:
 
-        ## Generate unique channel ID
-        print(f"Generating unique channel ID... ", end="")
+        ## Generate unique channels
+        print(f"Generating unique channels... ", end="")
         try:
-            cid = uuid.uuid4() # unique string
-            chanid = f'{bid}_{cid}'
+            id       = f'{bid}.{drid}' if drid else f'{bid}'
+            cid      = uuid.uuid4() # unique string
+            chanid   = f'{id}_{cid}'
+            chan_pub = f'board_{chanid}'
+            chan_sub = f'rets_{chan_pub}'
         except Exception as e: return _fail(e, f'Failed to generate unique channel ID.')
         else: _success("Generated unique channel ID.")
 
         ## Publish command to single board
-        print(f"Publishing command {com_num} to board {bid}... ", end="")
+        print(f"Publishing command {com_num} to board {id}... ", end="")
         try:
-            p.psubscribe(f'board_rets_{chanid}')            # return channel
-            num_clients = r.publish(f'board_{chanid}', payload) # send command
+            p.psubscribe(chan_sub)                     # return channel
+            num_clients = r.publish(chan_pub, payload) # send command
         except Exception as e: return _fail(e, f'Failed to publish command.')
         else: _success("Published command.")
 
@@ -134,6 +138,10 @@ def alcoveCommand(com_num, bid=None, all_boards=False, args=None):
 
             # stop listening; we only expect a single response
             return True # done
+
+    # not clear who to send command to
+    else:
+        print("Command not sent: bid required if not sending to all boards.")
 
 
 def callCom(com_num, args=None):

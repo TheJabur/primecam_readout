@@ -76,16 +76,19 @@ def setupArgparse():
         type=int, help="command to send or execute (int)")
     parser.add_argument("--args",   # command arguments string
         type=str, help="arguments to send with command (string), e.g. 'val1' or '-arg1 val1' or 'val1 -arg2 val2'")
+    parser.add_argument("--drid",   # drone id
+        type=int, help="send command to drone with this drid. Requires bid.")
+
     target = parser.add_mutually_exclusive_group(required=True)
     target.add_argument("--commands",
         action="store_true", help="list all available commands")
-    target.add_argument("--bid",    # board bid
+    target.add_argument("--bid",    # board id
         type=int, help="send command to board with this bid")
     target.add_argument("--all",    # all boards
         action="store_true", help="send command to all boards")
     target.add_argument("--queen",  # queen command
         action="store_true", help="execute this command locally in queen")
-   
+
     # return arguments values
     return parser.parse_args()
 
@@ -101,8 +104,11 @@ def processCommand(args):
         queen.callCom(key, args=args.args)
     elif args.all:      # an all-boards commands
         queen.alcoveCommand(key, all_boards=True, args=args.args)
-    elif args.bid:      # a single board command
-        queen.alcoveCommand(key, bid=args.bid, args=args.args)
+    elif args.bid:      
+        if args.drid:   # a specific board/drone command
+            queen.alcoveCommand(key, bid=args.bid, drid=args.drid, args=args.args)
+        else:           # a specific board (but not drone) command
+            queen.alcoveCommand(key, bid=args.bid, args=args.args)
         
 
 if __name__ == "__main__":
