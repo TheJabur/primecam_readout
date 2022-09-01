@@ -6,53 +6,40 @@
 ########################################################
 
 
+
 ###############
 ### IMPORTS ###
 
-# from re import A
+
 import queen
 import alcove
 import os
 import argparse
 
 
+
 ######################
 ### MAIN EXECUTION ###
 
+
 def main():
-    '''run when this script directly accessed'''
-
-    # get command line arguments
-    args = setupArgparse()
-
-    # output list of commands
-    if args.commands:
-        printCom()
+    """
+    Run when this script directly accessed.
+    """
 
     # attempt command execution
-    else:
-        processCommand(args)
+    _processCommand(_setupArgparse())
+
 
 
 ######################
 ### USER FUNCTIONS ###
 
-def printCom():
-    '''print available commands (from queen.py)'''
-
-    print(50*"=")
-    print("queen commands available (command : name):")
-    for key in queen.com.keys():
-        print(f"{key} : {queen.com[key].__name__}")
-    print("")
-    print("alcove commands available (command : name):")
-    for key in alcove.com.keys():
-        print(f"{key} : {alcove.com[key].__name__}")
-    print(50*"=")
 
 
 ##########################
 ### INTERNAL FUNCTIONS ###
+
 
 # monkeypatch the print statement
 _print = print 
@@ -62,54 +49,85 @@ def print(*args, **kw):
     _print(f"{os.path.basename(__file__)}: ", end='')
     _print(*args, **kw)
 
-def setupArgparse():
-    '''Setup the argparse arguments'''
+
+def _comsStr():
+    """
+    Output queen and alcove commands as a string.
+    """
+
+    s = ""
+    s += "\nqueen commands [com_num : name]:"
+    for key in queen.com.keys():
+        s+= f"\n  {key} : {queen.com[key].__name__}"
+    s += "\n"
+    s += "\nalcove commands [com_num : name]:"
+    for key in alcove.com.keys():
+        s += f"\n  {key} : {alcove.com[key].__name__}"
+
+    return s
+
+
+def _setupArgparse():
+    """
+    Setup command line arguments.
+    """
+
+    # If only one arg then its com_num to all boards.
+    # If two arguments then its com_num to bid.drid (string).
+        # If no period then no drid.
+    # If one argument and -q then it's com_num for queen.
 
     parser = argparse.ArgumentParser(
-        description=
-            'Terminal interface to queen script. '\
-            'Use --commands to see a list of commands.')
-    # todo: add printCom() to help
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Terminal interface to queen script.",
+        epilog = _comsStr())
 
-    # add arguments
-    parser.add_argument("-c",       # command
-        type=int, help="command to send or execute (int)")
-    parser.add_argument("--args",   # command arguments string
-        type=str, help="arguments to send with command (string), e.g. 'val1' or '-arg1 val1' or 'val1 -arg2 val2'")
-    parser.add_argument("--drid",   # drone id
-        type=int, help="send command to drone with this drid. Requires bid.")
+    # com_num is required
+    parser.add_argument("com_num",
+        type=int, help="Command number.")
 
-    target = parser.add_mutually_exclusive_group(required=True)
-    target.add_argument("--commands",
-        action="store_true", help="list all available commands")
-    target.add_argument("--bid",    # board id
-        type=int, help="send command to board with this bid")
-    target.add_argument("--all",    # all boards
-        action="store_true", help="send command to all boards")
-    target.add_argument("--queen",  # queen command
-        action="store_true", help="execute this command locally in queen")
+    # -a is optional
+    parser.add_argument("-a", "--arguments", 
+        type=str, help="Arguments to send with command, e.g. 'bar' or '-foo bar' or 'baz -foo bar'."\
+        " Note: Avoid subargs starting with '-a' or '-q' due to known bug.")
+
+    # bid or -q or neither, but not both
+    g1 = parser.add_mutually_exclusive_group(required=False)
+    g1.add_argument("bid", nargs='?',
+        type=str, help="Board and drone id: format is 'bid' or 'bid.drid'.")
+    g1.add_argument("-q", "--queen",
+        action="store_true", help="Queen command instead of board command.")
 
     # return arguments values
     return parser.parse_args()
 
-def processCommand(args):
-    '''Process a command (we accept a single command)
-    for either: a single bid, all boards, or queen.
-    Look at setupArgparse() for arguments setup.'''
 
-    key = args.c
-    if not key:         # no command given
-        printCom()
-    elif args.queen:    # a queen command
-        queen.callCom(key, args=args.args)
-    elif args.all:      # an all-boards commands
-        queen.alcoveCommand(key, all_boards=True, args=args.args)
-    elif args.bid:      
-        if args.drid:   # a specific board/drone command
-            queen.alcoveCommand(key, bid=args.bid, drid=args.drid, args=args.args)
-        else:           # a specific board (but not drone) command
-            queen.alcoveCommand(key, bid=args.bid, args=args.args)
-        
+def _processCommand(args):
+    """
+    Process a single command.
+    Can be for a single bid.drid, all bid.drid, or queen.
+    Look at _setupArgparse() for arguments setup.
+    """
+
+    # queen command
+    if args.queen:
+        queen.callCom(args.com_num, args.arguments)
+
+    # specific board/drone command
+    elif args.bid:
+        ids = args.bid.split('.')
+        bid = int(ids[0]) # must exist
+        drid = int(ids[1]) if len(ids)>1 else None
+        if drid:
+            queen.alcoveCommand(args.com_num, bid=bid, drid=drid, args=args.arguments)
+        else:
+            queen.alcoveCommand(args.com_num, bid=bid, args=args.arguments)
+
+    # all-boards commands
+    else:
+        queen.alcoveCommand(args.com_num, all_boards=True, args=args.arguments)
+
+
 
 if __name__ == "__main__":
     main()

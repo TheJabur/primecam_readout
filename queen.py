@@ -91,7 +91,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
         except Exception as e: return _fail(e, f'Failed to publish command.')
         else: _success("Published command.")
 
-        print(f"{num_clients} received this command. Returns will be logged.")
+        print(f"{num_clients} drones received this command. Returns will be logged.")
         return True # done
 
     ## Send to a single board
