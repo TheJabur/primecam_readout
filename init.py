@@ -26,11 +26,11 @@ try:
                      src_mac1_int16 = int("feed",16),
                      dst_mac0_int16 = int("2bb0",16),     # 
                      dst_mac1_int32 = int("803f5d09",16)):
-    eth_regs.write( 0x00, src_mac0_int32) 
-    eth_regs.write( 0x04, (dst_mac0_int16<<16) + src_mac1_int16)
-    eth_regs.write( 0x08, dst_mac1_int32)
-    eth_regs.write( 0x0c, src_ip_int32)
-    eth_regs.write( 0x10, dst_ip_int32)
+      eth_regs.write( 0x00, src_mac0_int32) 
+      eth_regs.write( 0x04, (dst_mac0_int16<<16) + src_mac1_int16)
+      eth_regs.write( 0x08, dst_mac1_int32)
+      eth_regs.write( 0x0c, src_ip_int32)
+      eth_regs.write( 0x10, dst_ip_int32)
     
     ethRegsPortWrite(firmware.eth_wrap.eth_regs_port0, src_ip_int32=int("c0a80332",16))
     ethRegsPortWrite(firmware.eth_wrap.eth_regs_port1, src_ip_int32=int("c0a80333",16))

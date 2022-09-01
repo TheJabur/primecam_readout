@@ -7,8 +7,8 @@
 bid = 1    # should match physical id on board
 
 ## redis server configuration
-host = 'localhost'
-#host = '192.168.2.80'
+#host = 'localhost'
+host = '192.168.2.80'
 port = 6379
 db = 0
 
