@@ -26,5 +26,12 @@ See /docs for more information about this project.
 - **quickDataViewer.ipynb**: A simple Jupyter notebook to inspect data in tmp/ (which are payloads from the board functions).
 
 ## Redis Channels:
-- There is a command channel to send to all boards at once (all_boards).
-- Each board has a channel space which contains a dynamic and unique channel for each command issued, and a similar channel space for command returns. The channels have the form board_[bid]_[cid] and board_rets_[bid]_[cid], where [bid] is the board identifier (contained in _cfg_board.py) and [cid] is the command identifier which is a unique id generated when the command is sent.
+- **all_boards**: Channel to send commands to all boards at once.
+- **board_[bid]_[uuid]**: Each board has it's own command channels. A new channel is created every time a command is issued with a random uuid generated string suffix. [bid] is the board identifier (contained in _cfg_board.py) and [cid] is the command identifier which is a unique id generated when the command is sent.
+- **rets_board_[bid]_[uuid]**: Each board has it's own return channels, similar to the command channels.
+- **board_[bid].[drid]_[uuid]**: Each drone has it's own command channels. A new channel is created every time a command is issued with a random uuid generated string suffix.
+- **rets_board_[bid].[drid]_[uuid]**: Each drone has it's own return channels, similar to the command channels.
+
+**[bid]**: Board identifier (contained in _cfg_board.py).  
+**[drid]**: Drone identifier (1-4) (contained in _cfg_drone.py).  
+**[cid]**: Command identifier which is a unique id generated when the command is sent.  
