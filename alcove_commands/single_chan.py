@@ -416,6 +416,16 @@ def writeVnaComb():
     load_waveform_into_mem(freqs, LUT_I, LUT_Q, DDS_I, DDS_Q)
     np.save("freqs.npy",freqs) 
 
+def writeTargComb():
+
+    import numpy as np
+    
+    targ_freqs = np.load(f'{cfg.drone_dir}/f_res.npy')
+
+    LUT_I, LUT_Q, DDS_I, DDS_Q, freqs = genWaveform( targ_freqs.real, vna=False, verbose=False)
+    load_bin_list(freqs)
+    load_waveform_into_mem(freqs, LUT_I, LUT_Q, DDS_I, DDS_Q)
+
 def writeTestTone():
 
     import numpy as np
@@ -461,5 +471,4 @@ def findResonators():
 
     i_peaks = resonatorIndicesInS21(Z)
     f_res = f[i_peaks]
-
-    return f_res
+    np.save(f'{cfg.drone_dir}/f_res.npy', f_res)
