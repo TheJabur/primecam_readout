@@ -421,8 +421,9 @@ def writeTargComb():
     import numpy as np
     
     targ_freqs = np.load(f'{cfg.drone_dir}/f_res.npy')
+    f_center = np.load(f'{cfg.drone_dir}/f_center.npy')
 
-    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform( targ_freqs.real, vna=False, verbose=False)
+    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform( targ_freqs.real-f_center, vna=False, verbose=False)
     load_bin_list(freqsx2)
     load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
 
@@ -456,6 +457,7 @@ def vnaSweep(f_center=600):
     freqs = np.load("freqs.npy") # these should be moved to drone directory?
     f, Z = sweep(f_center, freqs, N_steps=500)
     np.save(f'{cfg.drone_dir}/s21.npy', np.array((f, Z)))
+    np.save(f'{cfg.drone_dir}/f_center.npy', f_center*1e6)
     return "s21.npy saved on board."
 
 def findResonators():
