@@ -411,10 +411,10 @@ def writeVnaComb():
 
     import numpy as np
 
-    LUT_I, LUT_Q, DDS_I, DDS_Q, freqs = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=True, verbose=False)
-    load_bin_list(freqs)
-    load_waveform_into_mem(freqs, LUT_I, LUT_Q, DDS_I, DDS_Q)
-    np.save("freqs.npy",freqs) 
+    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=True, verbose=False)
+    load_bin_list(freqsx2)
+    load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
+    np.save("freqs.npy",freqsx2/2.) 
 
 def writeTargComb():
 
@@ -422,17 +422,17 @@ def writeTargComb():
     
     targ_freqs = np.load(f'{cfg.drone_dir}/f_res.npy')
 
-    LUT_I, LUT_Q, DDS_I, DDS_Q, freqs = genWaveform( targ_freqs.real, vna=False, verbose=False)
-    load_bin_list(freqs)
-    load_waveform_into_mem(freqs, LUT_I, LUT_Q, DDS_I, DDS_Q)
+    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform( targ_freqs.real, vna=False, verbose=False)
+    load_bin_list(freqsx2)
+    load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
 
 def writeTestTone():
 
     import numpy as np
 
-    LUT_I, LUT_Q, DDS_I, DDS_Q, freqs = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=False, verbose=False)
-    load_bin_list(freqs)
-    load_waveform_into_mem(freqs, LUT_I, LUT_Q, DDS_I, DDS_Q)
+    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=False, verbose=False)
+    load_bin_list(freqsx2)
+    load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
 
 
 def getAdcData():
