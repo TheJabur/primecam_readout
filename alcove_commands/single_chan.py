@@ -76,7 +76,7 @@ def genWaveform(freq_list, vna=False, verbose=False):
         #freqs = freqs_up
     else:
         freqs = C*freq_list # equally spaced tones
-    phases = np.random.uniform(-np.pi,np.pi,len(freqs))
+    phases = np.random.uniform( -np.pi, np.pi, np.size(freqs))
     
     # DAC Params
     A = 2**15-1 # 16 bit D/A, expecting signed values.
@@ -329,16 +329,24 @@ def get_snap_data(mux_sel):
     
     return I, Q
 
-def sweep(f_center, freqs, N_steps):
-    '''Perform a stepped frequency sweep centered at f_center.
-    f_center: (float) Center frequency for sweep in [MHz].
-    freqs:    (1D array of floats) .
-    N_steps:  (int) .'''
+def sweep(f_center, freqs, N_steps, chan_bandwidth=None):
+    """
+    Perform a stepped LO frequency sweep with existing comb centered at f_center.
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    freqs:           (1D array of floats) Comb frequencies [Hz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    chan_bandwidth:  (float) Bandwidth of each channel [MHz].
+    Returns:  f:     (1D array of floats) Central frequency for each bin.
+              S21:   (1D array of complex) Complex I+jQ of S_21 for each bin.
+    """
 
     import numpy as np
 
-    tone_diff = np.diff(freqs)[0]/1e6 # MHz
-    flos = np.arange(f_center-tone_diff/2., f_center+tone_diff/2., tone_diff/N_steps)
+    if chan_bandwidth: # LO bandwidth given
+        bw = chan_bandwidth # MHz
+    else:              # LO bandwidth is tone difference
+        bw = np.diff(freqs)[0]/1e6 # MHz
+    flos = np.arange(f_center-bw/2., f_center+bw/2., bw/N_steps)
 
     def ZforLoFreq(lofreq, Naccums=5):
         set_NCLO(lofreq)
@@ -456,7 +464,7 @@ def vnaSweep(f_center=600):
     freqs = np.load("freqs.npy") # these should be moved to drone directory?
     f, Z = sweep(f_center, freqs, N_steps=500)
     np.save(f'{cfg.drone_dir}/s21.npy', np.array((f, Z)))
-    return "s21.npy saved on board."
+    return np.array((f,Z)) #"s21.npy saved on board."
 
 def findResonators():
     """
