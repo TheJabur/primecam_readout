@@ -402,6 +402,66 @@ def resonatorIndicesInS21(Z):
     return i_peaks
 
 
+def aToAmp(a, f):
+    """
+    Normalized tone amplitude from slope asymmetry.
+
+    a: (float) Slope asymmetry, ml + mr.
+    f: (float) Resonance frequency (Hz).
+    
+    Return: (float) Normalized tone amplitude.
+    """
+
+    return 10**(a*(f/1e8)**2/200)
+
+
+def toneFreqsAndAmpsFromSweepData(f, Z, amps, chan_bandwidth, N_steps):
+    """
+    Determine resonator tone frequencies and normalized amplitudes from sweep data.
+    
+    f:               (1D array of floats) Central frequency for each bin.
+    Z:               (1D array of floats) Complex S21 values.
+    amps:            (1D array of floats) Current normalized tone amplitudes.
+    chan_bandwidth:  (float) Channel bandwidth [MHz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    """
+    
+    import numpy as np
+    
+    Δx = chan_bandwidth*1e6/N_steps # bin width in Hz
+    
+    y     = np.abs(Z)                    # magnitude of Z
+    f_res = np.reshape(f, (-1, N_steps)) # split f by KID
+    # Z_res = np.reshape(Z, (-1, N_steps)) # split Z by KID
+    y_res = np.reshape(y, (-1, N_steps)) # split Zm by KID
+    
+    # KID resonance frequencies
+    i_res = np.argmin(y_res, axis=1)
+    
+    # power
+    # half way between min and max -> get slope on each side
+    # addition of slope is proportional to how to change power
+    lo = np.min(y_res, axis=1)  # minimums in y
+    hi = np.max(y_res, axis=1)  # maximums in y
+    mi = (hi + lo)/2            # midpoints in y
+    Δy = 0.1*(hi - lo)          # range to use for slope calc.
+    freqs = np.zeros(len(i_res))  # resonance frequencies
+    # A_res  = np.ones(len(i_res))  # relative amplitude adjustment factor
+    A_res = amps.copy()
+    for i in range(len(i_res)):
+        y1 = y_res[i,:i_res[i]]            # separate into left of resonance
+        y2 = y_res[i,i_res[i]:]            # and right of resonance
+        y1 = y1[(y1<(mi[i] + Δy[i])) & (y1>(mi[i] - Δy[i]))] # slice to range
+        y2 = y2[(y2<(mi[i] + Δy[i])) & (y2>(mi[i] - Δy[i]))] # slice to range
+        ml = np.median(np.gradient(y1)) # calculate left slope
+        mr = np.median(np.gradient(y2)) # calculate right slope
+        freqs[i] = f_res[i][i_res[i]]
+        A_res[i] *= aToAmp((ml + mr)/Δx, freqs[i])
+        
+    return (freqs, A_res)
+
+
+
 #####################
 # Command Functions #
 #####################
@@ -416,6 +476,7 @@ def writeVnaComb():
     load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
     np.save("freqs.npy",freqsx2/2.) 
 
+
 def writeTargComb():
 
     import numpy as np
@@ -426,6 +487,7 @@ def writeTargComb():
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform( targ_freqs.real-f_center, vna=False, verbose=False)
     load_bin_list(freqsx2)
     load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
+
 
 def writeTestTone():
 
@@ -439,8 +501,10 @@ def writeTestTone():
 def getAdcData():
     return get_snap_data(0)
 
+
 def getSnapData(mux_sel):
     return get_snap_data(int(mux_sel))
+
 
 def vnaSweep(f_center=600):
     """
@@ -460,6 +524,7 @@ def vnaSweep(f_center=600):
     np.save(f'{cfg.drone_dir}/f_center.npy', f_center*1e6)
     return "s21.npy saved on board."
 
+
 def findResonators():
     """
     Find the resonator peak frequencies in previously saved s21.npy file.
@@ -474,3 +539,83 @@ def findResonators():
     i_peaks = resonatorIndicesInS21(Z)
     f_res = f[i_peaks]
     np.save(f'{cfg.drone_dir}/f_res.npy', f_res)
+
+
+def targetSweep(f_res, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None):
+    """
+    Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
+    
+    f_res:           (1D array of floats) Current comb tone frequencies [Hz].
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    chan_bandwidth:  (float) Channel bandwidth [MHz].
+    amps:            (1D array of floats) Current normalized tone amplitudes.
+
+    Return:          (2-tuple) Characterized resonator frequencies and normalized tone amplitudes.
+    """
+
+    import numpy as np
+
+    if amps is None:
+        amps = np.ones_like(f_res)
+    
+    # load S21 complex mags (Z) and frequencies (f) from file
+    f, Z  = sweep(f_center, f_res, N_steps, chan_bandwidth, amps)
+    
+    freqs, A_res = toneFreqsAndAmpsFromSweepData(f, Z, amps, chan_bandwidth, N_steps)
+
+    return (freqs, A_res)
+
+
+def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                    f_tol=0.1, A_tol=0.1, loops_max=20):
+    """
+    chan_bandwidth:  (float) Channel bandwidth [MHz].
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    f_tol: Frequency difference tolerance between vna sweep and target sweep (MHz).
+    A_tol: Amplitude relative adjustment factor tolerance.
+    loops_max: 
+    """
+    
+    import numpy as np
+    
+    try: # current resonance frequencies
+        freqs = np.load(f'{cfg.drone_dir}/f_res.npy') # f'{cfg.drone_dir}/f_res.npy'
+    except:
+        raise("Required file missing: f_res.npy. Perform a vna sweep first?")
+
+    try: # current channel amplitudes
+        amps = np.load(f'{cfg.drone_dir}/amps.npy')
+        if len(amps) != len(freqs): # could be an old file... how to deal with?
+            raise NameError("amps.npy and f_res.npy are not the same length!")
+    except:
+        amps = np.ones_like(freqs)
+
+    # should we look at whether chan_bandwidth was large enough / too large?
+        
+    loop_num = 0; sweep = True
+    while sweep:
+        sweep = False # default to not performing another sweep
+        
+        freqs_new, amps_new = targetSweep(
+            freqs, f_center=f_center, N_steps=N_steps, 
+            chan_bandwidth=chan_bandwidth, amps=amps, 
+            plot_step=200)
+    
+        if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
+            or np.any(np.abs(1 - amps_new/amps) > A_tol)):
+            sweep = True
+            
+        freqs, amps = freqs_new, amps_new
+
+        if loop_num > loops_max:
+            sweep = False # override any sweep=True statements
+        loop_num += 1
+        
+    # should frequencies be saved to a different file than vna_seep uses?
+    # should we introduce file versions, e.g. add timestamp?
+    np.save(f'{cfg.drone_dir}/f_res.npy', freqs)
+    np.save(f'{cfg.drone_dir}/amps.npy', amps)
+        
+targetSweepLoop()
