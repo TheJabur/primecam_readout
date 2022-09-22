@@ -617,5 +617,7 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     # should we introduce file versions, e.g. add timestamp?
     np.save(f'{cfg.drone_dir}/f_res.npy', freqs)
     np.save(f'{cfg.drone_dir}/amps.npy', amps)
+
+    return np.array([freqs, amps])
         
 targetSweepLoop()
