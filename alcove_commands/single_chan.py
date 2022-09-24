@@ -402,20 +402,7 @@ def resonatorIndicesInS21(Z):
     return i_peaks
 
 
-def aToAmp(a, f):
-    """
-    Normalized tone amplitude from slope asymmetry.
-
-    a: (float) Slope asymmetry, ml + mr.
-    f: (float) Resonance frequency (Hz).
-    
-    Return: (float) Normalized tone amplitude.
-    """
-
-    return 10**(a*(f/1e8)**2/200)
-
-
-def toneFreqsAndAmpsFromSweepData(f, Z, amps, chan_bandwidth, N_steps):
+def toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     """
     Determine resonator tone frequencies and normalized amplitudes from sweep data.
     
@@ -428,36 +415,24 @@ def toneFreqsAndAmpsFromSweepData(f, Z, amps, chan_bandwidth, N_steps):
     
     import numpy as np
     
-    Δx = chan_bandwidth*1e6/N_steps # bin width in Hz
-    
     y     = np.abs(Z)                    # magnitude of Z
     f_res = np.reshape(f, (-1, N_steps)) # split f by KID
-    # Z_res = np.reshape(Z, (-1, N_steps)) # split Z by KID
     y_res = np.reshape(y, (-1, N_steps)) # split Zm by KID
+    # _res vars are 2D arrays: one 1D array per resonator
     
     # KID resonance frequencies
     i_res = np.argmin(y_res, axis=1)
-    
-    # power
-    # half way between min and max -> get slope on each side
-    # addition of slope is proportional to how to change power
-    lo = np.min(y_res, axis=1)  # minimums in y
-    hi = np.max(y_res, axis=1)  # maximums in y
-    mi = (hi + lo)/2            # midpoints in y
-    Δy = 0.1*(hi - lo)          # range to use for slope calc.
-    freqs = np.zeros(len(i_res))  # resonance frequencies
-    # A_res  = np.ones(len(i_res))  # relative amplitude adjustment factor
-    A_res = amps.copy()
-    for i in range(len(i_res)):
-        y1 = y_res[i,:i_res[i]]            # separate into left of resonance
-        y2 = y_res[i,i_res[i]:]            # and right of resonance
-        y1 = y1[(y1<(mi[i] + Δy[i])) & (y1>(mi[i] - Δy[i]))] # slice to range
-        y2 = y2[(y2<(mi[i] + Δy[i])) & (y2>(mi[i] - Δy[i]))] # slice to range
-        ml = np.median(np.gradient(y1)) # calculate left slope
-        mr = np.median(np.gradient(y2)) # calculate right slope
-        freqs[i] = f_res[i][i_res[i]]
-        A_res[i] *= aToAmp((ml + mr)/Δx, freqs[i])
-        
+    freqs = f_res[tuple([np.arange(0,len(i_res)), i_res])] # multi-dim. array indexing
+
+    # Power
+    # np.gradient provides the slope at each point.
+    # The asymmetry of the resonator shape in frequency space 
+    # can be characterized by the sum of the max and min slopes.
+    y_grad = np.gradient(y_res, axis=1)         # slope at each point
+    a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
+    a /= np.max(np.abs(y_grad), axis=1)         # normalize
+    A_res = (1 + a)*amps
+
     return (freqs, A_res)
 
 
@@ -562,7 +537,7 @@ def targetSweep(f_res, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None)
     # load S21 complex mags (Z) and frequencies (f) from file
     f, Z  = sweep(f_center, f_res, N_steps, chan_bandwidth, amps)
     
-    freqs, A_res = toneFreqsAndAmpsFromSweepData(f, Z, amps, chan_bandwidth, N_steps)
+    freqs, A_res = toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
 
     return (freqs, A_res)
 
