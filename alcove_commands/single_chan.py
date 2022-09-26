@@ -266,13 +266,14 @@ def get_snap_data(mux_sel):
     # WIDE BRAM
     axi_wide = firmware.axi_wide_ctrl# 0x0 max count, 0x8 capture rising edge trigger
     max_count = 32768
-    #mux_sel = 3
     axi_wide.write(0x08, mux_sel<<1) # mux select 0-adc, 1-pfb, 2-ddc, 3-accum
     axi_wide.write(0x00, max_count - 16) # -4 to account for extra delay in write counter state machine
     axi_wide.write(0x08, mux_sel<<1 | 0)
     axi_wide.write(0x08, mux_sel<<1 | 1)
     axi_wide.write(0x08, mux_sel<<1 | 0)
     base_addr_wide = 0x00_A007_0000
+
+    # For simple peripherals with a small number of memory accesses, or where performance is not critical, MMIO is usually sufficient for most developers. If performance is critical, or large amounts of data need to be transferred between PS and PL, using the Zynq HP interfaces with DMA IP and the PYNQ DMA class may be more appropriate.
     mmio_wide_bram = MMIO(base_addr_wide,max_count)
     wide_data = mmio_wide_bram.array[0:8192]# max/4, bram depth*word_bits/32bits
 
@@ -329,34 +330,50 @@ def get_snap_data(mux_sel):
     
     return I, Q
 
-def sweep(f_center, freqs, N_steps):
-    '''Perform a stepped frequency sweep centered at f_center.
-    f_center: (float) Center frequency for sweep in [MHz].
-    freqs:    (1D array of floats) .
-    N_steps:  (int) .'''
+# single_chan.sweep replacement
+
+def sweep(f_center, freqs, N_steps, chan_bandwidth=None):
+    """
+    Perform a stepped LO frequency sweep with existing comb centered at f_center.
+    
+    INPUTS
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    freqs:           (1D array of floats) Comb frequencies [Hz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    chan_bandwidth:  (float) Bandwidth of each channel [MHz].
+    
+    RETURN: tuple(f, S21)
+    f:               (1D array of floats) Central frequency for each bin.
+    S21:             (1D array of complex) Complex I+jQ of S_21 for each bin.
+    """
 
     import numpy as np
 
-    tone_diff = np.diff(freqs)[0]/1e6 # MHz
-    flos = np.arange(f_center-tone_diff/2., f_center+tone_diff/2., tone_diff/N_steps)
-
-    def ZforLoFreq(lofreq, Naccums=5):
-        set_NCLO(lofreq)
-        IQ = [getSnapData(3) for i in range(Naccums)]
+    if chan_bandwidth:         # LO bandwidth given
+        bw = chan_bandwidth    # MHz
+    else:                      # LO bandwidth is tone difference
+        bw = np.diff(freqs)[0]/1e6 # MHz
+    flos = np.arange(f_center-bw/2., f_center+bw/2., bw/N_steps)
+    
+    def _Z(lofreq, Naccums=5):
+        set_NCLO(lofreq)       # update mixer LO frequency
+        # get accum data Naccums times and take median
+        # this is done to deal with a periodically dirty signal
+        # we don't understand why this happens
+        IQ = [getSnapData(3) for i in range(Naccums)] 
         Imed,Qmed = np.median(IQ, axis=0)
-        Z = Imed + 1j*Qmed
-        # print(".", end="")
-        return Z[0:len(freqs)]
-    sweep_Z = np.array([ZforLoFreq(lofreq) for lofreq in flos])
-
+        Z = Imed + 1j*Qmed     # convert I and Q to complex
+        return Z[0:len(freqs)] # only return relevant slice
+    
+    # loop over _Z for each lo freq
+    # and flatten into 
+    Z = np.array([_Z(lofreq) for lofreq in flos]).T.flatten()
+    
+    # build and flatten all bin frequencies
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
-    sweep_Z_f = sweep_Z.T.flatten()
 
-    ## SAVE f and sweep_Z_f TO LOCAL FILES
-    # SHOULD BE ABLE TO SAVE TARG OR VNA
-    # WITH TIMESTAMP
+    return (f, Z)
 
-    return (f, sweep_Z_f)
 
 def variationInS21m(S21m):
     '''Find small signal variation in S21 complex modulus.
@@ -409,7 +426,6 @@ def toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     f:               (1D array of floats) Central frequency for each bin.
     Z:               (1D array of floats) Complex S21 values.
     amps:            (1D array of floats) Current normalized tone amplitudes.
-    chan_bandwidth:  (float) Channel bandwidth [MHz].
     N_steps:         (int) Number of LO frequencies to divide each channel into.
     """
     
@@ -543,7 +559,7 @@ def targetSweep(f_res, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None)
 
 
 def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
-                    f_tol=0.1, A_tol=0.1, loops_max=20):
+                    f_tol=0.1, A_tol=0.3, loops_max=20):
     """
     chan_bandwidth:  (float) Channel bandwidth [MHz].
     f_center:        (float) Center LO frequency for sweep [MHz].
