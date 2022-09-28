@@ -344,7 +344,7 @@ def sweep(f_center, freqs, N_steps, chan_bandwidth=None):
     
     RETURN: tuple(f, S21)
     f:               (1D array of floats) Central frequency for each bin.
-    S21:             (1D array of complex) Complex I+jQ of S_21 for each bin.
+    Z:               (1D array of complex) S_21 complex I+jQ for each bin.
     """
 
     import numpy as np
@@ -365,8 +365,8 @@ def sweep(f_center, freqs, N_steps, chan_bandwidth=None):
         Z = Imed + 1j*Qmed     # convert I and Q to complex
         return Z[0:len(freqs)] # only return relevant slice
     
-    # loop over _Z for each lo freq
-    # and flatten into 
+    # loop over _Z for each LO freq
+    # and flatten
     Z = np.array([_Z(lofreq) for lofreq in flos]).T.flatten()
     
     # build and flatten all bin frequencies
@@ -610,5 +610,3 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     np.save(f'{cfg.drone_dir}/amps.npy', amps)
 
     return np.array([freqs, amps])
-        
-targetSweepLoop()
