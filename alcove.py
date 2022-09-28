@@ -38,7 +38,8 @@ def _com():
         17:single_chan.vnaSweep,
         18:single_chan.findResonators,
         19:test.testFunction2,
-        20:single_chan.writeTargComb
+        20:single_chan.writeTargComb,
+        21:single_chan.targetSweep
     }
 
 
