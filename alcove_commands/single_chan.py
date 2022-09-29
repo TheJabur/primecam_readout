@@ -353,7 +353,8 @@ def sweep(f_center, freqs, N_steps, chan_bandwidth=None):
         bw = chan_bandwidth    # MHz
     else:                      # LO bandwidth is tone difference
         bw = np.diff(freqs)[0]/1e6 # MHz
-    flos = np.arange(f_center-bw/2., f_center+bw/2., bw/N_steps)
+    # flos = np.arange(f_center-bw/2., f_center+bw/2., bw/N_steps)
+    flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
     
     def _Z(lofreq, Naccums=5):
         set_NCLO(lofreq)       # update mixer LO frequency
@@ -430,7 +431,7 @@ def toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     """
     
     import numpy as np
-    
+
     y     = np.abs(Z)                    # magnitude of Z
     f_res = np.reshape(f, (-1, N_steps)) # split f by KID
     y_res = np.reshape(y, (-1, N_steps)) # split Zm by KID
@@ -532,7 +533,7 @@ def findResonators():
     np.save(f'{cfg.drone_dir}/f_res.npy', f_res)
 
 
-def targetSweep(f_res, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None):
+def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
@@ -547,13 +548,23 @@ def targetSweep(f_res, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None)
 
     import numpy as np
 
+    if f_res is None:
+        try:
+            f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
+        except:
+            raise("Required file missing: f_res.npy. Perform a vna sweep first?")
+
     if amps is None:
         amps = np.ones_like(f_res)
     
     # load S21 complex mags (Z) and frequencies (f) from file
-    f, Z  = sweep(f_center, f_res, N_steps, chan_bandwidth, amps)
+    f, Z  = sweep(f_center, f_res, N_steps, chan_bandwidth)
     
     freqs, A_res = toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
+
+    if save:
+        np.save(f'{cfg.drone_dir}/f_res.npy', freqs)
+        np.save(f'{cfg.drone_dir}/amps.npy', amps)
 
     return (freqs, A_res)
 
@@ -592,7 +603,7 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
         freqs_new, amps_new = targetSweep(
             freqs, f_center=f_center, N_steps=N_steps, 
             chan_bandwidth=chan_bandwidth, amps=amps, 
-            plot_step=200)
+            plot_step=200, save=False)
     
         if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
             or np.any(np.abs(1 - amps_new/amps) > A_tol)):
