@@ -4,6 +4,7 @@
 #####################
 try:
     import _cfg_board as cfg
+    import alcove_commands.board_io as io
     import xrfdc
     from pynq import Overlay
     firmware = Overlay("single_chan_4eth_v8p2.bit",ignore_version=True, download=False)
@@ -563,8 +564,8 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
     freqs, A_res = toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
 
     if save:
-        np.save(f'{cfg.drone_dir}/f_res.npy', freqs)
-        np.save(f'{cfg.drone_dir}/amps.npy', amps)
+        io.save(io.file.f_res_targ, freqs)
+        io.save(io.file.a_res_targ, amps)
 
     return (freqs, A_res)
 
@@ -615,9 +616,7 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
             sweep = False # override any sweep=True statements
         loop_num += 1
         
-    # should frequencies be saved to a different file than vna_seep uses?
-    # should we introduce file versions, e.g. add timestamp?
-    np.save(f'{cfg.drone_dir}/f_res.npy', freqs)
-    np.save(f'{cfg.drone_dir}/amps.npy', amps)
+    io.save(io.file.f_res_targ, freqs)
+    io.save(io.file.a_res_targ, amps)
 
     return np.array([freqs, amps])
