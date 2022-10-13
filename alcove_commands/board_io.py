@@ -24,6 +24,24 @@ class file:
     # optional:
         # use_timestamp   (bool) Append timestamp to filename.
 
+    freqs_vna = {
+        'fname'         :'freqs_vna',
+        'file_type'     :'npy', 
+        'dname'         :cfg.drone_dir+'/vna',
+        'use_timestamp' :True}
+
+    s21_vna = {
+        'fname'         :'s21_vna',
+        'file_type'     :'npy', 
+        'dname'         :cfg.drone_dir+'/vna',
+        'use_timestamp' :True}
+
+    f_center_vna = {
+        'fname'         :'f_center_vna',
+        'file_type'     :'npy', 
+        'dname'         :cfg.drone_dir+'/vna',
+        'use_timestamp' :True}
+
     f_res_vna = {
         'fname'         :'f_res_vna',
         'file_type'     :'npy', 
@@ -41,7 +59,6 @@ class file:
         'file_type'     :'npy', 
         'dname'         :cfg.drone_dir+'/targ',
         'use_timestamp' :True}
-
 
 
 ######################

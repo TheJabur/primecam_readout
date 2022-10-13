@@ -467,7 +467,8 @@ def writeVnaComb():
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=True, verbose=False)
     load_bin_list(freqsx2)
     load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
-    np.save("freqs.npy",freqsx2/2.) 
+
+    io.save(io.file.freqs_vna, freqsx2/2.)
 
 
 def writeTargComb():
@@ -510,18 +511,19 @@ def vnaSweep(f_center=600):
     import numpy as np
 
     f_center = int(f_center)
+    freqs = io.load(io.file.freqs_vna)
 
-    freqs = np.load("freqs.npy") # these should be moved to drone directory?
-    f, Z = sweep(f_center, freqs, N_steps=500)
-    np.save(f'{cfg.drone_dir}/s21.npy', np.array((f, Z)))
-    np.save(f'{cfg.drone_dir}/f_center.npy', f_center*1e6)
-    return "s21.npy saved on board."
+    s21 = np.array(sweep(f_center, freqs, N_steps=500)) # f, Z
+
+    io.save(io.file.s21_vna, s21)
+    io.save(io.file.f_center_vna, f_center*1e6)
+
+    return (s21)
 
 
 def findResonators():
     """
     Find the resonator peak frequencies in previously saved s21.npy file.
-    This is untested, as are the functions it relies on.
     """
     
     import numpy as np
@@ -531,7 +533,8 @@ def findResonators():
 
     i_peaks = resonatorIndicesInS21(Z)
     f_res = f[i_peaks]
-    np.save(f'{cfg.drone_dir}/f_res.npy', f_res)
+
+    io.save(io.file.f_res_vna, f_res)
 
 
 def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
