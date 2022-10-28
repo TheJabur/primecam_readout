@@ -513,6 +513,8 @@ def vnaSweep(f_center=600):
     f_center = int(f_center)
     freqs = io.load(io.file.freqs_vna)
 
+    writeVnaComb()
+
     s21 = np.array(sweep(f_center, freqs, N_steps=500)) # f, Z
 
     io.save(io.file.s21_vna, s21)
@@ -561,6 +563,8 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
     if amps is None:
         amps = np.ones_like(f_res)
     
+    writeTargComb()
+
     # load S21 complex mags (Z) and frequencies (f) from file
     f, Z  = sweep(f_center, f_res, N_steps, chan_bandwidth)
     
@@ -623,3 +627,46 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     io.save(io.file.a_res_targ, amps)
 
     return np.array([freqs, amps])
+
+
+def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
+    '''
+    Complete resonator calibration.
+
+    max_loops_full:  (int) Max number of times to retry if fail.
+    max_loops_funcs: (int) Similar to max_loops_full but for individual funcs.
+    verbose:         (bool) All messages to standard out.
+    '''
+    
+    def retry(f, s, **params):
+        for _ in range(max_loops_funcs):
+            try: print(s+"...", end=""); f(**params)
+            except Exception as e: fail(e)
+            else: success(); return True
+        raise Exception("Retry failed.") 
+    def success(): print(" Done."); return True
+    def fail(e):
+        print(CFL.strcol('red', ' FAILED!'))
+        if verbose: print(CFL.strcol('red', e))
+    def fullFail(l): print(f"\n* Full loop failed ({l}).")
+    def fullSuccess(l): print(f"\n* Full loop complete ({l}).")
+    
+    for l in range(max_loops_full)
+            
+        try: retry(vnaSweep, 
+                   "Perform VNA sweep", 
+                   f_center=600)
+        except: fullFail(l); continue
+        
+        try: retry(findResonators, 
+                   "Finding resonators")
+        except: fullFail(l); continue
+        
+        try: retry(targetSweepLoop, 
+                   "Perform target sweep loop", 
+                   chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                   f_tol=0.1, A_tol=0.3, loops_max=20)
+        except: fullFail(l); continue
+        
+        fullSuccess(l)
+        break

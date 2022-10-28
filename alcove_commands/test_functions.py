@@ -23,7 +23,7 @@
 
     # io.save(io.file.f_res_targ, a)
 
-def testFunction2():
+def testFunction():
     import alcove_commands.board_io as io
     import numpy as np
 

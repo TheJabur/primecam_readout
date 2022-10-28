@@ -33,13 +33,13 @@ def _com():
         12:single_chan.writeVnaComb,
         13:single_chan.writeTestTone,
         14:single_chan.getAdcData,
-        15:test.testFunction1,
+        15:test.testFunction,
         16:single_chan.getSnapData,
         17:single_chan.vnaSweep,
         18:single_chan.findResonators,
-        19:test.testFunction2,
         20:single_chan.writeTargComb,
-        21:single_chan.targetSweep
+        21:single_chan.targetSweep,
+        22:single_chan.fullLoop
     }
 
 
