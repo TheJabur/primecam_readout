@@ -472,11 +472,9 @@ def writeVnaComb():
 
 
 def writeTargComb():
-
-    import numpy as np
     
-    targ_freqs = np.load(f'{cfg.drone_dir}/f_res.npy')
-    f_center = np.load(f'{cfg.drone_dir}/f_center.npy')
+    targ_freqs = io.load(io.file.f_res_vna)
+    f_center   = io.load(io.file.f_center_vna)
 
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform( targ_freqs.real-f_center, vna=False, verbose=False)
     load_bin_list(freqsx2)
@@ -488,6 +486,16 @@ def writeTestTone():
     import numpy as np
 
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=False, verbose=False)
+    load_bin_list(freqsx2)
+    load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
+
+
+def writeLoChopComb():
+
+    targ_freqs = io.load(io.file.f_res_targ)
+    f_center   = io.load(io.file.f_center_targ)
+
+    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(targ_freqs.real-f_center, vna=False, verbose=False)
     load_bin_list(freqsx2)
     load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
 
@@ -573,6 +581,7 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
     if save:
         io.save(io.file.f_res_targ, freqs)
         io.save(io.file.a_res_targ, amps)
+        io.save(io.file.f_center_targ, f_center*1e6)
 
     return (freqs, A_res)
 
@@ -625,6 +634,7 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
         
     io.save(io.file.f_res_targ, freqs)
     io.save(io.file.a_res_targ, amps)
+    io.save(io.file.f_center_targ, f_center*1e6)
 
     return np.array([freqs, amps])
 

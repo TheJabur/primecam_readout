@@ -48,6 +48,12 @@ class file:
         'dname'         :cfg.drone_dir+'/vna',
         'use_timestamp' :True}
 
+    f_center_targ = {
+        'fname'         :'f_center_targ',
+        'file_type'     :'npy', 
+        'dname'         :cfg.drone_dir+'/targ',
+        'use_timestamp' :True}
+
     f_res_targ = {
         'fname'         :'f_res_targ',
         'file_type'     :'npy', 
