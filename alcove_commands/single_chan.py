@@ -648,6 +648,9 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
     verbose:         (bool) All messages to standard out.
     '''
     
+    def fail(e):
+        print(" FAILED!")
+        if verbose: print(e)
     def retry(f, s, **params):
         for _ in range(max_loops_funcs):
             try: print(s+"...", end=""); f(**params)
@@ -655,9 +658,6 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
             else: success(); return True
         raise Exception("Retry failed.") 
     def success(): print(" Done."); return True
-    def fail(e):
-        print(CFL.strcol('red', ' FAILED!'))
-        if verbose: print(CFL.strcol('red', e))
     def fullFail(l): print(f"\n* Full loop failed ({l}).")
     def fullSuccess(l): print(f"\n* Full loop complete ({l}).")
     
