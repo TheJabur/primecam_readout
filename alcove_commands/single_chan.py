@@ -661,7 +661,7 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
     def fullFail(l): print(f"\n* Full loop failed ({l}).")
     def fullSuccess(l): print(f"\n* Full loop complete ({l}).")
     
-    for l in range(max_loops_full)
+    for l in range(max_loops_full):
             
         try: retry(vnaSweep, 
                    "Perform VNA sweep", 
