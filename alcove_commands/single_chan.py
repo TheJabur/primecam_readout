@@ -518,10 +518,10 @@ def vnaSweep(f_center=600):
 
     import numpy as np
 
+    writeVnaComb()
+
     f_center = int(f_center)
     freqs = io.load(io.file.freqs_vna)
-
-    writeVnaComb()
 
     s21 = np.array(sweep(f_center, freqs, N_steps=500)) # f, Z
 
