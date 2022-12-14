@@ -24,47 +24,68 @@ class file:
     # optional:
         # use_timestamp   (bool) Append timestamp to filename.
 
-    freqs_vna = {
-        'fname'         :'freqs_vna',
-        'file_type'     :'npy', 
-        'dname'         :cfg.drone_dir+'/vna',
-        'use_timestamp' :True}
+    class _freqs_vna:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'freqs_vna',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/vna',
+                'use_timestamp' :True}
+    freqs_vna = _freqs_vna()
 
-    s21_vna = {
-        'fname'         :'s21_vna',
-        'file_type'     :'npy', 
-        'dname'         :cfg.drone_dir+'/vna',
-        'use_timestamp' :True}
+    class _s21_vna:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'s21_vna',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/vna',
+                'use_timestamp' :True}
+    s21_vna = _s21_vna()
 
-    f_center_vna = {
-        'fname'         :'f_center_vna',
-        'file_type'     :'npy', 
-        'dname'         :cfg.drone_dir+'/vna',
-        'use_timestamp' :True}
+    class _f_center_vna:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'f_center_vna',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/vna',
+                'use_timestamp' :True}
+    f_center_vna = _f_center_vna()
 
-    f_res_vna = {
-        'fname'         :'f_res_vna',
-        'file_type'     :'npy', 
-        'dname'         :cfg.drone_dir+'/vna',
-        'use_timestamp' :True}
+    class _f_res_vna:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'f_res_vna',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/vna',
+                'use_timestamp' :True}
+    f_res_vna = _f_res_vna()
 
-    f_center_targ = {
-        'fname'         :'f_center_targ',
-        'file_type'     :'npy', 
-        'dname'         :cfg.drone_dir+'/targ',
-        'use_timestamp' :True}
+    class _f_center_targ:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'f_center_targ',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/targ',
+                'use_timestamp' :True}
+    f_center_targ = _f_center_targ()
 
-    f_res_targ = {
-        'fname'         :'f_res_targ',
-        'file_type'     :'npy', 
-        'dname'         :cfg.drone_dir+'/targ',
-        'use_timestamp' :True}
+    class _f_res_targ:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'f_res_targ',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/targ',
+                'use_timestamp' :True}
+    f_res_targ = _f_res_targ()
 
-    a_res_targ = {
-        'fname'         :'a_res_targ',
-        'file_type'     :'npy', 
-        'dname'         :cfg.drone_dir+'/targ',
-        'use_timestamp' :True}
+    class _a_res_targ:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'a_res_targ',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/targ',
+                'use_timestamp' :True}
+    a_res_targ = _a_res_targ()
 
 
 ######################
@@ -94,6 +115,11 @@ def save(file, data):
     if use_timestamp:
         timestamp = _timestamp()
         fname += f'_{timestamp}'
+
+    print(cfg.root_dir)
+    print(cfg.drone_dir)
+    print(cfg.drid)
+    print(f'{dname}/{fname}.npy')
 
     if file_type == 'npy':
         np.save(f'{dname}/{fname}.npy', data)
