@@ -116,11 +116,6 @@ def save(file, data):
         timestamp = _timestamp()
         fname += f'_{timestamp}'
 
-    print(cfg.root_dir)
-    print(cfg.drone_dir)
-    print(cfg.drid)
-    print(f'{dname}/{fname}.npy')
-
     if file_type == 'npy':
         np.save(f'{dname}/{fname}.npy', data)
 
