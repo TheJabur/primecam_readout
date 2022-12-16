@@ -6,16 +6,11 @@ try:
     import _cfg_board as cfg
     import alcove_commands.board_io as io
 
-    # import xrfdc
-    import xrfclk
+    import xrfdc
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
-    firmware = Overlay("tetra_v3p3.bit",ignore_version=True) #download=False
-
-    # INITIALIZING PLLs
-    clksrc = 409.6 # MHz
-    xrfclk.set_all_ref_clks(clksrc)
+    firmware = Overlay("tetra_v3p4.bit",ignore_version=True,download=False)
 
 except Exception as e: 
     firmware = None
@@ -26,25 +21,6 @@ except Exception as e:
 ######################
 # Internal Functions #
 ######################
-
-# SET ETHERNET IPS and MACS
-def ethRegsPortWrite(eth_regs,
-                     src_ip_int32   = int("c0a80335",16),
-                     dst_ip_int32   = int("c0a80328",16),
-                     src_mac0_int32 = int("eec0ffee",16),
-                     src_mac1_int16 = int("c0ff",16),
-                     dst_mac0_int16 = int("0991",16),     # 
-                     dst_mac1_int32 = int("00e04c68",16)):
-    eth_regs.write( 0x00, src_mac0_int32) 
-    eth_regs.write( 0x04, (dst_mac0_int16<<16) + src_mac1_int16)
-    eth_regs.write( 0x08, dst_mac1_int32)
-    eth_regs.write( 0x0c, src_ip_int32)
-    eth_regs.write( 0x10, dst_ip_int32)
-    
-#ethRegsPortWrite(firmware.ethWrapPort0.eth_regs_0, src_ip_int32=int("c0a80332",16))
-#ethRegsPortWrite(firmware.ethWrapPort1.eth_regs_0, src_ip_int32=int("c0a80333",16))
-#ethRegsPortWrite(firmware.ethWrapPort2.eth_regs_0, src_ip_int32=int("c0a80334",16))
-#ethRegsPortWrite(firmware.ethWrapPort3.eth_regs_0, src_ip_int32=int("c0a80335",16))
 
 def set_NCLO( chan, lofreq):
 
@@ -83,7 +59,7 @@ def generate_wave_ddr4(freq_list):
     import numpy as np
 
     fs = 512e6 
-    lut_len = 2**24
+    lut_len = 2**20
     fft_len = 1024
     k = np.int64(np.round(freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
@@ -121,7 +97,7 @@ def load_bin_list(chan, freq_list):
 
     fs = 512e6
     fft_len = 1024
-    lut_len = 2**24
+    lut_len = 2**20
     k = np.int64(np.round(freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
     bin_list = np.int64(np.round(freq_actual / (fs / fft_len)))
@@ -148,7 +124,7 @@ def load_bin_list(chan, freq_list):
     # initialization 
     sync_in = 2**26
     accum_rst = 2**24  # (active low)
-    accum_length = (2**24)-1#(2**19)-1
+    accum_length = (2**19)-1
     ################################################
     # Load DDC bins
     ################################################
@@ -187,7 +163,7 @@ def reset_accum_and_sync(chan, freqs):
     # initialization
     sync_in = 2**26
     accum_rst = 2**24  # (active rising edge)
-    accum_length = (2**24)-1#(2**19)-1 # (2**18)-1
+    accum_length = (2**19)-1
     
     fft_shift=0
     if len(freqs)<400:
@@ -241,10 +217,10 @@ def load_ddr4(chan, wave_real, wave_imag, dphi):
     depth_ddr4 = 2**32
     mmio_ddr4 = MMIO(base_addr_ddr4, depth_ddr4)
         
-    mmio_ddr4.array[0:67108864][0 + (chan-1)*4::16] = data0
-    mmio_ddr4.array[0:67108864][1 + (chan-1)*4::16] = data1
-    mmio_ddr4.array[0:67108864][2 + (chan-1)*4::16] = data2
-    mmio_ddr4.array[0:67108864][3 + (chan-1)*4::16] = data3
+    mmio_ddr4.array[0:4194304][0 + (chan-1)*4::16] = data0
+    mmio_ddr4.array[0:4194304][1 + (chan-1)*4::16] = data1
+    mmio_ddr4.array[0:4194304][2 + (chan-1)*4::16] = data2
+    mmio_ddr4.array[0:4194304][3 + (chan-1)*4::16] = data3
 
     ddr4mux.write(8,1) # set read valid 
     ddr4mux.write(0,1) # mux switch
@@ -343,12 +319,22 @@ def get_snap_data(chan, mux_sel):
 def writeVnaComb():
 
     import numpy as np
+    
+    chan = cfg.drid
 
-    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=True, verbose=False)
-    load_bin_list(freqsx2)
-    load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
-
-    io.save(io.file.freqs_vna, freqsx2/2.)
+    freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    
+    wave, dphi = generate_wave_ddr4(freqs);
+    
+    wave_real, wave_imag = norm_wave(wave, max_amp=2**15-1)
+    
+    load_ddr4( chan, wave_real, wave_imag, dphi)
+    
+    load_bin_list( chan, freqs)
+    
+    reset_accum_and_sync( chan, freqs) 
+    
+    io.save(io.file.freqs_vna, freqs)
 
 
 def writeTargComb():
@@ -385,7 +371,8 @@ def getAdcData():
 
 
 def getSnapData(mux_sel):
-    return get_snap_data(int(mux_sel))
+    chan = cfg.drid
+    return get_snap_data(chan,int(mux_sel))
 
 
 def vnaSweep(f_center=600):

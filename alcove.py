@@ -41,7 +41,8 @@ def _com():
         20:single_chan.writeTargComb,
         21:single_chan.targetSweep,
         22:single_chan.fullLoop,
-        42:multi_chan.writeVnaComb
+        42:multi_chan.writeVnaComb,
+        46:multi_chan.getSnapData
     }
 
 
