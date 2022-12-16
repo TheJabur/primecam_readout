@@ -163,7 +163,7 @@ def reset_accum_and_sync(chan, freqs):
     # initialization
     sync_in = 2**26
     accum_rst = 2**24  # (active rising edge)
-    accum_length = (2**19)-1#(2**19)-1 # (2**18)-1
+    accum_length = (2**19)-1
     
     fft_shift=0
     if len(freqs)<400:
@@ -217,10 +217,10 @@ def load_ddr4(chan, wave_real, wave_imag, dphi):
     depth_ddr4 = 2**32
     mmio_ddr4 = MMIO(base_addr_ddr4, depth_ddr4)
         
-    mmio_ddr4.array[0:67108864][0 + (chan-1)*4::16] = data0
-    mmio_ddr4.array[0:67108864][1 + (chan-1)*4::16] = data1
-    mmio_ddr4.array[0:67108864][2 + (chan-1)*4::16] = data2
-    mmio_ddr4.array[0:67108864][3 + (chan-1)*4::16] = data3
+    mmio_ddr4.array[0:4194304][0 + (chan-1)*4::16] = data0
+    mmio_ddr4.array[0:4194304][1 + (chan-1)*4::16] = data1
+    mmio_ddr4.array[0:4194304][2 + (chan-1)*4::16] = data2
+    mmio_ddr4.array[0:4194304][3 + (chan-1)*4::16] = data3
 
     ddr4mux.write(8,1) # set read valid 
     ddr4mux.write(0,1) # mux switch
@@ -319,12 +319,22 @@ def get_snap_data(chan, mux_sel):
 def writeVnaComb():
 
     import numpy as np
+    
+    chan = cfg.drid
 
-    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=True, verbose=False)
-    load_bin_list(freqsx2)
-    load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
-
-    io.save(io.file.freqs_vna, freqsx2/2.)
+    freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    
+    wave, dphi = generate_wave_ddr4(freqs);
+    
+    wave_real, wave_imag = norm_wave(wave, max_amp=2**15-1)
+    
+    load_ddr4( chan, wave_real, wave_imag, dphi)
+    
+    load_bin_list( chan, freqs)
+    
+    reset_accum_and_sync( chan, freqs) 
+    
+    io.save(io.file.freqs_vna, freqs)
 
 
 def writeTargComb():
@@ -361,7 +371,8 @@ def getAdcData():
 
 
 def getSnapData(mux_sel):
-    return get_snap_data(int(mux_sel))
+    chan = cfg.drid
+    return get_snap_data(chan,int(mux_sel))
 
 
 def vnaSweep(f_center=600):
