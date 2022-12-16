@@ -14,6 +14,7 @@ import logging
 import alcove_commands.test_functions as test
 import alcove_commands.board_utilities as utils
 import alcove_commands.single_chan as single_chan
+import alcove_commands.multi_chan as multi_chan
 
 
 ##############
@@ -39,7 +40,8 @@ def _com():
         18:single_chan.findResonators,
         20:single_chan.writeTargComb,
         21:single_chan.targetSweep,
-        22:single_chan.fullLoop
+        22:single_chan.fullLoop,
+        42:multi_chan.writeVnaComb
     }
 
 
