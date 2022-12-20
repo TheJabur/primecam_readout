@@ -20,7 +20,7 @@ class file:
     # required:
         # fname           (str) Base filename (sans extension).
         # file_type       (str) Dictates extension and saving method.
-        # dname           (str) Absolute directory containing fname. Must exist!
+        # dname           (str) Absolute directory containing fname.
     # optional:
         # use_timestamp   (bool) Append timestamp to filename.
 
@@ -102,11 +102,15 @@ def save(file, data):
     """
 
     import numpy as np
+    from pathlib import Path
 
     # required file attributes
     fname          = file['fname']
     file_type      = file['file_type']
     dname          = file['dname']
+
+    # this will make this path exist if possible
+    Path(dname).mkdir(parents=True, exist_ok=True)
 
     # optional file attributes
     use_timestamp  = file.get('use_timestamp', False)
