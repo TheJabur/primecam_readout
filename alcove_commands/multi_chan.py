@@ -361,6 +361,51 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     return (f, Z)
 
 
+def _variationInS21m(S21m):
+    '''Find small signal variation in S21 complex modulus.
+    S21m: 1D array of S21 complex modulus floats.
+    This has only been tested on fake data with <2000 resonators.'''
+
+    import numpy as np
+
+    w = 10                      # min of 10 for reasonable results
+    l = len(S21m)
+    while l%w != 0:             # need w to be a factor of len(S21m) for reshape
+        w += 1
+        if w>l: raise("Error: No width found!")
+
+    x = np.reshape(S21m, (len(S21m)//w, w))
+
+    vars = np.std(x, axis=1)    # variation in each bin
+    var = np.median(vars)       # median of variations
+    
+    return var
+
+
+def _resonatorIndicesInS21(Z):
+    """
+    Find the indices in given complex S21 values for resonator peaks.
+    Z: Complex S21 values.
+    """
+
+    import numpy as np
+    import scipy.signal
+
+    # complex modulus
+    sig = -np.abs(Z)              # find_peaks looks at positive peaks
+
+    var  = _variationInS21m(sig)
+    prom = 10*var
+
+    i_peaks = scipy.signal.find_peaks(
+        x          = sig,       
+        prominence = prom,        # 
+        height     = (np.nanmin(sig), np.nanmax(sig)-prom)
+    )[0]                          # [0] is peaks, [1] is properties
+
+    return i_peaks
+
+
 
 #####################
 # Command Functions #
@@ -403,12 +448,10 @@ def vnaSweep(f_center=600):
     import numpy as np
 
     chan = cfg.drid
+    f_center = int(f_center)
+    freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
 
     writeVnaComb()
-
-    f_center = int(f_center)
-    freqs = io.load(io.file.freqs_vna)
-
     s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
 
     io.save(io.file.s21_vna, s21)
@@ -417,20 +460,21 @@ def vnaSweep(f_center=600):
     return (s21)
 
 
-# def findResonators():
-#     """
-#     Find the resonator peak frequencies in previously saved s21.npy file.
-#     """
+def findResonators():
+    """
+    Find the resonator peak frequencies in previously saved s21.npy file.
+    """
     
-#     import numpy as np
+    import numpy as np
 
-#     # load S21 complex mags (Z) and frequencies (f) from file
-#     f, Z = np.load(f'{cfg.drone_dir}/s21.npy')
+    # load S21 complex mags (Z) and frequencies (f) from file
+    # f, Z = np.load(f'{cfg.drone_dir}/s21.npy')
+    f, Z = io.load(io.file.s21_vna)
 
-#     i_peaks = resonatorIndicesInS21(Z)
-#     f_res = f[i_peaks]
+    i_peaks = _resonatorIndicesInS21(Z)
+    f_res = f[i_peaks]
 
-#     io.save(io.file.f_res_vna, f_res)
+    io.save(io.file.f_res_vna, f_res)
 
 
 # def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
