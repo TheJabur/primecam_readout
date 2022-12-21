@@ -552,57 +552,58 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
     return (freqs, A_res)
 
 
-# def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
-#                     f_tol=0.1, A_tol=0.3, loops_max=20):
-#     """
-#     chan_bandwidth:  (float) Channel bandwidth [MHz].
-#     f_center:        (float) Center LO frequency for sweep [MHz].
-#     N_steps:         (int) Number of LO frequencies to divide each channel into.
-#     f_tol: Frequency difference tolerance between vna sweep and target sweep (MHz).
-#     A_tol: Amplitude relative adjustment factor tolerance.
-#     loops_max: 
-#     """
+def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                    f_tol=0.1, A_tol=0.3, loops_max=20):
+    """
+    chan_bandwidth:  (float) Channel bandwidth [MHz].
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    f_tol: Frequency difference tolerance between vna sweep and target sweep (MHz).
+    A_tol: Amplitude relative adjustment factor tolerance.
+    loops_max: 
+    """
     
-#     import numpy as np
+    import numpy as np
     
-#     try: # current resonance frequencies
-#         freqs = np.load(f'{cfg.drone_dir}/f_res.npy') # f'{cfg.drone_dir}/f_res.npy'
-#     except:
-#         raise("Required file missing: f_res.npy. Perform a vna sweep first?")
+    try:
+        freqs = io.load(io.file.f_res_vna)
+    except:
+        raise("Required file missing: f_res_vna. Perform a vna sweep first.")
 
-#     try: # current channel amplitudes
-#         amps = np.load(f'{cfg.drone_dir}/amps.npy')
-#         if len(amps) != len(freqs): # could be an old file... how to deal with?
-#             raise NameError("amps.npy and f_res.npy are not the same length!")
-#     except:
-#         amps = np.ones_like(freqs)
+    try: # current channel amplitudes
+        # amps = np.load(f'{cfg.drone_dir}/amps.npy')
+        amps = io.load(io.file.a_res_targ)
+        if len(amps) != len(freqs): # could be an old file
+            raise NameError("Target amps and f_res are not the same length!")
+    except:
+        amps = np.ones_like(freqs)
 
-#     # should we look at whether chan_bandwidth was large enough / too large?
+    # should we look at whether chan_bandwidth was large enough / too large?
         
-#     loop_num = 0; sweep = True
-#     while sweep:
-#         sweep = False # default to not performing another sweep
+    loop_num = 0; sweep = True
+    while sweep:
+        sweep = False # default to not performing another sweep
         
-#         freqs_new, amps_new = targetSweep(
-#             freqs, f_center=f_center, N_steps=N_steps, 
-#             chan_bandwidth=chan_bandwidth, amps=amps, 
-#             plot_step=200, save=False)
+        freqs_new, amps_new = targetSweep(
+            freqs, f_center=f_center, N_steps=N_steps, 
+            chan_bandwidth=chan_bandwidth, amps=amps, 
+            plot_step=200, save=False)
     
-#         if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
-#             or np.any(np.abs(1 - amps_new/amps) > A_tol)):
-#             sweep = True
+        if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
+            or np.any(np.abs(1 - amps_new/amps) > A_tol)):
+            sweep = True
             
-#         freqs, amps = freqs_new, amps_new
+        freqs, amps = freqs_new, amps_new
 
-#         if loop_num > loops_max:
-#             sweep = False # override any sweep=True statements
-#         loop_num += 1
+        if loop_num > loops_max:
+            sweep = False # override any sweep=True statements
+        loop_num += 1
         
-#     io.save(io.file.f_res_targ, freqs)
-#     io.save(io.file.a_res_targ, amps)
-#     io.save(io.file.f_center_targ, f_center*1e6)
+    io.save(io.file.f_res_targ, freqs)
+    io.save(io.file.a_res_targ, amps)
+    io.save(io.file.f_center_targ, f_center*1e6)
 
-#     return np.array([freqs, amps])
+    return np.array([freqs, amps])
 
 
 # def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
