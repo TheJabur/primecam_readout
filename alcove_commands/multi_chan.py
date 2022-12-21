@@ -649,41 +649,42 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
         break
 
 
-# def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
-#     """
-#     Do a quick sweep using only 2 (symmetric) points per resonator.
-#     Trigger a full sweep if dtol detectors are over tol.
+def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
+    """
+    Do a quick sweep using only 2 (symmetric) points per resonator.
+    Trigger a full sweep if dtol detectors are over tol.
     
-#     f_center:        (float) Center LO frequency for sweep [MHz].
-#     freq_offset:     (float) +/- offset from res. freq. for measurement [MHz].
-#     tol:             (float) Allowed |S21| difference between offsets [unit?].
-#     dtol:            (float) Max number of KIDs allowed to be over tolerance.
-#     """
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    freq_offset:     (float) +/- offset from res. freq. for measurement [MHz].
+    tol:             (float) Allowed |S21| difference between offsets [unit?].
+    dtol:            (float) Max number of KIDs allowed to be over tolerance.
+    """
 
-#     import numpy as np
+    import numpy as np
     
-#     freqs = io.load(io.file.f_res_targ)
+    chan = cfg.drid
+    freqs = io.load(io.file.f_res_targ)
     
-#     # if this comb is already set we could bypass this step for efficiency
-#     # how can we know?
-#     writeTargComb() 
+    # if this comb is already set we could bypass this step for efficiency
+    # how can we know?
+    writeTargComb() 
     
-#     N_steps = 2                          # 2 symmetric points
-#     f, Z  = sweep(f_center, freqs, N_steps=N_steps, chan_bandwidth=2*freq_offset)
+    N_steps = 2                          # 2 symmetric points
+    f, Z  = _sweep(chan, f_center, freqs, N_steps=N_steps, chan_bandwidth=2*freq_offset)
     
-#     y     = np.abs(Z)                    # magnitude of Z
-#     f_res = np.reshape(f, (-1, N_steps)) # split f by KID
-#     y_res = np.reshape(y, (-1, N_steps)) # split Zm by KID
-#     # _res vars are 2D arrays: one 1D array per resonator
+    y     = np.abs(Z)                    # magnitude of Z
+    f_res = np.reshape(f, (-1, N_steps)) # split f by KID
+    y_res = np.reshape(y, (-1, N_steps)) # split Zm by KID
+    # _res vars are 2D arrays: one 1D array per resonator
   
-#     d = np.diff(y_res)
-#     n = np.sum(d>tol)                    # > tol count
-#     # how do we decide on a reasonable tol?
-#     # will it be consistent?
-#     # with only 2 measurements per KID it's hard to normalize...
+    d = np.diff(y_res)
+    n = np.sum(d>tol)                    # > tol count
+    # how do we decide on a reasonable tol?
+    # will it be consistent?
+    # with only 2 measurements per KID it's hard to normalize...
     
-#     if n > dtol:
-#         print(f"{n} detectors over tolerance. Running full loop.")
-#         fullLoop()
-#     else:
-#         print(f"{n} detectors over tolerance (<dtol). Done.")
+    if n > dtol:
+        print(f"{n} detectors over tolerance. Running full loop.")
+        fullLoop()
+    else:
+        print(f"{n} detectors over tolerance (<dtol). Done.")
