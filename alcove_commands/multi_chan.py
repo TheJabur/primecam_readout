@@ -406,6 +406,39 @@ def _resonatorIndicesInS21(Z):
     return i_peaks
 
 
+def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
+    """
+    Determine resonator tone frequencies and normalized amplitudes from sweep data.
+    
+    f:               (1D array of floats) Central frequency for each bin.
+    Z:               (1D array of floats) Complex S21 values.
+    amps:            (1D array of floats) Current normalized tone amplitudes.
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    """
+    
+    import numpy as np
+
+    y     = np.abs(Z)                    # magnitude of Z
+    f_res = np.reshape(f, (-1, N_steps)) # split f by KID
+    y_res = np.reshape(y, (-1, N_steps)) # split Zm by KID
+    # _res vars are 2D arrays: one 1D array per resonator
+    
+    # KID resonance frequencies
+    i_res = np.argmin(y_res, axis=1)
+    freqs = f_res[tuple([np.arange(0,len(i_res)), i_res])] # multi-dim. array indexing
+
+    # Power
+    # np.gradient provides the slope at each point.
+    # The asymmetry of the resonator shape in frequency space 
+    # can be characterized by the sum of the max and min slopes.
+    y_grad = np.gradient(y_res, axis=1)         # slope at each point
+    a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
+    a /= np.max(np.abs(y_grad), axis=1)         # normalize
+    A_res = (1 + a)*amps
+
+    return (freqs, A_res)
+
+
 
 #####################
 # Command Functions #
@@ -477,43 +510,46 @@ def findResonators():
     io.save(io.file.f_res_vna, f_res)
 
 
-# def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
-#     """
-#     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
+def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
+    """
+    Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
-#     f_res:           (1D array of floats) Current comb tone frequencies [Hz].
-#     f_center:        (float) Center LO frequency for sweep [MHz].
-#     N_steps:         (int) Number of LO frequencies to divide each channel into.
-#     chan_bandwidth:  (float) Channel bandwidth [MHz].
-#     amps:            (1D array of floats) Current normalized tone amplitudes.
+    f_res:           (1D array of floats) Current comb tone frequencies [Hz].
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    chan_bandwidth:  (float) Channel bandwidth [MHz].
+    amps:            (1D array of floats) Current normalized tone amplitudes.
 
-#     Return:          (2-tuple) Characterized resonator frequencies and normalized tone amplitudes.
-#     """
+    Return:          (2-tuple) Characterized resonator frequencies and normalized tone amplitudes.
+    """
 
-#     import numpy as np
+    import numpy as np
 
-#     if f_res is None:
-#         try:
-#             f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
-#         except:
-#             raise("Required file missing: f_res.npy. Perform a vna sweep first?")
+    chan = cfg.drid
 
-#     if amps is None:
-#         amps = np.ones_like(f_res)
+    if f_res is None:
+        try:
+            f_res = io.load(io.file.f_res_vna)
+            # f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
+        except:
+            raise("Required file missing: f_res_vna. Perform a vna sweep first.")
+
+    if amps is None:
+        amps = np.ones_like(f_res)
     
-#     writeTargComb()
+    writeTargComb()
 
-#     # load S21 complex mags (Z) and frequencies (f) from file
-#     f, Z  = sweep(f_center, f_res, N_steps, chan_bandwidth)
+    # load S21 complex mags (Z) and frequencies (f) from file
+    f, Z  = _sweep(chan, f_center, f_res, N_steps, chan_bandwidth)
     
-#     freqs, A_res = toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
+    freqs, A_res = _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
 
-#     if save:
-#         io.save(io.file.f_res_targ, freqs)
-#         io.save(io.file.a_res_targ, amps)
-#         io.save(io.file.f_center_targ, f_center*1e6)
+    if save:
+        io.save(io.file.f_res_targ, freqs)
+        io.save(io.file.a_res_targ, amps)
+        io.save(io.file.f_center_targ, f_center*1e6)
 
-#     return (freqs, A_res)
+    return (freqs, A_res)
 
 
 # def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
