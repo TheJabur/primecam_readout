@@ -606,47 +606,47 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     return np.array([freqs, amps])
 
 
-# def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
-#     '''
-#     Complete resonator calibration.
+def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
+    '''
+    Complete resonator calibration.
 
-#     max_loops_full:  (int) Max number of times to retry if fail.
-#     max_loops_funcs: (int) Similar to max_loops_full but for individual funcs.
-#     verbose:         (bool) All messages to standard out.
-#     '''
+    max_loops_full:  (int) Max number of times to retry if fail.
+    max_loops_funcs: (int) Similar to max_loops_full but for individual funcs.
+    verbose:         (bool) All messages to standard out.
+    '''
     
-#     def fail(e):
-#         print(" FAILED!")
-#         if verbose: print(e)
-#     def retry(f, s, **params):
-#         for _ in range(max_loops_funcs):
-#             try: print(s+"...", end=""); f(**params)
-#             except Exception as e: fail(e)
-#             else: success(); return True
-#         raise Exception("Retry failed.") 
-#     def success(): print(" Done."); return True
-#     def fullFail(l): print(f"\n* Full loop failed ({l}).")
-#     def fullSuccess(l): print(f"\n* Full loop complete ({l}).")
+    def fail(e):
+        print(" FAILED!")
+        if verbose: print(e)
+    def retry(f, s, **params):
+        for _ in range(max_loops_funcs):
+            try: print(s+"...", end=""); f(**params)
+            except Exception as e: fail(e)
+            else: success(); return True
+        raise Exception("Retry failed.") 
+    def success(): print(" Done."); return True
+    def fullFail(l): print(f"\n* Full loop failed ({l}).")
+    def fullSuccess(l): print(f"\n* Full loop complete ({l}).")
     
-#     for l in range(max_loops_full):
+    for l in range(max_loops_full):
             
-#         try: retry(vnaSweep, 
-#                    "Perform VNA sweep", 
-#                    f_center=600)
-#         except: fullFail(l); continue
+        try: retry(vnaSweep, 
+                   "Perform VNA sweep", 
+                   f_center=600)
+        except: fullFail(l); continue
         
-#         try: retry(findResonators, 
-#                    "Finding resonators")
-#         except: fullFail(l); continue
+        try: retry(findResonators, 
+                   "Finding resonators")
+        except: fullFail(l); continue
         
-#         try: retry(targetSweepLoop, 
-#                    "Perform target sweep loop", 
-#                    chan_bandwidth=0.2, f_center=600, N_steps=500, 
-#                    f_tol=0.1, A_tol=0.3, loops_max=20)
-#         except: fullFail(l); continue
+        try: retry(targetSweepLoop, 
+                   "Perform target sweep loop", 
+                   chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                   f_tol=0.1, A_tol=0.3, loops_max=20)
+        except: fullFail(l); continue
         
-#         fullSuccess(l)
-#         break
+        fullSuccess(l)
+        break
 
 
 # def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
