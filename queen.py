@@ -18,10 +18,11 @@ import numpy as np
 import logging
 import uuid
 import pickle
-import tempfile
+# import tempfile
 
 import _cfg_queen as cfg
 
+import queen_commands.control_io as io
 import queen_commands.test_functions as test
 
 
@@ -276,20 +277,13 @@ def _connectRedis():
 def _processCommandReturn(dat):
     '''Process the return data from a command.'''
 
-    dat = pickle.loads(dat)                # assuming msg is pickled
+    dat = pickle.loads(dat)             # assuming msg is pickled
 
-    if isinstance(dat, str):            # print only if string
+    # strings get printed, all else saved
+    if isinstance(dat, str):
         print(dat) 
-
-    elif isinstance(dat, np.ndarray):   # save arrays to tmp .npy file
-        with tempfile.NamedTemporaryFile(dir='tmp', suffix='.npy', delete=False) as tf:
-            np.save(tf, dat)
-
-    else:                               # write other types to tmp file
-        with tempfile.NamedTemporaryFile(dir='tmp', delete=False) as tf:
-            tf.write(pickle.dumps(dat))
-
-    # note that these tmp files are not currently ever cleared out
+    else:
+        io.saveToTmp(dat)
 
 
 def _notificationHandler(message):
