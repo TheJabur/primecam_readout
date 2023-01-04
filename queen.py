@@ -43,11 +43,11 @@ logging.basicConfig(
 # queen command keys start at 20
 def _com():
     return {
-        20:alcoveCommand,
-        21:listenMode,
-        22:test.testFunc1,
-        23:getKeyValue,
-        24:setKeyValue
+        1:alcoveCommand,
+        2:listenMode,
+        3:getKeyValue,
+        4:setKeyValue,
+        9:test.testFunc1
     }
 
 
@@ -158,7 +158,7 @@ def callCom(com_num, args=None):
     ## build payload
     # payload consists of commmand number and arguments
     if args is None:
-        payload = com_num
+        payload = str(com_num)
     else:
         payload = f"{com_num} {args}"
         
