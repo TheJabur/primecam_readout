@@ -92,6 +92,8 @@ def saveToTmp(data):
     data: The data to save to file.
     """
 
+    # add functionality to clear out old tmp files?
+
     import numpy as np
     import tempfile
     import pickle

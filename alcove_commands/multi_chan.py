@@ -353,10 +353,10 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     
     # loop over _Z for each LO freq
     # and flatten
-    Z = np.array([_Z(lofreq) for lofreq in flos]).T.flatten()
+    Z = np.flip(np.array([_Z(lofreq) for lofreq in flos]).T, axis=1).flatten()
     
     # build and flatten all bin frequencies
-    f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
+    f = np.flip(np.array([flos*1e6 + ftone for ftone in freqs]).flatten())
 
     return (f, Z)
 
@@ -395,7 +395,7 @@ def _resonatorIndicesInS21(Z):
     sig = -np.abs(Z)              # find_peaks looks at positive peaks
 
     var  = _variationInS21m(sig)
-    prom = 10*var
+    prom = 50*var
 
     i_peaks = scipy.signal.find_peaks(
         x          = sig,       
@@ -509,6 +509,8 @@ def findResonators():
 
     io.save(io.file.f_res_vna, f_res)
 
+    return f_res
+
 
 def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
     """
@@ -549,6 +551,7 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
         io.save(io.file.a_res_targ, amps)
         io.save(io.file.f_center_targ, f_center*1e6)
 
+    # return an array here
     return (freqs, A_res)
 
 
