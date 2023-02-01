@@ -361,25 +361,25 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     return (f, Z)
 
 
-def _variationInS21m(S21m):
-    '''Find small signal variation in S21 complex modulus.
-    S21m: 1D array of S21 complex modulus floats.
-    This has only been tested on fake data with <2000 resonators.'''
+# def _variationInS21m(S21m):
+#     '''Find small signal variation in S21 complex modulus.
+#     S21m: 1D array of S21 complex modulus floats.
+#     This has only been tested on fake data with <2000 resonators.'''
 
-    import numpy as np
+#     import numpy as np
 
-    w = 10                      # min of 10 for reasonable results
-    l = len(S21m)
-    while l%w != 0:             # need w to be a factor of len(S21m) for reshape
-        w += 1
-        if w>l: raise("Error: No width found!")
+#     w = 10                      # min of 10 for reasonable results
+#     l = len(S21m)
+#     while l%w != 0:             # need w to be a factor of len(S21m) for reshape
+#         w += 1
+#         if w>l: raise("Error: No width found!")
 
-    x = np.reshape(S21m, (len(S21m)//w, w))
+#     x = np.reshape(S21m, (len(S21m)//w, w))
 
-    vars = np.std(x, axis=1)    # variation in each bin
-    var = np.median(vars)       # median of variations
+#     vars = np.std(x, axis=1)    # variation in each bin
+#     var = np.median(vars)       # median of variations
     
-    return var
+#     return var
 
 
 # def _resonatorIndicesInS21(Z):
