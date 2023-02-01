@@ -382,10 +382,34 @@ def _variationInS21m(S21m):
     return var
 
 
-def _resonatorIndicesInS21(Z):
+# def _resonatorIndicesInS21(Z):
+#     """
+#     Find the indices in given complex S21 values for resonator peaks.
+#     Z: Complex S21 values.
+#     """
+
+#     import numpy as np
+#     import scipy.signal
+
+#     # complex modulus
+#     sig = -np.abs(Z)              # find_peaks looks at positive peaks
+
+#     var  = _variationInS21m(sig)
+#     prom = 50*var
+
+#     i_peaks = scipy.signal.find_peaks(
+#         x          = sig,       
+#         prominence = prom,        # 
+#         height     = (np.nanmin(sig), np.nanmax(sig)-prom),
+#         width      = (10, 500)
+#     )[0]                          # [0] is peaks, [1] is properties
+
+#     return i_peaks
+
+def _resonatorIndicesInS21dB(S21m):
     """
     Find the indices in given complex S21 values for resonator peaks.
-    Z: Complex S21 values.
+    S21m: 1D array of S21 complex modulus floats.
     """
 
     import numpy as np
@@ -394,13 +418,10 @@ def _resonatorIndicesInS21(Z):
     # complex modulus
     sig = -np.abs(Z)              # find_peaks looks at positive peaks
 
-    var  = _variationInS21m(sig)
-    prom = 50*var
-
     i_peaks = scipy.signal.find_peaks(
-        x          = sig,       
-        prominence = prom,        # 
-        height     = (np.nanmin(sig), np.nanmax(sig)-prom)
+        x          = sig,
+        prominence = 2,           # in dB
+        width      = [3,1000]     # in data indices
     )[0]                          # [0] is peaks, [1] is properties
 
     return i_peaks
@@ -437,6 +458,28 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     A_res = (1 + a)*amps
 
     return (freqs, A_res)
+
+
+def _stitchS21m(S21m, bw=500, sw=500):
+    """
+    Shift S21 mags so the bin ends align.
+
+    S21m: (array of floats) 1D array of S21 complex modulus.
+    bw:   (int) Width of the stitch bins.
+    sw:   (int) Width of slice (at ends) of each stitch bin to take median.
+    """
+    
+    import numpy as np
+
+    i1 = 0 # index of 1st bin start
+    while(i1 < len(S21m)-bw):
+        i2 = i1 + bw # index of 1st bin end / 2nd bin start
+        i3 = i2 + bw # index of 2nd bin end
+        med1 = np.median(S21m[i1:i2][-sw:])
+        med2 = np.median(S21m[i2:i3][:sw])
+        S21m[i2:i3] += med1 - med2 # shift next stitch bin to align to this one
+        i1 = i2                    # move to next stitch bin
+    return S21m
 
 
 
@@ -504,7 +547,14 @@ def findResonators():
     # f, Z = np.load(f'{cfg.drone_dir}/s21.npy')
     f, Z = io.load(io.file.s21_vna)
 
-    i_peaks = _resonatorIndicesInS21(Z)
+    # stitch so bins align
+    S21m = _stitchS21m(np.abs(Z), bw=500, sw=500)
+
+    # convert to dB and shift to all positive
+    S21m_dB = 20.*np.log10(S21m + 1.1*np.abs(np.min(S21m)))
+
+    # i_peaks = _resonatorIndicesInS21(Z)
+    i_peaks = _resonatorIndicesInS21dB(S21m_dB)
     f_res = f[i_peaks]
 
     io.save(io.file.f_res_vna, f_res)
