@@ -416,7 +416,7 @@ def _resonatorIndicesInS21dB(S21m):
     import scipy.signal
 
     # complex modulus
-    sig = -np.abs(Z)              # find_peaks looks at positive peaks
+    sig = -np.abs(S21m)              # find_peaks looks at positive peaks
 
     i_peaks = scipy.signal.find_peaks(
         x          = sig,
