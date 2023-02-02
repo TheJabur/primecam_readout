@@ -304,7 +304,8 @@ def _getSnapData(chan, mux_sel):
         Q[0::2] = q0
         Q[1::2] = q1
         I[0::2] = i0
-        I[1::2] = i1    
+        I[1::2] = i1
+        I, Q = I[4:], Q[4:]
     return I, Q
 
 
