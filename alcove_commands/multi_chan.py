@@ -200,8 +200,8 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
     mmio_bram_phis.array[0:512] = dphi_stacked[0:512] # the [0:512] indexing is necessary on .array
     
     # slice waveform for uploading to ddr4
-    I0, I1, I2, I3 = wave_real[0::4], wave_real[1::4], wave_real[2::4], wave_real[3::4]
-    Q0, Q1, Q2, Q3 = wave_imag[0::4], wave_imag[1::4], wave_imag[2::4], wave_imag[3::4]
+    I0, I1, I2, I3 = wave_imag[0::4], wave_imag[1::4], wave_imag[2::4], wave_imag[3::4]
+    Q0, Q1, Q2, Q3 = wave_real[0::4], wave_real[1::4], wave_real[2::4], wave_real[3::4]
     data0 = ((np.int32(I0) << 16) + Q0).astype("int32")
     data1 = ((np.int32(I1) << 16) + Q1).astype("int32")
     data2 = ((np.int32(I2) << 16) + Q2).astype("int32")
@@ -311,7 +311,7 @@ def _getSnapData(chan, mux_sel):
 
 def _writeComb(chan, freqs):
     
-    wave, dphi, freq_actual = _generateWaveDdr4(-freqs)
+    wave, dphi, freq_actual = _generateWaveDdr4(freqs)
     wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
     _loadDdr4(chan, wave_real, wave_imag, dphi)
     _loadBinList(chan, freq_actual)
@@ -358,7 +358,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     Z = np.flip(np.array([_Z(lofreq) for lofreq in flos]).T, axis=1).flatten()
     
     # build and flatten all bin frequencies
-    f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
+    f = np.flip(np.array([flos*1e6 + ftone for ftone in freqs]).flatten())
         
     _setNCLO(chan, f_center)       # update mixer LO frequency
 
