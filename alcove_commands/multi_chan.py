@@ -74,7 +74,7 @@ def _generateWaveDdr4(freq_list):
         z = np.zeros(fft_len)
         z[0] = dphi0
         dphi = z
-    return x, dphi
+    return x, dphi, freq_actual
 
 
 def _normWave(wave, max_amp=2**15-1):
