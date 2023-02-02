@@ -358,6 +358,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     
     # build and flatten all bin frequencies
     f = np.flip(np.array([flos*1e6 + ftone for ftone in freqs]).flatten())
+        
+    _setNCLO(chan, f_center)       # update mixer LO frequency
 
     return (f, Z)
 
