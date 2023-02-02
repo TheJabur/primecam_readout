@@ -489,6 +489,13 @@ def _stitchS21m(S21m, bw=500, sw=500):
 #####################
 # Arguments are given as strings!
 
+def writeTestTone():
+
+    import numpy as np
+    
+    chan = cfg.drid # drone (chan) id is from config
+    freqs = np.array(np.linspace(50e6, 255.00e6, 1))
+    freq_actual = _writeComb(chan, freqs)
 
 def writeVnaComb():
 
