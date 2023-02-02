@@ -310,11 +310,12 @@ def _getSnapData(chan, mux_sel):
 
 def _writeComb(chan, freqs):
     
-    wave, dphi = _generateWaveDdr4(freqs)
+    wave, dphi, freq_actual = _generateWaveDdr4(-freqs)
     wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
     _loadDdr4(chan, wave_real, wave_imag, dphi)
-    _loadBinList(chan, freqs)
-    _resetAccumAndSync(chan, freqs)
+    _loadBinList(chan, freq_actual)
+    _resetAccumAndSync(chan, freq_actual)
+    return freq_actual
 
 
 def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
@@ -495,8 +496,8 @@ def writeVnaComb():
     
     chan = cfg.drid # drone (chan) id is from config
     freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    _writeComb(chan, freqs)
-    io.save(io.file.freqs_vna, freqs)
+    freq_actual = _writeComb(chan, freqs)
+    io.save(io.file.freqs_vna, freq_actual)
 
 
 def writeTargComb():
@@ -505,7 +506,7 @@ def writeTargComb():
     f_center   = io.load(io.file.f_center_vna)
     chan = cfg.drid # drone (chan) id is from config
     freqs = targ_freqs.real - f_center
-    _writeComb(chan, freqs)
+    freq_actual = _writeComb(chan, freqs)
 
 
 def getSnapData(mux_sel):
