@@ -66,7 +66,7 @@ def _generateWaveDdr4(freq_list):
     X[k] = np.exp(-1j*phi)
     x = np.fft.ifft(X) * lut_len/np.sqrt(2)
     bin_num = np.int64(np.round(freq_actual / (fs / fft_len)))
-    f_beat = freq_actual - bin_num*fs/fft_len
+    f_beat = bin_num*fs/fft_len - freq_actual
     dphi0 = f_beat/(fs/fft_len)*2**16
     if np.size(dphi0) > 1:
         dphi = np.concatenate((dphi0, np.zeros(fft_len - np.size(dphi0))))
@@ -96,7 +96,7 @@ def _loadBinList(chan, freq_list):
     fs = 512e6
     fft_len = 1024
     lut_len = 2**20
-    k = np.int64(np.round(freq_list/(fs/lut_len)))
+    k = np.int64(np.round(-freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
     bin_list = np.int64(np.round(freq_actual / (fs / fft_len)))
     pos_bin_idx = np.where(bin_list > 0)
