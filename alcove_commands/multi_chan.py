@@ -355,7 +355,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     
     # loop over _Z for each LO freq
     # and flatten
-    Z = np.flip(np.array([_Z(lofreq) for lofreq in flos]).T,axis=1).flatten()
+    Z = (np.array([_Z(lofreq) for lofreq in flos]).T).flatten()
     
     # build and flatten all bin frequencies
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
