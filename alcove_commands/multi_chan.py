@@ -523,6 +523,20 @@ def getSnapData(mux_sel):
     chan = cfg.drid
     return _getSnapData(chan, int(mux_sel))
 
+def setNCLO(f_lo):
+    """
+    setNCLO: set the numerically controlled local oscillator
+           
+
+    f_lo: center frequency in [MHz]
+    """
+
+    import numpy as np
+
+    chan = cfg.drid
+    f_lo = int(f_lo)
+    _setNCLO(chan, f_lo)
+    io.save(io.file.f_center_vna, f_center*1e6)
 
 def vnaSweep(f_center=600):
     """
