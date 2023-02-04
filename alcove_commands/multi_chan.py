@@ -536,7 +536,6 @@ def setNCLO(f_lo):
     chan = cfg.drid
     f_lo = int(f_lo)
     _setNCLO(chan, f_lo)
-    io.save(io.file.f_center_vna, f_center*1e6)
 
 def vnaSweep(f_center=600):
     """
