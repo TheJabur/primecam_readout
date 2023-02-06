@@ -345,12 +345,14 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
 
     def _Z(lofreq, Naccums=5):
         _setNCLO(chan, lofreq)       # update mixer LO frequency
-        # get accum data Naccums times and take median
-        # this is done to deal with a periodically dirty signal
-        # we don't understand why this happens
-        IQ = [getSnapData(3) for i in range(Naccums)] 
-        Imed,Qmed = np.median(IQ, axis=0)
-        Z = Imed + 1j*Qmed     # convert I and Q to complex
+        # after setting nclo sleep to let old data pass
+        # read accumulator snap block a few times to assure
+        # new data
+        sleep(0.03)
+        I, Q = getSnapData(3)
+        I, Q = getSnapData(3)
+        I, Q = getSnapData(3)
+        Z = I + 1j*Q     # convert I and Q to complex
         return Z[0:len(freqs)] # only return relevant slice
     
     # loop over _Z for each LO freq
