@@ -4,6 +4,7 @@
 #####################
 try:
     import _cfg_board as cfg
+    import alcove_commands.board_io as io
     import xrfdc
     from pynq import Overlay
     firmware = Overlay("single_chan_4eth_v8p2.bit",ignore_version=True, download=False)
@@ -466,15 +467,14 @@ def writeVnaComb():
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=True, verbose=False)
     load_bin_list(freqsx2)
     load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
-    np.save("freqs.npy",freqsx2/2.) 
+
+    io.save(io.file.freqs_vna, freqsx2/2.)
 
 
 def writeTargComb():
-
-    import numpy as np
     
-    targ_freqs = np.load(f'{cfg.drone_dir}/f_res.npy')
-    f_center = np.load(f'{cfg.drone_dir}/f_center.npy')
+    targ_freqs = io.load(io.file.f_res_vna)
+    f_center   = io.load(io.file.f_center_vna)
 
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform( targ_freqs.real-f_center, vna=False, verbose=False)
     load_bin_list(freqsx2)
@@ -486,6 +486,16 @@ def writeTestTone():
     import numpy as np
 
     LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(np.linspace(20.2e6,50.0e6,1), vna=False, verbose=False)
+    load_bin_list(freqsx2)
+    load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
+
+
+def writeLoChopComb():
+
+    targ_freqs = io.load(io.file.f_res_targ)
+    f_center   = io.load(io.file.f_center_targ)
+
+    LUT_I, LUT_Q, DDS_I, DDS_Q, freqsx2 = genWaveform(targ_freqs.real-f_center, vna=False, verbose=False)
     load_bin_list(freqsx2)
     load_waveform_into_mem(freqsx2, LUT_I, LUT_Q, DDS_I, DDS_Q)
 
@@ -508,19 +518,22 @@ def vnaSweep(f_center=600):
 
     import numpy as np
 
-    f_center = int(f_center)
+    writeVnaComb()
 
-    freqs = np.load("freqs.npy") # these should be moved to drone directory?
-    f, Z = sweep(f_center, freqs, N_steps=500)
-    np.save(f'{cfg.drone_dir}/s21.npy', np.array((f, Z)))
-    np.save(f'{cfg.drone_dir}/f_center.npy', f_center*1e6)
-    return "s21.npy saved on board."
+    f_center = int(f_center)
+    freqs = io.load(io.file.freqs_vna)
+
+    s21 = np.array(sweep(f_center, freqs, N_steps=500)) # f, Z
+
+    io.save(io.file.s21_vna, s21)
+    io.save(io.file.f_center_vna, f_center*1e6)
+
+    return (s21)
 
 
 def findResonators():
     """
     Find the resonator peak frequencies in previously saved s21.npy file.
-    This is untested, as are the functions it relies on.
     """
     
     import numpy as np
@@ -530,7 +543,8 @@ def findResonators():
 
     i_peaks = resonatorIndicesInS21(Z)
     f_res = f[i_peaks]
-    np.save(f'{cfg.drone_dir}/f_res.npy', f_res)
+
+    io.save(io.file.f_res_vna, f_res)
 
 
 def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
@@ -557,14 +571,17 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
     if amps is None:
         amps = np.ones_like(f_res)
     
+    writeTargComb()
+
     # load S21 complex mags (Z) and frequencies (f) from file
     f, Z  = sweep(f_center, f_res, N_steps, chan_bandwidth)
     
     freqs, A_res = toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
 
     if save:
-        np.save(f'{cfg.drone_dir}/f_res.npy', freqs)
-        np.save(f'{cfg.drone_dir}/amps.npy', amps)
+        io.save(io.file.f_res_targ, freqs)
+        io.save(io.file.a_res_targ, amps)
+        io.save(io.file.f_center_targ, f_center*1e6)
 
     return (freqs, A_res)
 
@@ -615,9 +632,94 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
             sweep = False # override any sweep=True statements
         loop_num += 1
         
-    # should frequencies be saved to a different file than vna_seep uses?
-    # should we introduce file versions, e.g. add timestamp?
-    np.save(f'{cfg.drone_dir}/f_res.npy', freqs)
-    np.save(f'{cfg.drone_dir}/amps.npy', amps)
+    io.save(io.file.f_res_targ, freqs)
+    io.save(io.file.a_res_targ, amps)
+    io.save(io.file.f_center_targ, f_center*1e6)
 
     return np.array([freqs, amps])
+<<<<<<< HEAD
+=======
+
+
+def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
+    '''
+    Complete resonator calibration.
+
+    max_loops_full:  (int) Max number of times to retry if fail.
+    max_loops_funcs: (int) Similar to max_loops_full but for individual funcs.
+    verbose:         (bool) All messages to standard out.
+    '''
+    
+    def fail(e):
+        print(" FAILED!")
+        if verbose: print(e)
+    def retry(f, s, **params):
+        for _ in range(max_loops_funcs):
+            try: print(s+"...", end=""); f(**params)
+            except Exception as e: fail(e)
+            else: success(); return True
+        raise Exception("Retry failed.") 
+    def success(): print(" Done."); return True
+    def fullFail(l): print(f"\n* Full loop failed ({l}).")
+    def fullSuccess(l): print(f"\n* Full loop complete ({l}).")
+    
+    for l in range(max_loops_full):
+            
+        try: retry(vnaSweep, 
+                   "Perform VNA sweep", 
+                   f_center=600)
+        except: fullFail(l); continue
+        
+        try: retry(findResonators, 
+                   "Finding resonators")
+        except: fullFail(l); continue
+        
+        try: retry(targetSweepLoop, 
+                   "Perform target sweep loop", 
+                   chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                   f_tol=0.1, A_tol=0.3, loops_max=20)
+        except: fullFail(l); continue
+        
+        fullSuccess(l)
+        break
+
+
+def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
+    """
+    Do a quick sweep using only 2 (symmetric) points per resonator.
+    Trigger a full sweep if dtol detectors are over tol.
+    
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    freq_offset:     (float) +/- offset from res. freq. for measurement [MHz].
+    tol:             (float) Allowed |S21| difference between offsets [unit?].
+    dtol:            (float) Max number of KIDs allowed to be over tolerance.
+    """
+
+    import numpy as np
+    
+    freqs = io.load(io.file.f_res_targ)
+    
+    # if this comb is already set we could bypass this step for efficiency
+    # how can we know?
+    writeLoChopComb() 
+    
+    N_steps = 2                          # 2 symmetric points
+    f, Z  = sweep(f_center, freqs, N_steps=N_steps, chan_bandwidth=2*freq_offset)
+    
+    y     = np.abs(Z)                    # magnitude of Z
+    f_res = np.reshape(f, (-1, N_steps)) # split f by KID
+    y_res = np.reshape(y, (-1, N_steps)) # split Zm by KID
+    # _res vars are 2D arrays: one 1D array per resonator
+  
+    d = np.diff(y_res)
+    n = np.sum(d>tol)                    # > tol count
+    # how do we decide on a reasonable tol?
+    # will it be consistent?
+    # with only 2 measurements per KID it's hard to normalize...
+    
+    if n > dtol:
+        print(f"{n} detectors over tolerance. Running full loop.")
+        fullLoop()
+    else:
+        print(f"{n} detectors over tolerance (<dtol). Done.")
+>>>>>>> develop

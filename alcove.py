@@ -10,10 +10,12 @@
 ###############
 ### IMPORTS ###
 
+from audioop import mul
 import logging
 import alcove_commands.test_functions as test
 import alcove_commands.board_utilities as utils
 import alcove_commands.single_chan as single_chan
+import alcove_commands.multi_chan as multi_chan
 
 
 ##############
@@ -33,13 +35,23 @@ def _com():
         12:single_chan.writeVnaComb,
         13:single_chan.writeTestTone,
         14:single_chan.getAdcData,
-        15:test.testFunction1,
+        15:test.testFunction,
         16:single_chan.getSnapData,
         17:single_chan.vnaSweep,
         18:single_chan.findResonators,
-        19:test.testFunction2,
         20:single_chan.writeTargComb,
-        21:single_chan.targetSweep
+        21:single_chan.targetSweep,
+        22:single_chan.fullLoop,
+        40:multi_chan.setNCLO,
+        41:multi_chan.writeTestTone,
+        42:multi_chan.writeVnaComb,
+        43:multi_chan.writeTargComb,
+        44:multi_chan.getSnapData,
+        45:multi_chan.vnaSweep,
+        46:multi_chan.findResonators,
+        47:multi_chan.targetSweep,
+        48:multi_chan.fullLoop,
+        49:multi_chan.loChop
     }
 
 

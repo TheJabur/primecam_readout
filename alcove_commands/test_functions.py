@@ -14,20 +14,39 @@
 #############################################################
 
 
-def testFunction1(arg1=None, arg2=None):
+# def testFunction1():
 
-    import _cfg_board as cfg
+    # import alcove_commands.board_io as io
+    # import numpy as np
 
-    ret = f"drid={cfg.drid}, arg1={arg1}, arg2={arg2}"
-    print(f"returning: {ret}")
-    return ret
+    # a = np.array([1,2,3,4,5,6]) + 1
+
+    # io.save(io.file.f_res_targ, a)
+
+def testFunction():
+    import alcove_commands.board_io as io
+    import numpy as np
+
+    a = io.load(io.file.f_res_targ)
+    # a = io.loadVersion(io.file.f_res_targ, timestamp='20221006T222045Z')
+
+    print(a)
 
 
-def testFunction2(key):
+# def testFunction1(arg1=None, arg2=None):
 
-    import drone
+#     import _cfg_board as cfg
 
-    ret = drone.getKeyValue(key)
-    print(f"returning: {ret}")
+#     ret = f"drid={cfg.drid}, arg1={arg1}, arg2={arg2}"
+#     print(f"returning: {ret}")
+#     return ret
 
-    return ret
+
+# def testFunction2(key):
+
+#     import drone
+
+#     ret = drone.getKeyValue(key)
+#     print(f"returning: {ret}")
+
+#     return ret
