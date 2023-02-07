@@ -335,6 +335,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     """
 
     import numpy as np
+    from time import sleep
 
     if chan_bandwidth:         # LO bandwidth given
         bw = chan_bandwidth    # MHz
