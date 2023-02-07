@@ -308,6 +308,32 @@ def _getSnapData(chan, mux_sel):
         I, Q = I[4:], Q[4:]
     return I, Q
 
+def _getCleanAccum(Itemplate, Qtemplate):
+    """
+    Function to return un-spurious accumuation captures
+
+    input: I and Q template to compare variance of power
+
+    output: I and Q which pass variance ratio threshold
+    """
+    import numpy as np
+
+    j = 0
+    I, Q = getSnapData(3)
+    Pt = Itemplate**2 + Qtemplate**2
+    Ntrys = 5
+    while (j < Ntrys):
+        Pdiff = Pt - (I**2 + Q**2)
+        ratio = np.var(Pdiff)/np.var(Pt)
+        if ratio < 0.00001:
+            j = Ntrys
+        else:
+            I, Q = getSnapData(3)
+            if j==(Ntrys-1):
+                print("Warning! could not clean data")
+            j+= 1    
+    return I, Q
+
 
 def _writeComb(chan, freqs):
     
@@ -343,16 +369,14 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
         bw = np.diff(freqs)[0]/1e6 # MHz
     # flos = np.arange(f_center-bw/2., f_center+bw/2., bw/N_steps)
     flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
-
+    _, _ = getSnapData(3) # discard previously collected accum samples
+    It, Qt = getSnapData(3) # grab new accumulator samples for template
     def _Z(lofreq, Naccums=5):
         _setNCLO(chan, lofreq)       # update mixer LO frequency
         # after setting nclo sleep to let old data pass
         # read accumulator snap block a few times to assure
         # new data
-        sleep(0.03)
-        I, Q = getSnapData(3)
-        I, Q = getSnapData(3)
-        I, Q = getSnapData(3)
+        I, Q = _getCleanAccum(It, Qt):
         Z = I + 1j*Q     # convert I and Q to complex
         return Z[0:len(freqs)] # only return relevant slice
     
