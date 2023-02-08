@@ -392,70 +392,52 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     return (f, Z)
 
 
-# def _variationInS21m(S21m):
-#     '''Find small signal variation in S21 complex modulus.
-#     S21m: 1D array of S21 complex modulus floats.
-#     This has only been tested on fake data with <2000 resonators.'''
-
-#     import numpy as np
-
-#     w = 10                      # min of 10 for reasonable results
-#     l = len(S21m)
-#     while l%w != 0:             # need w to be a factor of len(S21m) for reshape
-#         w += 1
-#         if w>l: raise("Error: No width found!")
-
-#     x = np.reshape(S21m, (len(S21m)//w, w))
-
-#     vars = np.std(x, axis=1)    # variation in each bin
-#     var = np.median(vars)       # median of variations
-    
-#     return var
-
-
-# def _resonatorIndicesInS21(Z):
+# def _resonatorIndicesInS21dB(S21m):
 #     """
 #     Find the indices in given complex S21 values for resonator peaks.
-#     Z: Complex S21 values.
+#     S21m: 1D array of S21 complex modulus floats.
 #     """
 
 #     import numpy as np
 #     import scipy.signal
 
 #     # complex modulus
-#     sig = -np.abs(Z)              # find_peaks looks at positive peaks
-
-#     var  = _variationInS21m(sig)
-#     prom = 50*var
+#     sig = -np.abs(S21m)              # find_peaks looks at positive peaks
 
 #     i_peaks = scipy.signal.find_peaks(
-#         x          = sig,       
-#         prominence = prom,        # 
-#         height     = (np.nanmin(sig), np.nanmax(sig)-prom),
-#         width      = (10, 500)
+#         x          = sig,
+#         prominence = 2,           # in dB
+#         width      = [3,1000]     # in data indices
 #     )[0]                          # [0] is peaks, [1] is properties
 
 #     return i_peaks
 
-def _resonatorIndicesInS21dB(S21m):
-    """
-    Find the indices in given complex S21 values for resonator peaks.
-    S21m: 1D array of S21 complex modulus floats.
+def _resonatorIndicesInS21(S21m, fs):
+    """Find the indices of resonator peaks in given S21 mags.
+    S21m: (1D array of floats) S21 complex modulus floats.
+    fs:   (float) Sampling frequency.
     """
 
     import numpy as np
     import scipy.signal
 
-    # complex modulus
-    sig = -np.abs(S21m)              # find_peaks looks at positive peaks
+    # calculate std of just noise
+    sos = scipy.signal.iirfilter(
+        N=2, fs=fs,
+        Wn=[50, fs//2], # >50 eliminates all but noise
+        btype="bandpass", ftype="butter", output="sos")
+    S21_filt = scipy.signal.sosfiltfilt(sos, S21m)
+    std = np.std(S21_filt)
 
-    i_peaks = scipy.signal.find_peaks(
-        x          = sig,
-        prominence = 2,           # in dB
-        width      = [3,1000]     # in data indices
-    )[0]                          # [0] is peaks, [1] is properties
+    peaks, props = scipy.signal.find_peaks(
+        x             = -S21m, 
+        prominence    = 10*std, 
+        width         = (5, 100)) 
+    # width min 5 eliminates small scale noise
+    # width max 499 elminates the anomolous dropout areas
+    # width max 100 restricts to appropriate scale of resonators
 
-    return i_peaks
+    return peaks
 
 
 def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
@@ -597,15 +579,17 @@ def findResonators():
     # load S21 complex mags (Z) and frequencies (f) from file
     # f, Z = np.load(f'{cfg.drone_dir}/s21.npy')
     f, Z = io.load(io.file.s21_vna)
+    fs   = np.abs(np.diff(f)[0])   # sampling frequency
+    S21m = np.abs(Z)
 
     # stitch so bins align
-    S21m = _stitchS21m(np.abs(Z), bw=500, sw=500)
+    # S21m = _stitchS21m(np.abs(Z), bw=500, sw=500)
 
     # convert to dB and shift to all positive
-    S21m_dB = 20.*np.log10(S21m + 1.1*np.abs(np.min(S21m)))
+    # S21m_dB = 20.*np.log10(S21m + 1.1*np.abs(np.min(S21m)))
 
-    # i_peaks = _resonatorIndicesInS21(Z)
-    i_peaks = _resonatorIndicesInS21dB(S21m_dB)
+    # i_peaks = _resonatorIndicesInS21dB(S21m_dB)
+    i_peaks = _resonatorIndicesInS21(S21m, fs)
     f_res = f[i_peaks]
 
     io.save(io.file.f_res_vna, f_res)
