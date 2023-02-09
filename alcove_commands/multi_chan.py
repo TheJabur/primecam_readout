@@ -392,51 +392,59 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     return (f, Z)
 
 
-# def _resonatorIndicesInS21dB(S21m):
-#     """
-#     Find the indices in given complex S21 values for resonator peaks.
-#     S21m: 1D array of S21 complex modulus floats.
-#     """
+def _stitchS21m(S21m, bw=500, sw=100):
+    """Shift S21 mags so the bin ends align.
 
-#     import numpy as np
-#     import scipy.signal
-
-#     # complex modulus
-#     sig = -np.abs(S21m)              # find_peaks looks at positive peaks
-
-#     i_peaks = scipy.signal.find_peaks(
-#         x          = sig,
-#         prominence = 2,           # in dB
-#         width      = [3,1000]     # in data indices
-#     )[0]                          # [0] is peaks, [1] is properties
-
-#     return i_peaks
-
-def _resonatorIndicesInS21(S21m, fs):
-    """Find the indices of resonator peaks in given S21 mags.
-    S21m: (1D array of floats) S21 complex modulus floats.
-    fs:   (float) Sampling frequency.
+    S21m: (array of floats) 1D array of S21 complex modulus.
+    bw:   (int) Width of the stitch bins.
+    sw:   (int) Width of slice (at ends) of each stitch bin to take median.
     """
-
+    
     import numpy as np
-    import scipy.signal
+    
+    a = S21m.reshape(-1, bw)               # reshape into bins
+    
+    meds_i = np.median(a[:,:sw], axis=1)   # medians on left
+    meds_f = np.median(a[:,-sw:], axis=-1) # medians on right
+    
+    f = meds_i[1:] - meds_f[:-1]           # bin power misalignment
+    f = np.pad(f, (1, 0))                  # 1st bin -> 0 misalignment
+    f = np.cumsum(f)                       # misalignments are cumulative
+    f = f.reshape((a.shape[0],1))          # reshape for matrix addition
+    a_n = a - f                            # misalignment correction (stitch)
+    
+    return a_n.flatten()                   # reshape to 1D and return
 
-    # calculate std of just noise
-    sos = scipy.signal.iirfilter(
-        N=2, fs=fs,
-        Wn=[50, fs//2], # >50 eliminates all but noise
-        btype="bandpass", ftype="butter", output="sos")
-    S21_filt = scipy.signal.sosfiltfilt(sos, S21m)
-    std = np.std(S21_filt)
 
-    peaks, props = scipy.signal.find_peaks(
-        x             = -S21m, 
-        prominence    = 10*std, 
-        width         = (5, 100)) 
-    # width min 5 eliminates small scale noise
-    # width max 499 elminates the anomolous dropout areas
-    # width max 100 restricts to appropriate scale of resonators
-
+def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, testing=False):
+    """Find the indices of resonator peaks in given S21 signal.
+    
+    f:         (1D array of floats) Frequency bins of signal.
+    Z:         (1D array of floats) S21 complex values.
+    stitch_bw: (int) Width of the stitch bins.
+    stitch_sw: (int) Width of slice (at ends) of each stitch bin to take median.
+    f_hi:      (float) Highpass filter cutoff frequency (data units).
+    f_lo:      (float) lowpass filter cutoff frequency (data units).
+    prom_dB:   (float) Peak prominence cutoff, in dB.
+    testing:   (bool) Also return intermediate products.
+    
+    Return:  (1D array of integers) Indices of peaks.
+    """
+    
+    import numpy as np
+    from scipy.signal import iirfilter, sosfiltfilt, find_peaks
+    
+    fs  = abs(f[1] - f[0])                             # sampling frequency
+    m   = np.abs(Z)                                    # S21 mags
+    m   = _stitchS21m(m, bw=stitch_bw, sw=stitch_sw)   # stitch mags
+    
+    filt_bp = iirfilter(2, (f_lo, f_hi), fs=fs, btype='bandpass', output='sos')
+    m_f   = sosfiltfilt(filt_bp, m)                    # bandpass filtered
+        
+    m_f_dB = 20.*np.log10(m_f + abs(np.min(m_f)) + 1)     # in dB
+    peaks, props = find_peaks(x=-m_f_dB, prominence=prom_dB, width=(5, 100)) 
+    
+    if testing: return peaks, (fs, m, m_f, m_f_dB, prom_dB, props)
     return peaks
 
 
@@ -471,28 +479,6 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     A_res = (1 + a)*amps
 
     return (freqs, A_res)
-
-
-def _stitchS21m(S21m, bw=500, sw=500):
-    """
-    Shift S21 mags so the bin ends align.
-
-    S21m: (array of floats) 1D array of S21 complex modulus.
-    bw:   (int) Width of the stitch bins.
-    sw:   (int) Width of slice (at ends) of each stitch bin to take median.
-    """
-    
-    import numpy as np
-
-    i1 = 0 # index of 1st bin start
-    while(i1 < len(S21m)-bw):
-        i2 = i1 + bw # index of 1st bin end / 2nd bin start
-        i3 = i2 + bw # index of 2nd bin end
-        med1 = np.median(S21m[i1:i2][-sw:])
-        med2 = np.median(S21m[i2:i3][:sw])
-        S21m[i2:i3] += med1 - med2 # shift next stitch bin to align to this one
-        i1 = i2                    # move to next stitch bin
-    return S21m
 
 
 
@@ -577,19 +563,13 @@ def findResonators():
     import numpy as np
 
     # load S21 complex mags (Z) and frequencies (f) from file
-    # f, Z = np.load(f'{cfg.drone_dir}/s21.npy')
     f, Z = io.load(io.file.s21_vna)
-    fs   = np.abs(np.diff(f)[0])   # sampling frequency
-    S21m = np.abs(Z)
 
-    # stitch so bins align
-    # S21m = _stitchS21m(np.abs(Z), bw=500, sw=500)
-
-    # convert to dB and shift to all positive
-    # S21m_dB = 20.*np.log10(S21m + 1.1*np.abs(np.min(S21m)))
-
-    # i_peaks = _resonatorIndicesInS21dB(S21m_dB)
-    i_peaks = _resonatorIndicesInS21(S21m, fs)
+    i_peaks = _resonatorIndicesInS21(
+        f, Z, 
+        stitch_bw=500, stitch_sw=100, 
+        f_hi=50, f_lo=1, prom_dB=1, 
+        testing=False)
     f_res = f[i_peaks]
 
     io.save(io.file.f_res_vna, f_res)
