@@ -513,8 +513,9 @@ def writeTargComb(write_cal_tones=True):
     f_center   = io.load(io.file.f_center_vna)
     f_cal_tones = io.load(io.file.f_cal_tones) # what if doesnt exist?
     chan = cfg.drid # drone (chan) id is from config
+    freqs = targ_freqs.real
     freqs = np.append(freqs, f_cal_tones)
-    freqs = targ_freqs.real - f_center
+    freqs = freqs - f_center
     freq_actual = _writeComb(chan, freqs)
     # io.save(io.file._f_res_targ, freq_actual)
 
