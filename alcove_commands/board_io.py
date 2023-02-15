@@ -96,4 +96,4 @@ class file:
                 'file_type'     :'npy', 
                 'dname'         :cfg.drone_dir+'/cal_tones',
                 'use_timestamp' :True}
-    freqs_vna = _freqs_vna()
+    f_cal_tones = _f_cal_tones()
