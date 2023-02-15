@@ -51,7 +51,8 @@ def _com():
         46:multi_chan.findResonators,
         47:multi_chan.targetSweep,
         48:multi_chan.fullLoop,
-        49:multi_chan.loChop
+        49:multi_chan.loChop,
+        50:multi_chan.findCalTones
     }
 
 

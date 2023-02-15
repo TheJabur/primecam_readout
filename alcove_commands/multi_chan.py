@@ -505,13 +505,18 @@ def writeVnaComb():
     io.save(io.file.freqs_vna, freq_actual)
 
 
-def writeTargComb():
+def writeTargComb(write_cal_tones=True):
+    
+    import numpy as np
     
     targ_freqs = io.load(io.file.f_res_vna)
     f_center   = io.load(io.file.f_center_vna)
+    f_cal_tones = io.load(io.file.f_cal_tones) # what if doesnt exist?
     chan = cfg.drid # drone (chan) id is from config
+    freqs = np.append(freqs, f_cal_tones)
     freqs = targ_freqs.real - f_center
     freq_actual = _writeComb(chan, freqs)
+    # io.save(io.file._f_res_targ, freq_actual)
 
 
 def getSnapData(mux_sel):
@@ -576,6 +581,57 @@ def findResonators():
 
     return f_res
 
+
+def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
+    """Determine the indices of calibration tones.
+    
+    f_hi:      (float) Highpass filter cutoff frequency (data units).
+    f_lo:      (float) lowpass filter cutoff frequency (data units).
+    tol:       (float) Reject tones tol*std_noise from continuum.
+    max_tones: (int) Maximum number of tones to return.
+    """
+    
+    import numpy as np
+    from scipy.signal import iirfilter, sosfiltfilt
+
+    ## load data from file
+    f, Z = io.load(io.file.s21_vna)
+    freqs = io.load(io.file.f_res_vna).real
+    
+    fs  = abs(f[1] - f[0])                        ## sampling frequency
+    freqs_i = [np.abs(f - v).argmin() for v in freqs] ## indices of freqs
+    freqs_i = np.append(np.insert(freqs_i, 0, 0), len(f)) ## add end gaps
+    
+    ## isolate continuum w/ lowpass filter
+    filt_lo = iirfilter(2, f_lo, fs=fs, btype='lowpass', output='sos')
+    m_lo   = sosfiltfilt(filt_lo, m)
+
+    ## isolate noise w/ highpass filter
+    filt_hi = iirfilter(2, f_hi, fs=fs, btype='highpass', output='sos')
+    m_hi   = sosfiltfilt(filt_hi, m)
+    std_hi = np.std(m_hi)                         ## calculate std of noise
+
+    ## find gaps between resonators
+    gaps = np.diff(freqs_i)
+    gaps_i = (freqs_i[:-1] + freqs_i[1:]) // 2    ## gap center indices
+    
+    ## sort gaps (descending; w/ indices)
+    sort_i = np.argsort(gaps)[::-1]
+    # gaps_s = gaps[sort_i]
+    gaps_s_i = gaps_i[sort_i]
+   
+    ## filter any too far from continuum (m_lo)
+    cal_tones_i = gaps_s_i[(abs(m[gaps_s_i] - m_lo[gaps_s_i])) < tol*std_hi]
+    
+    ## limit to max_tones
+    cal_tones_i = cal_tones_i[:min(max_tones, len(cal_tones_i))] 
+
+    f_cal_tones = f[cal_tones_i]
+
+    io.save(io.file.f_cal_tones, f_cal_tones)
+    
+    return f_cal_tones
+    
 
 def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
     """
