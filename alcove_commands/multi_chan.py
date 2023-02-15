@@ -596,6 +596,7 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
 
     ## load data from file
     f, Z = io.load(io.file.s21_vna)
+    m = np.abs(Z)
     freqs = io.load(io.file.f_res_vna).real
     
     fs  = abs(f[1] - f[0])                        ## sampling frequency
