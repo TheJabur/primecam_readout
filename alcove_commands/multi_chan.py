@@ -408,7 +408,7 @@ def _stitchS21m(S21m, bw=500, sw=100):
     meds_f = np.median(a[:,-sw:], axis=-1) # medians on right
     
     f = meds_i[1:] - meds_f[:-1]           # bin power misalignment
-    f = np.pad(f, (1, 0))                  # 1st bin -> 0 misalignment
+    f = np.pad(f, (1, 0), mode='constant') # 1st bin -> 0 misalignment
     f = np.cumsum(f)                       # misalignments are cumulative
     f = f.reshape((a.shape[0],1))          # reshape for matrix addition
     a_n = a - f                            # misalignment correction (stitch)
