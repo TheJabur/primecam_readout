@@ -508,7 +508,7 @@ def writeVnaComb():
 def writeTargComb(write_cal_tones=True):
     
     import numpy as np
-    
+
     targ_freqs = io.load(io.file.f_res_vna)
     f_center   = io.load(io.file.f_center_vna)
     f_cal_tones = io.load(io.file.f_cal_tones) # what if doesnt exist?
@@ -624,7 +624,7 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
     cal_tones_i = gaps_s_i[(abs(m[gaps_s_i] - m_lo[gaps_s_i])) < tol*std_hi]
     
     ## limit to max_tones
-    cal_tones_i = cal_tones_i[:min(max_tones, len(cal_tones_i))] 
+    cal_tones_i = cal_tones_i[:max_tones] 
 
     f_cal_tones = f[cal_tones_i]
 
