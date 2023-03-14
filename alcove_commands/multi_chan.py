@@ -76,7 +76,7 @@ def _setNCLO2(chan, lofreq):
         return digi_val, actual_freq
 
     digi_val, actual_freq = nclo_num(lofreq)
-    mix.write(offset, nclo_num(lofreqMHz)) # frequency
+    mix.write(offset, digi_val) # frequency
     return
 
 def _generateWaveDdr4(freq_list):  
