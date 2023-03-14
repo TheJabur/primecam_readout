@@ -402,7 +402,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
         # after setting nclo sleep to let old data pass
         # read accumulator snap block a few times to assure
         # new data
-        I, Q = _getCleanAccum(It, Qt)
+        for i in range(4):
+            I, Q += _getCleanAccum(It, Qt)/4
         Z = I + 1j*Q     # convert I and Q to complex
         return Z[0:len(freqs)] # only return relevant slice
     
