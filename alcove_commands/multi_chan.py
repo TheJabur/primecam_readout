@@ -10,7 +10,7 @@ try:
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
-    firmware = Overlay("tetra_v3p4.bit",ignore_version=True,download=False)
+    firmware = Overlay("tetra_v5p4.bit",ignore_version=True,download=False)
 
 except Exception as e: 
     firmware = None
@@ -51,6 +51,33 @@ def _setNCLO(chan, lofreq):
         return "Does not compute" # great error message
     return
 
+def _setNCLO2(chan, lofreq):
+    import numpy as np
+    mix = firmware.mix_freq_set_0
+    if chan == 1:
+        offset = 0
+    elif chan == 2:
+        offset = 4
+    elif chan == 3:
+        offset = 8
+    elif chan == 4:
+        offset = 12
+    else:
+        return "Does not compute"
+    # set fabric nclo frequency 
+    # only for small frequency sweeps
+    # 0x00 -  frequency[21 downto 0] 
+    def nclo_num(freqMHz):
+        # freq in MHz
+        # returns 32 bit signed integer for setting nclo2
+        MHz_per_int = 512.0/2**22 #MHz per_step !check with spec-analyzer
+        digi_val = int(np.round(freqMHz/MHz_per_int))
+        actual_freq = digi_val*MHz_per_int
+        return digi_val, actual_freq
+
+    digi_val, actual_freq = nclo_num(lofreq)
+    mix.write(offset, nclo_num(lofreqMHz)) # frequency
+    return
 
 def _generateWaveDdr4(freq_list):  
 
@@ -329,8 +356,8 @@ def _getCleanAccum(Itemplate, Qtemplate):
             j = Ntrys
         else:
             I, Q = getSnapData(3)
-            if j==(Ntrys-1):
-                print("Warning! could not clean data")
+            #if j==(Ntrys-1):
+            #    print("Warning! could not clean data")
             j+= 1    
     return I, Q
 
@@ -367,12 +394,11 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
         bw = chan_bandwidth    # MHz
     else:                      # LO bandwidth is tone difference
         bw = np.diff(freqs)[0]/1e6 # MHz
-    # flos = np.arange(f_center-bw/2., f_center+bw/2., bw/N_steps)
     flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
     _, _ = getSnapData(3) # discard previously collected accum samples
     It, Qt = getSnapData(3) # grab new accumulator samples for template
     def _Z(lofreq, Naccums=5):
-        _setNCLO(chan, lofreq)       # update mixer LO frequency
+        _setNCLO2(chan, lofreq)       # update mixer LO frequency
         # after setting nclo sleep to let old data pass
         # read accumulator snap block a few times to assure
         # new data
@@ -382,12 +408,12 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     
     # loop over _Z for each LO freq
     # and flatten
-    Z = (np.array([_Z(lofreq) for lofreq in flos]).T).flatten()
+    Z = (np.array([_Z(lofreq-f_center) for lofreq in flos]).T).flatten()
     
     # build and flatten all bin frequencies
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
         
-    _setNCLO(chan, f_center)       # update mixer LO frequency
+    _setNCLO2(chan, 0)       # update mixer LO frequency
 
     return (f, Z)
 
