@@ -16,8 +16,6 @@ except Exception as e:
     firmware = None
     print(f"Error loading firmware: {e}")
 
-
-
 ######################
 # Internal Functions #
 ######################
