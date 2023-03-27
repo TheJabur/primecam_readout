@@ -16,6 +16,8 @@ except Exception as e:
     firmware = None
     print(f"Error loading firmware: {e}")
 
+
+
 ######################
 # Internal Functions #
 ######################
@@ -346,7 +348,7 @@ def _getCleanAccum(Itemplate, Qtemplate):
     j = 0
     I, Q = getSnapData(3)
     Pt = Itemplate**2 + Qtemplate**2
-    Ntrys = 5
+    Ntrys = 3
     while (j < Ntrys):
         Pdiff = Pt - (I**2 + Q**2)
         ratio = np.var(Pdiff)/np.var(Pt)
@@ -402,8 +404,11 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
         # new data
         Is, Qs = 0, 0
         accums = 4
+        I, Q = getSnapData(3) #
         for i in range(accums):
-            I, Q = _getCleanAccum(It, Qt)
+            #I, Q = _getCleanAccum(It, Qt)
+            sleep(0.004)
+            I, Q = getSnapData(3) #
             Is += I/accums
             Qs += Q/accums
         Z = Is + 1j*Qs     # convert I and Q to complex
