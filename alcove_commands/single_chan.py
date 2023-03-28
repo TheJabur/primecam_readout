@@ -637,9 +637,6 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     io.save(io.file.f_center_targ, f_center*1e6)
 
     return np.array([freqs, amps])
-<<<<<<< HEAD
-=======
-
 
 def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
     '''
@@ -722,4 +719,3 @@ def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
         fullLoop()
     else:
         print(f"{n} detectors over tolerance (<dtol). Done.")
->>>>>>> develop
