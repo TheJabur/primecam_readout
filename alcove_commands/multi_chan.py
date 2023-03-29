@@ -474,9 +474,11 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     
     filt_bp = iirfilter(2, (f_lo, f_hi), fs=fs, btype='bandpass', output='sos')
     m_f   = sosfiltfilt(filt_bp, m)                    # bandpass filtered
-        
+    a = (2.75-1.3)/(10.*np.log10(36e12)-10.*np.log10(9e12)) 
+    b = 2.75 - a*10.*np.log10(36e12)
+    prom_lin = 10.**((prom_dB-b)/a/20.)  
     m_f_dB = 20.*np.log10(m_f + abs(np.min(m_f)) + 1)     # in dB
-    peaks, props = find_peaks(x=-m_f_dB, prominence=prom_dB, width=(5, 100)) 
+    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, width=(5, 100)) 
     
     if testing: return peaks, (fs, m, m_f, m_f_dB, prom_dB, props)
     return peaks
@@ -571,6 +573,7 @@ def setNCLO(f_lo):
     chan = cfg.drid
     f_lo = int(f_lo)
     _setNCLO(chan, f_lo)
+    io.save(io.file.f_center_vna, f_lo*1e6)
 
 def vnaSweep(f_center=600):
     """
