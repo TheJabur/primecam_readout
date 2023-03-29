@@ -588,6 +588,7 @@ def vnaSweep(f_center=600):
     chan = cfg.drid
     f_center = int(f_center)
     freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
+    _setNCLO(chan, f_center)
 
     writeVnaComb()
     s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
