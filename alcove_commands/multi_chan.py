@@ -470,13 +470,11 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     
     fs  = abs(f[1] - f[0])                             # sampling frequency
     m   = np.abs(Z)                                    # S21 mags
-    m   = _stitchS21m(m, bw=stitch_bw, sw=stitch_sw)   # stitch mags
+    m_s   = _stitchS21m(m, bw=stitch_bw, sw=stitch_sw)   # stitch mags
     
     filt_bp = iirfilter(2, (f_lo, f_hi), fs=fs, btype='bandpass', output='sos')
-    m_f   = sosfiltfilt(filt_bp, m)                    # bandpass filtered
-    a = (2.75-1.3)/(10.*np.log10(36e12)-10.*np.log10(9e12)) 
-    b = 2.75 - a*10.*np.log10(36e12)
-    prom_lin = 10.**((prom_dB-b)/a/20.)  
+    m_f   = sosfiltfilt(filt_bp, m_s)                    # bandpass filtered
+    prom_lin = np.amax(m)*(1-10**(-prom_dB/20)) 
     m_f_dB = 20.*np.log10(m_f + abs(np.min(m_f)) + 1)     # in dB
     peaks, props = find_peaks(x=-m_f, prominence=prom_lin, width=(5, 100)) 
     
@@ -673,7 +671,7 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
     return f_cal_tones
     
 
-def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
+def targetSweep(f_res=None, f_center=650, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
@@ -703,11 +701,12 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
     writeTargComb()
 
     # load S21 complex mags (Z) and frequencies (f) from file
-    f, Z  = _sweep(chan, f_center, f_res, N_steps, chan_bandwidth)
-    
-    freqs, A_res = _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
+    S21 = np.array(_sweep(chan, f_center, f_res, N_steps, chan_bandwidth)) 
+  
+    freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
 
     if save:
+        io.save(io.file.S21_targ, S21)
         io.save(io.file.f_res_targ, freqs)
         io.save(io.file.a_res_targ, amps)
         io.save(io.file.f_center_targ, f_center*1e6)
