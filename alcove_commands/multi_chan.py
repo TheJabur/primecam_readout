@@ -706,7 +706,7 @@ def targetSweep(f_res=None, f_center=650, N_steps=500, chan_bandwidth=0.2, amps=
     freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
 
     if save:
-        io.save(io.file.S21_targ, S21)
+        io.save(io.file.s21_targ, S21)
         io.save(io.file.f_res_targ, freqs)
         io.save(io.file.a_res_targ, amps)
         io.save(io.file.f_center_targ, f_center*1e6)
