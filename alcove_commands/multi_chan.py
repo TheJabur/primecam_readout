@@ -476,7 +476,7 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     m_f   = sosfiltfilt(filt_bp, m_s)                    # bandpass filtered
     prom_lin = np.amax(m)*(1-10**(-prom_dB/20)) 
     m_f_dB = 20.*np.log10(m_f + abs(np.min(m_f)) + 1)     # in dB
-    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, width=(5, 100)) 
+    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, distance=30, width=(5, 100)) 
     
     if testing: return peaks, (fs, m, m_f, m_f_dB, prom_dB, props)
     return peaks
@@ -698,10 +698,10 @@ def targetSweep(f_res=None, f_center=650, N_steps=500, chan_bandwidth=0.2, amps=
     if amps is None:
         amps = np.ones_like(f_res)
     
-    writeTargComb()
+    # writeTargComb()
 
     # load S21 complex mags (Z) and frequencies (f) from file
-    S21 = np.array(_sweep(chan, f_center, f_res, N_steps, chan_bandwidth)) 
+    S21 = np.array(_sweep(chan, f_center, f_res-f_center, N_steps, chan_bandwidth)) 
   
     freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
 
