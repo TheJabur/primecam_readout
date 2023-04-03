@@ -585,8 +585,9 @@ def vnaSweep(f_center=600):
 
     chan = cfg.drid
     f_center = int(f_center)
-    freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
     _setNCLO(chan, f_center)
+    
+    freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
 
     writeVnaComb()
     s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
@@ -690,7 +691,7 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
 
     if f_res is None:
         try:
-            f_res = io.load(io.file.f_res_vna)
+            f_res = io.load(io.file.f_res_vna) # Hz
             # f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
         except:
             raise("Required file missing: f_res_vna. Perform a vna sweep first.")
@@ -706,8 +707,8 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
     else:
         f_center = f_center*1e6 # convert param MHz to Hz
     
-    # load S21 complex mags (Z) and frequencies (f) from file
-    S21 = np.array(_sweep(chan, f_center, f_res-f_center, N_steps, chan_bandwidth)) 
+    # perform target sweep after loading f_center
+    S21 = np.array(_sweep(chan, f_center/1e6, f_res-f_center, N_steps, chan_bandwidth)) 
   
     freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
 
