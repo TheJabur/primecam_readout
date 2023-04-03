@@ -671,12 +671,12 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
     return f_cal_tones
     
 
-def targetSweep(f_res=None, f_center=650, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
+def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
     f_res:           (1D array of floats) Current comb tone frequencies [Hz].
-    f_center:        (float) Center LO frequency for sweep [MHz].
+    f_center:        center frequency in [MHz].
     N_steps:         (int) Number of LO frequencies to divide each channel into.
     chan_bandwidth:  (float) Channel bandwidth [MHz].
     amps:            (1D array of floats) Current normalized tone amplitudes.
@@ -697,9 +697,15 @@ def targetSweep(f_res=None, f_center=650, N_steps=500, chan_bandwidth=0.2, amps=
 
     if amps is None:
         amps = np.ones_like(f_res)
+    if f_center is None:
+        try:
+            # load center LO frequency - stored in Hz
+            f_center = io.load(io.file.f_center_vna) # Hz
+        except:
+            raise("Required file missing: f_center_vna. Write NCLO frequency first.")
+    else:
+        f_center = f_center*1e6 # convert param MHz to Hz
     
-    # writeTargComb()
-
     # load S21 complex mags (Z) and frequencies (f) from file
     S21 = np.array(_sweep(chan, f_center, f_res-f_center, N_steps, chan_bandwidth)) 
   
@@ -709,7 +715,7 @@ def targetSweep(f_res=None, f_center=650, N_steps=500, chan_bandwidth=0.2, amps=
         io.save(io.file.s21_targ, S21)
         io.save(io.file.f_res_targ, freqs)
         io.save(io.file.a_res_targ, amps)
-        io.save(io.file.f_center_targ, f_center*1e6)
+        io.save(io.file.f_center_targ, f_center)
 
     # return an array here
     return (freqs, A_res)
