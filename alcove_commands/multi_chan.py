@@ -83,6 +83,9 @@ def _generateWaveDdr4(freq_list):
 
     import numpy as np
 
+    # freq_list may be complex but imag parts should all be zero
+    freq_list = np.real(freq_list)
+
     fs = 512e6 
     lut_len = 2**20
     fft_len = 1024
