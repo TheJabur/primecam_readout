@@ -367,6 +367,10 @@ def _getCleanAccum(Itemplate, Qtemplate):
 
 def _writeComb(chan, freqs):
     
+    if not freqs:
+        # what do we want to do if freqs empty?
+        raise("freqs must not be empty.")
+
     wave, dphi, freq_actual = _generateWaveDdr4(freqs)
     wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
     _loadDdr4(chan, wave_real, wave_imag, dphi)
@@ -546,12 +550,21 @@ def writeTargComb(write_cal_tones=True):
     
     import numpy as np
 
-    targ_freqs = io.load(io.file.f_res_vna)
-    f_center   = io.load(io.file.f_center_vna)
-    f_cal_tones = io.load(io.file.f_cal_tones) # what if doesnt exist?
+    try:
+        targ_freqs = io.load(io.file.f_res_vna)
+        f_center   = io.load(io.file.f_center_vna)
+    except:
+        raise("Required file[s] missing: f_res_vna and/or f_center_vna. Perform a vna sweep first.")
+
     chan = cfg.drid # drone (chan) id is from config
-    freqs = targ_freqs.real
-    freqs = np.append(freqs, f_cal_tones)
+    freqs = targ_freqs.real # complex freqs have 0j
+
+    if write_cal_tones:
+        try: # calibration tones may not exist
+            f_cal_tones = io.load(io.file.f_cal_tones)
+            freqs = np.append(freqs, f_cal_tones)
+        except: pass
+
     freqs = freqs - f_center
     freq_actual = _writeComb(chan, freqs)
     # io.save(io.file._f_res_targ, freq_actual)
