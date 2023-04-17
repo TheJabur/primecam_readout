@@ -124,6 +124,30 @@ def saveToTmp(data):
             tf.write(pickle.dumps(data))
 
 
+def saveWrappedToTmp(wrappedData):
+
+    import numpy as np
+    from pathlib import Path
+    import pickle
+
+    d = wrappedData
+
+    data = d['data']
+    fname = f"{d['filename']}_{d['bid']}_{d['drid']}_{d['timestamp']}.{d['ext']}"
+    dname = 'tmp'
+    pathname = Path(dname, fname)
+
+    # this will make the tmp dir exist if possible
+    Path(dname).mkdir(parents=True, exist_ok=True)
+
+    if isinstance(data, np.ndarray):
+        np.save(pathname, data)  # save arrays w/ numpy
+
+    else: # save everything else w/ pickle
+        with open(pathname, 'wb') as handle:
+            pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    
+
 def returnWrapper(file, data):
     """Create a dictionary wrapper for data to return to queen.
 
@@ -132,14 +156,13 @@ def returnWrapper(file, data):
     """
 
     d = {
+        "wrapped":  True,
         "bid":      cfg.bid,
         "drid":     cfg.drid,
-        "filename": file['fname']+'.'+file['file_type'],
+        "filename": file['fname'],
+        "ext":      file['file_type'],
+        "timestamp":_timestamp(),
         "data":     data}
-    
-    use_timestamp  = file.get('use_timestamp', False)
-    if use_timestamp:
-        d["timestamp"] = _timestamp()
 
     return d
 

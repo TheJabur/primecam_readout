@@ -277,13 +277,15 @@ def _connectRedis():
 def _processCommandReturn(dat):
     '''Process the return data from a command.'''
 
-    dat = pickle.loads(dat)             # assuming msg is pickled
-
-    # strings get printed, all else saved
-    if isinstance(dat, str):
+    d = pickle.loads(dat)             # assuming msg is pickled
+    
+    if isinstance(dat, str):          # print if string
         print(dat) 
-    else:
-        io.saveToTmp(dat)
+
+    try:
+        io.saveWrappedToTmp(d)        # save a wrapped return
+    except:
+        io.saveToTmp(dat)             # or save as tmp
 
 
 def _notificationHandler(message):
