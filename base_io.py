@@ -144,6 +144,7 @@ def saveWrappedToTmp(wrappedData):
         np.save(pathname, data)  # save arrays w/ numpy
 
     else: # save everything else w/ pickle
+        # should overwrite if file exists
         with open(pathname, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     

@@ -198,15 +198,19 @@ def listenMode():
     """
     Listen for Redis messages in thread.
     """
-    # the only way to stop listening is to kill process
+    # CTRL-C to exit listening mode
 
     r,p = _connectRedis()
 
     def handleMessage(message):
         '''actions to take on receiving message'''
         if message['type'] == 'pmessage':
-            print(message['data'].decode('utf-8')) # log/print message
-            _notificationHandler(message)  # send important notifications
+            # print(message['data'].decode('utf-8')) # log/print message
+            # _notificationHandler(message)  # send important notifications
+            try:
+                _processCommandReturn(message['data'])
+            except Exception as e: 
+                return _fail(e, f'Failed to process a response.')
 
     p.psubscribe(**{'board_rets_*':handleMessage}) # all board return chans
     thread = p.run_in_thread(sleep_time=2) # move listening to thread
@@ -216,9 +220,8 @@ def listenMode():
          # more research is recommended
     print('The Queen is listening...') 
 
-    # todo
-     # when do we stop listening?
-     # thread.stop()
+    # This thread isn't shut down - could lead to problems
+    # thread.stop()
 
 
 def getKeyValue(key):
