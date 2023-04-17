@@ -5,6 +5,7 @@
 try:
     import _cfg_board as cfg
     import alcove_commands.board_io as io
+    import queen_commands.control_io as cio
 
     import xrfdc
     from pynq import Overlay
@@ -536,6 +537,7 @@ def writeTestTone():
     freqs = np.array(np.linspace(50e6, 255.00e6, 1))
     freq_actual = _writeComb(chan, freqs)
 
+
 def writeVnaComb():
 
     import numpy as np
@@ -574,6 +576,7 @@ def getSnapData(mux_sel):
     chan = cfg.drid
     return _getSnapData(chan, int(mux_sel))
 
+
 def setNCLO(f_lo):
     """
     setNCLO: set the numerically controlled local oscillator
@@ -588,6 +591,7 @@ def setNCLO(f_lo):
     f_lo = int(f_lo)
     _setNCLO(chan, f_lo)
     io.save(io.file.f_center_vna, f_lo*1e6)
+
 
 def vnaSweep(f_center=600):
     """
@@ -611,7 +615,8 @@ def vnaSweep(f_center=600):
     io.save(io.file.s21_vna, s21)
     io.save(io.file.f_center_vna, f_center*1e6)
 
-    return (s21)
+    # return (s21)
+    return io.returnWrapper(io.file.s21_vna, s21)
 
 
 def findResonators():

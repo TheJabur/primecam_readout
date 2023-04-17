@@ -10,6 +10,17 @@
 
 
 
+#####################
+# Global attributes #
+#####################
+
+try:
+    import _cfg_board as cfg
+except Exception as e: 
+    print(f"board_io.py global attribute issue.")
+
+
+
 ######################
 # External Functions #
 ######################
@@ -111,6 +122,26 @@ def saveToTmp(data):
     else:                               # write other types to tmp file
         with tempfile.NamedTemporaryFile(dir=dname, delete=False) as tf:
             tf.write(pickle.dumps(data))
+
+
+def returnWrapper(file, data):
+    """Create a dictionary wrapper for data to return to queen.
+
+    file:     (dict) File attributes. See file class.
+    data:     The data to be saved in the file.
+    """
+
+    d = {
+        "bid":      cfg.bid,
+        "drid":     cfg.drid,
+        "filename": file['fname']+'.'+file['file_type'],
+        "data":     data}
+    
+    use_timestamp  = file.get('use_timestamp', False)
+    if use_timestamp:
+        d["timestamp"] = _timestamp()
+
+    return d
 
 
 
