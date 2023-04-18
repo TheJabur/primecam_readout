@@ -156,6 +156,9 @@ def returnWrapper(file, data):
     data:     The data to be saved in the file.
     """
 
+    # we require data instead of doing load(file)
+    # because return may be a different version of file
+
     d = {
         "wrapped":  True,
         "bid":      cfg.bid,
