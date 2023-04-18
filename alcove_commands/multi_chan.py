@@ -616,6 +616,7 @@ def vnaSweep(f_center=600):
     io.save(io.file.f_center_vna, f_center*1e6)
 
     # return (s21)
+    # do we want to return freqs too?
     return io.returnWrapper(io.file.s21_vna, s21)
 
 
@@ -638,7 +639,8 @@ def findResonators():
 
     io.save(io.file.f_res_vna, f_res)
 
-    return f_res
+    # return f_res
+    return io.returnWrapper(io.file.f_res_vna, f_res)
 
 
 def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
@@ -690,7 +692,8 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
 
     io.save(io.file.f_cal_tones, f_cal_tones)
     
-    return f_cal_tones
+    # return f_cal_tones
+    return io.returnWrapper(io.file.f_cal_tones, f_cal_tones)
     
 
 def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
