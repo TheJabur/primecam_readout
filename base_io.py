@@ -125,29 +125,41 @@ def saveToTmp(data):
 
 
 def saveWrappedToTmp(wrappedData):
+    """Save returnWrapper output to file in tmp.
+    Assumes wrappedData is returnWrapper return or a list of them.
+    """
 
     import numpy as np
     from pathlib import Path
     import pickle
 
-    d = wrappedData
+    # d = wrappedData
+    def processWrappedData(d):
 
-    data = d['data']
-    fname = f"{d['filename']}_{d['bid']}_{d['drid']}_{d['timestamp']}.{d['ext']}"
-    dname = 'tmp'
-    pathname = Path(dname, fname)
+        data = d['data']
+        fname = f"{d['filename']}_{d['bid']}_{d['drid']}_{d['timestamp']}.{d['ext']}"
+        dname = 'tmp'
+        pathname = Path(dname, fname)
 
-    # this will make the tmp dir exist if possible
-    Path(dname).mkdir(parents=True, exist_ok=True)
+        # this will make the tmp dir exist if possible
+        Path(dname).mkdir(parents=True, exist_ok=True)
 
-    if isinstance(data, np.ndarray):
-        np.save(pathname, data)  # save arrays w/ numpy
+        if isinstance(data, np.ndarray):
+            np.save(pathname, data)  # save arrays w/ numpy
 
-    else: # save everything else w/ pickle
-        # should overwrite if file exists
-        with open(pathname, 'wb') as handle:
-            pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
+        else: # save everything else w/ pickle
+            # should overwrite if file exists
+            with open(pathname, 'wb') as handle:
+                pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # could be a list of wrapped returns
+    if isinstance(wrappedData, list):
+        for d in wrappedData:
+            processWrappedData(d)
+
+    else:
+        processWrappedData(wrappedData)
+
 
 def returnWrapper(file, data):
     """Create a dictionary wrapper for data to return to queen.
@@ -169,6 +181,16 @@ def returnWrapper(file, data):
         "data":     data}
 
     return d
+
+
+def returnWrapperMultiple(file_list, data_list):
+    """Similar to returnWrapper but accepts lists of inputs.
+    Returns a list of returnWrapper outputs.
+    """
+
+    return [
+        returnWrapper(file, data)
+        for file, data in zip(file_list, data_list)]
 
 
 
