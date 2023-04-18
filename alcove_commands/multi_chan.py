@@ -739,11 +739,13 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
     if save:
         io.save(io.file.s21_targ, S21)
         io.save(io.file.f_res_targ, freqs)
-        io.save(io.file.a_res_targ, amps)
+        io.save(io.file.a_res_targ, A_res)
         io.save(io.file.f_center_targ, f_center)
 
-    # return an array here
-    return (freqs, A_res)
+    # return (freqs, A_res)
+    return io.returnWrapperMultiple(
+        [io.file.f_res_targ, io.file.a_res_targ], 
+        [freqs, A_res])
 
 
 def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
@@ -797,7 +799,10 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     io.save(io.file.a_res_targ, amps)
     io.save(io.file.f_center_targ, f_center*1e6)
 
-    return np.array([freqs, amps])
+    # return np.array([freqs, amps])    
+    return io.returnWrapperMultiple(
+        [io.file.f_res_targ, io.file.a_res_targ], 
+        [freqs, amps])
 
 
 def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
