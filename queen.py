@@ -207,12 +207,15 @@ def listenMode():
         if message['type'] == 'pmessage':
             # print(message['data'].decode('utf-8')) # log/print message
             # _notificationHandler(message)  # send important notifications
+            print(f"Message received on channel: {message['channel']}")
             try:
                 _processCommandReturn(message['data'])
             except Exception as e: 
                 return _fail(e, f'Failed to process a response.')
+            
+    # Message received: {'type': 'pmessage', 'pattern': b'rets_*', 'channel': b'rets_board_1.1_f9af519c-bea0-4093-81cf-8f8a423dc549', 'data': b'\x80 ...
 
-    p.psubscribe(**{'board_rets_*':handleMessage}) # all board return chans
+    p.psubscribe(**{'rets_*':handleMessage}) # all board return chans
     thread = p.run_in_thread(sleep_time=2) # move listening to thread
         # sleep_time is a socket timeout
          # too low and it will bog down server
