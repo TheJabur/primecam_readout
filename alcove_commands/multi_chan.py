@@ -367,8 +367,10 @@ def _getCleanAccum(Itemplate, Qtemplate):
 
 
 def _writeComb(chan, freqs):
-    
-    if not freqs:
+   
+    import numpy as np
+
+    if np.size(freqs)<1:
         # what do we want to do if freqs empty?
         raise("freqs must not be empty.")
 
