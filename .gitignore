@@ -49,3 +49,8 @@ cython_debug/
 
 # temp dir
 tmp/
+
+
+# config files
+_cfg_board.py
+_cfg_queen.py
