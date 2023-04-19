@@ -732,6 +732,7 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
         f_center = f_center*1e6 # convert param MHz to Hz
     
     # perform target sweep after loading f_center
+    writeTargComb(write_cal_tones=True)
     S21 = np.array(_sweep(chan, f_center/1e6, f_res-f_center, N_steps, chan_bandwidth)) 
   
     freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
@@ -785,14 +786,18 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
             chan_bandwidth=chan_bandwidth, amps=amps, 
             plot_step=200, save=False)
     
+        # sweep again if res freqs changed by more than f_tol
+        # or if tone amp change is more than A_tol
         if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
             or np.any(np.abs(1 - amps_new/amps) > A_tol)):
             sweep = True
             
         freqs, amps = freqs_new, amps_new
 
+        # stop re-sweeping after loops_max sweeps
+        # even if not in tolerances
         if loop_num > loops_max:
-            sweep = False # override any sweep=True statements
+            sweep = False
         loop_num += 1
         
     io.save(io.file.f_res_targ, freqs)
@@ -829,19 +834,18 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
     
     for l in range(max_loops_full):
             
-        try: retry(vnaSweep, 
-                   "Perform VNA sweep", 
-                   f_center=600)
+        # vna sweep
+        try: retry(vnaSweep, "Perform VNA sweep", f_center=600)
         except: fullFail(l); continue
         
-        try: retry(findResonators, 
-                   "Finding resonators")
+        # find resonators
+        try: retry(findResonators, "Finding resonators")
         except: fullFail(l); continue
         
-        try: retry(targetSweepLoop, 
-                   "Perform target sweep loop", 
-                   chan_bandwidth=0.2, f_center=600, N_steps=500, 
-                   f_tol=0.1, A_tol=0.3, loops_max=20)
+        # target sweep
+        try: retry(targetSweepLoop, "Perform target sweep loop", 
+                  chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                  f_tol=0.1, A_tol=0.3, loops_max=20)
         except: fullFail(l); continue
         
         fullSuccess(l)
