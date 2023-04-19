@@ -46,13 +46,14 @@ def _com():
         41:multi_chan.writeTestTone,
         42:multi_chan.writeVnaComb,
         43:multi_chan.writeTargComb,
-        # 44:multi_chan.getSnapData,
+        44:multi_chan.getSnapData,
         45:multi_chan.vnaSweep,
         46:multi_chan.findResonators,
         47:multi_chan.targetSweep,
         48:multi_chan.fullLoop,
         49:multi_chan.loChop,
-        50:multi_chan.findCalTones
+        50:multi_chan.findCalTones,
+        51:multi_chan.updateTargComb
     }
 
 
