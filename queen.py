@@ -18,6 +18,7 @@ import numpy as np
 import logging
 import uuid
 import pickle
+from datetime import datetime
 # import tempfile
 
 import _cfg_queen as cfg
@@ -207,7 +208,7 @@ def listenMode():
         if message['type'] == 'pmessage':
             # print(message['data'].decode('utf-8')) # log/print message
             # _notificationHandler(message)  # send important notifications
-            print(f"Message received on channel: {message['channel']}")
+            print(f"{_timeMsg()} Message received on channel: {message['channel']}")
             try:
                 _processCommandReturn(message['data'])
             except Exception as e: 
@@ -302,6 +303,18 @@ def _notificationHandler(message):
      # look through given message[s?]
      # and look through configured notifications
      # and send emails as appropriate
+
+
+def _timeMsg():
+    """A clear and concise time string for print statements."""
+
+    fmt = "%H:%M:%S_%y%m%d"
+
+    time_now = datetime.now()
+    time_str = time_now.strftime(fmt)
+    # ms_str = f".{time_now.microsecond // 1000:03}"
+    
+    return time_str
 
 
 def listToArgsAndKwargs(l):
