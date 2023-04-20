@@ -550,15 +550,23 @@ def writeVnaComb():
     io.save(io.file.freqs_vna, freq_actual)
 
 
-def writeTargComb(write_cal_tones=True):
-    
+def writeTargComb(write_cal_tones=True, update=False):
+    """Write the target comb with the last vna sweep values.
+    write_cal_tones: (bool) Also try to write calibration tones.
+    update: (bool) Try to use the last target sweep values instead."""
+
     import numpy as np
 
-    try:
+    try: # load f_res and center from vna sweep
         targ_freqs = io.load(io.file.f_res_vna)
         f_center   = io.load(io.file.f_center_vna)
     except:
-        raise("Required file[s] missing: f_res_vna and/or f_center_vna. Perform a vna sweep first.")
+        raise("Error: Required file[s] missing.")
+    
+    if update: # override f_res from targ sweep if possible
+        try:
+            targ_freqs = io.load(io.file.f_res_targ)
+        except: pass # fail silently
 
     chan = cfg.drid # drone (chan) id is from config
     freqs = targ_freqs.real # complex freqs have 0j
@@ -572,29 +580,13 @@ def writeTargComb(write_cal_tones=True):
     freqs = freqs - f_center
     freq_actual = _writeComb(chan, freqs)
     # io.save(io.file._f_res_targ, freq_actual)
+
 
 def updateTargComb(write_cal_tones=True):
-    
-    import numpy as np
+    """Write the target comb with the last target sweep values."""
 
-    try:
-        targ_freqs = io.load(io.file.f_res_targ)
-        f_center   = io.load(io.file.f_center_vna)
-    except:
-        raise("Required file[s] missing: f_res_vna and/or f_center_vna. Perform a vna sweep first.")
+    return writeTargComb(write_cal_tones=write_cal_tones, update=True)
 
-    chan = cfg.drid # drone (chan) id is from config
-    freqs = targ_freqs.real # complex freqs have 0j
-
-    if write_cal_tones:
-        try: # calibration tones may not exist
-            f_cal_tones = io.load(io.file.f_cal_tones)
-            freqs = np.append(freqs, f_cal_tones)
-        except: pass
-
-    freqs = freqs - f_center
-    freq_actual = _writeComb(chan, freqs)
-    # io.save(io.file._f_res_targ, freq_actual)
 
 def getSnapData(mux_sel):
     chan = cfg.drid
