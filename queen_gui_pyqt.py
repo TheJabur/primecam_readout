@@ -47,10 +47,26 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
 
 
-        # Create the time stream figure
-        self.figure = plt.figure(figsize=(5, 3), dpi=100)
-        self.canvas = FigureCanvas(self.figure)
+        # Time stream figure
+        self.figure_timestream = plt.figure(figsize=(5, 3), dpi=100)
+        self.canvas = FigureCanvas(self.figure_timestream)
         layout.addWidget(self.canvas)
+
+        layout_timestreamui = QHBoxLayout()
+        layout.addLayout(layout_timestreamui)
+
+        self.textbox_timestream_id = QLineEdit()
+        self.textbox_timestream_id.setPlaceholderText("KID ID")
+        layout_timestreamui.addWidget(self.textbox_timestream_id)
+
+        self.button_timestream = QPushButton("Start Time Stream")
+        self.button_timestream.clicked.connect(self.clicked_button_timestream)
+        layout_timestreamui.addWidget(self.button_timestream)
+
+        self.timer_timestream = QTimer()
+        self.timer_timestream.timeout.connect(self.update_figure_timestream)
+
+        self.data_timestream = ([], []) # x, y
 
 
         # Alcove command
@@ -76,32 +92,6 @@ class MainWindow(QMainWindow):
         self.label_alcovecoms = QLabel("")
         layout_alcovecoms.addWidget(self.label_alcovecoms)
 
-
-        # # Create the buttons
-        # button_layout = QHBoxLayout()
-        # layout.addLayout(button_layout)
-
-        # # Start time stream button
-        # self.button_timestream = QPushButton("Start Time Stream")
-        # self.button_timestream.clicked.connect(self.clicked_button_timestream)
-        # button_layout.addWidget(self.button_timestream)
-
-        # self.update_button = QPushButton("Update Text")
-        # self.update_button.clicked.connect(self.update_text)
-        # button_layout.addWidget(self.update_button)
-
-        # # Create the label
-        # self.label = QLabel("Press the Update Text button")
-        # self.label.setAlignment(Qt.AlignCenter)
-        # layout.addWidget(self.label)
-
-        # # Create the timer
-        # self.timer = QTimer()
-        # self.timer.timeout.connect(self.update_plot)
-
-        # # Initialize the data
-        # self.xdata = []
-        # self.ydata = []
 
 
     def clicked_button_alcovecoms(self):
@@ -143,28 +133,18 @@ class MainWindow(QMainWindow):
             self.button_alcovecoms.setText("Send Alcove Command")   
 
 
+    def clicked_button_timestream(self):
+        self.timer_timestream.start(100)  # milliseconds
 
-    # def clicked__start_stream(self):
-    #     self.timer.start(100)  # milliseconds
-
-
-    # def update_plot(self):
-    #     # Generate new data
-    #     x = len(self.xdata) + 1
-    #     y = random.uniform(0, 1)
-
-    #     # Update the data
-    #     self.xdata.append(x)
-    #     self.ydata.append(y)
-
-    #     # Plot the data
-    #     self.figure.clear()
-    #     plt.plot(self.xdata, self.ydata)
-    #     self.canvas.draw()
-
-
-    # def update_text(self):
-    #     self.label.setText("Text updated!")
+    def update_figure_timestream(self):
+        # random data for testing
+        x = len(self.data_timestream[0]) + 1
+        y = random.uniform(0, 1)
+        self.data_timestream[0].append(x)
+        self.data_timestream[1].append(y)
+        self.figure_timestream.clear()
+        plt.plot(self.data_timestream[0], self.data_timestream[1])
+        self.canvas.draw()
     
 
 
