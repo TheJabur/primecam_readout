@@ -5,12 +5,13 @@
 try:
     import _cfg_board as cfg
     import alcove_commands.board_io as io
+    import queen_commands.control_io as cio
 
     import xrfdc
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
-    firmware = Overlay("tetra_v3p4.bit",ignore_version=True,download=False)
+    firmware = Overlay("tetra_v5p4.bit",ignore_version=True,download=False)
 
 except Exception as e: 
     firmware = None
@@ -51,10 +52,40 @@ def _setNCLO(chan, lofreq):
         return "Does not compute" # great error message
     return
 
+def _setNCLO2(chan, lofreq):
+    import numpy as np
+    mix = firmware.mix_freq_set_0
+    if chan == 1:
+        offset = 0
+    elif chan == 2:
+        offset = 4
+    elif chan == 3:
+        offset = 8
+    elif chan == 4:
+        offset = 12
+    else:
+        return "Does not compute"
+    # set fabric nclo frequency 
+    # only for small frequency sweeps
+    # 0x00 -  frequency[21 downto 0] 
+    def nclo_num(freqMHz):
+        # freq in MHz
+        # returns 32 bit signed integer for setting nclo2
+        MHz_per_int = 512.0/2**22 #MHz per_step !check with spec-analyzer
+        digi_val = int(np.round(freqMHz/MHz_per_int))
+        actual_freq = digi_val*MHz_per_int
+        return digi_val, actual_freq
+
+    digi_val, actual_freq = nclo_num(lofreq)
+    mix.write(offset, digi_val) # frequency
+    return
 
 def _generateWaveDdr4(freq_list):  
 
     import numpy as np
+
+    # freq_list may be complex but imag parts should all be zero
+    freq_list = np.real(freq_list)
 
     fs = 512e6 
     lut_len = 2**20
@@ -321,7 +352,7 @@ def _getCleanAccum(Itemplate, Qtemplate):
     j = 0
     I, Q = getSnapData(3)
     Pt = Itemplate**2 + Qtemplate**2
-    Ntrys = 5
+    Ntrys = 3
     while (j < Ntrys):
         Pdiff = Pt - (I**2 + Q**2)
         ratio = np.var(Pdiff)/np.var(Pt)
@@ -329,14 +360,20 @@ def _getCleanAccum(Itemplate, Qtemplate):
             j = Ntrys
         else:
             I, Q = getSnapData(3)
-            if j==(Ntrys-1):
-                print("Warning! could not clean data")
+            #if j==(Ntrys-1):
+            #    print("Warning! could not clean data")
             j+= 1    
     return I, Q
 
 
 def _writeComb(chan, freqs):
-    
+   
+    import numpy as np
+
+    if np.size(freqs)<1:
+        # what do we want to do if freqs empty?
+        raise("freqs must not be empty.")
+
     wave, dphi, freq_actual = _generateWaveDdr4(freqs)
     wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
     _loadDdr4(chan, wave_real, wave_imag, dphi)
@@ -367,95 +404,92 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
         bw = chan_bandwidth    # MHz
     else:                      # LO bandwidth is tone difference
         bw = np.diff(freqs)[0]/1e6 # MHz
-    # flos = np.arange(f_center-bw/2., f_center+bw/2., bw/N_steps)
     flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
     _, _ = getSnapData(3) # discard previously collected accum samples
     It, Qt = getSnapData(3) # grab new accumulator samples for template
     def _Z(lofreq, Naccums=5):
-        _setNCLO(chan, lofreq)       # update mixer LO frequency
+        _setNCLO2(chan, lofreq)       # update mixer LO frequency
         # after setting nclo sleep to let old data pass
         # read accumulator snap block a few times to assure
         # new data
-        I, Q = _getCleanAccum(It, Qt)
-        Z = I + 1j*Q     # convert I and Q to complex
+        Is, Qs = 0, 0
+        accums = 4
+        I, Q = getSnapData(3) #
+        for i in range(accums):
+            #I, Q = _getCleanAccum(It, Qt)
+            sleep(0.004)
+            I, Q = getSnapData(3) #
+            Is += I/accums
+            Qs += Q/accums
+        Z = Is + 1j*Qs     # convert I and Q to complex
         return Z[0:len(freqs)] # only return relevant slice
     
     # loop over _Z for each LO freq
     # and flatten
-    Z = (np.array([_Z(lofreq) for lofreq in flos]).T).flatten()
+    Z = (np.array([_Z(lofreq-f_center) for lofreq in flos]).T).flatten()
     
     # build and flatten all bin frequencies
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
         
-    _setNCLO(chan, f_center)       # update mixer LO frequency
+    _setNCLO2(chan, 0)       # update mixer LO frequency
 
     return (f, Z)
 
 
-# def _variationInS21m(S21m):
-#     '''Find small signal variation in S21 complex modulus.
-#     S21m: 1D array of S21 complex modulus floats.
-#     This has only been tested on fake data with <2000 resonators.'''
+def _stitchS21m(S21m, bw=500, sw=100):
+    """Shift S21 mags so the bin ends align.
 
-#     import numpy as np
-
-#     w = 10                      # min of 10 for reasonable results
-#     l = len(S21m)
-#     while l%w != 0:             # need w to be a factor of len(S21m) for reshape
-#         w += 1
-#         if w>l: raise("Error: No width found!")
-
-#     x = np.reshape(S21m, (len(S21m)//w, w))
-
-#     vars = np.std(x, axis=1)    # variation in each bin
-#     var = np.median(vars)       # median of variations
+    S21m: (array of floats) 1D array of S21 complex modulus.
+    bw:   (int) Width of the stitch bins.
+    sw:   (int) Width of slice (at ends) of each stitch bin to take median.
+    """
     
-#     return var
-
-
-# def _resonatorIndicesInS21(Z):
-#     """
-#     Find the indices in given complex S21 values for resonator peaks.
-#     Z: Complex S21 values.
-#     """
-
-#     import numpy as np
-#     import scipy.signal
-
-#     # complex modulus
-#     sig = -np.abs(Z)              # find_peaks looks at positive peaks
-
-#     var  = _variationInS21m(sig)
-#     prom = 50*var
-
-#     i_peaks = scipy.signal.find_peaks(
-#         x          = sig,       
-#         prominence = prom,        # 
-#         height     = (np.nanmin(sig), np.nanmax(sig)-prom),
-#         width      = (10, 500)
-#     )[0]                          # [0] is peaks, [1] is properties
-
-#     return i_peaks
-
-def _resonatorIndicesInS21dB(S21m):
-    """
-    Find the indices in given complex S21 values for resonator peaks.
-    S21m: 1D array of S21 complex modulus floats.
-    """
-
     import numpy as np
-    import scipy.signal
+    
+    a = S21m.reshape(-1, bw)               # reshape into bins
+    
+    meds_i = np.median(a[:,:sw], axis=1)   # medians on left
+    meds_f = np.median(a[:,-sw:], axis=-1) # medians on right
+    
+    f = meds_i[1:] - meds_f[:-1]           # bin power misalignment
+    f = np.pad(f, (1, 0), mode='constant') # 1st bin -> 0 misalignment
+    f = np.cumsum(f)                       # misalignments are cumulative
+    f = f.reshape((a.shape[0],1))          # reshape for matrix addition
+    a_n = a - f                            # misalignment correction (stitch)
+    
+    return a_n.flatten()                   # reshape to 1D and return
 
-    # complex modulus
-    sig = -np.abs(S21m)              # find_peaks looks at positive peaks
 
-    i_peaks = scipy.signal.find_peaks(
-        x          = sig,
-        prominence = 2,           # in dB
-        width      = [3,1000]     # in data indices
-    )[0]                          # [0] is peaks, [1] is properties
-
-    return i_peaks
+def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, testing=False):
+    """Find the indices of resonator peaks in given S21 signal.
+    
+    f:         (1D array of floats) Frequency bins of signal.
+    Z:         (1D array of floats) S21 complex values.
+    stitch_bw: (int) Width of the stitch bins.
+    stitch_sw: (int) Width of slice (at ends) of each stitch bin to take median.
+    f_hi:      (float) Highpass filter cutoff frequency (data units).
+    f_lo:      (float) lowpass filter cutoff frequency (data units).
+    prom_dB:   (float) Peak prominence cutoff, in dB.
+    testing:   (bool) Also return intermediate products.
+    
+    Return:  (1D array of integers) Indices of peaks.
+    """
+    
+    import numpy as np
+    from scipy.signal import iirfilter, sosfiltfilt, find_peaks
+    
+    fs  = abs(f[1] - f[0])                             # sampling frequency
+    m   = np.abs(Z)                                    # S21 mags
+    m_s   = _stitchS21m(m, bw=stitch_bw, sw=stitch_sw)   # stitch mags
+    
+    filt_bp = iirfilter(2, (f_lo, f_hi), fs=fs, btype='bandpass', output='sos')
+    m_f   = sosfiltfilt(filt_bp, m_s)                    # bandpass filtered
+    prom_lin = np.amax(m)*(1-10**(-prom_dB/20)) 
+    m_f_dB = 20.*np.log10(m_f + abs(np.min(m_f)) + 1)     # in dB
+    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, distance=30, width=(5, 100)) 
+    
+    if testing: return peaks, (fs, m, m_f, m_f_dB, prom_dB, props)
+    return peaks
 
 
 def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
@@ -491,28 +525,6 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     return (freqs, A_res)
 
 
-def _stitchS21m(S21m, bw=500, sw=500):
-    """
-    Shift S21 mags so the bin ends align.
-
-    S21m: (array of floats) 1D array of S21 complex modulus.
-    bw:   (int) Width of the stitch bins.
-    sw:   (int) Width of slice (at ends) of each stitch bin to take median.
-    """
-    
-    import numpy as np
-
-    i1 = 0 # index of 1st bin start
-    while(i1 < len(S21m)-bw):
-        i2 = i1 + bw # index of 1st bin end / 2nd bin start
-        i3 = i2 + bw # index of 2nd bin end
-        med1 = np.median(S21m[i1:i2][-sw:])
-        med2 = np.median(S21m[i2:i3][:sw])
-        S21m[i2:i3] += med1 - med2 # shift next stitch bin to align to this one
-        i1 = i2                    # move to next stitch bin
-    return S21m
-
-
 
 #####################
 # Command Functions #
@@ -527,6 +539,7 @@ def writeTestTone():
     freqs = np.array(np.linspace(50e6, 255.00e6, 1))
     freq_actual = _writeComb(chan, freqs)
 
+
 def writeVnaComb():
 
     import numpy as np
@@ -537,18 +550,48 @@ def writeVnaComb():
     io.save(io.file.freqs_vna, freq_actual)
 
 
-def writeTargComb():
+def writeTargComb(write_cal_tones=True, update=False):
+    """Write the target comb with the last vna sweep values.
+    write_cal_tones: (bool) Also try to write calibration tones.
+    update: (bool) Try to use the last target sweep values instead."""
+
+    import numpy as np
+
+    try: # load f_res and center from vna sweep
+        targ_freqs = io.load(io.file.f_res_vna)
+        f_center   = io.load(io.file.f_center_vna)
+    except:
+        raise("Error: Required file[s] missing.")
     
-    targ_freqs = io.load(io.file.f_res_vna)
-    f_center   = io.load(io.file.f_center_vna)
+    if update: # override f_res from targ sweep if possible
+        try:
+            targ_freqs = io.load(io.file.f_res_targ)
+        except: pass # fail silently
+
     chan = cfg.drid # drone (chan) id is from config
-    freqs = targ_freqs.real - f_center
+    freqs = targ_freqs.real # complex freqs have 0j
+
+    if write_cal_tones:
+        try: # calibration tones may not exist
+            f_cal_tones = io.load(io.file.f_cal_tones)
+            freqs = np.append(freqs, f_cal_tones)
+        except: pass
+
+    freqs = freqs - f_center
     freq_actual = _writeComb(chan, freqs)
+    # io.save(io.file._f_res_targ, freq_actual)
+
+
+def updateTargComb(write_cal_tones=True):
+    """Write the target comb with the last target sweep values."""
+
+    return writeTargComb(write_cal_tones=write_cal_tones, update=True)
 
 
 def getSnapData(mux_sel):
     chan = cfg.drid
     return _getSnapData(chan, int(mux_sel))
+
 
 def setNCLO(f_lo):
     """
@@ -563,6 +606,8 @@ def setNCLO(f_lo):
     chan = cfg.drid
     f_lo = int(f_lo)
     _setNCLO(chan, f_lo)
+    io.save(io.file.f_center_vna, f_lo*1e6)
+
 
 def vnaSweep(f_center=600):
     """
@@ -576,6 +621,8 @@ def vnaSweep(f_center=600):
 
     chan = cfg.drid
     f_center = int(f_center)
+    _setNCLO(chan, f_center)
+    
     freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
 
     writeVnaComb()
@@ -584,7 +631,9 @@ def vnaSweep(f_center=600):
     io.save(io.file.s21_vna, s21)
     io.save(io.file.f_center_vna, f_center*1e6)
 
-    return (s21)
+    # return (s21)
+    # do we want to return freqs too?
+    return io.returnWrapper(io.file.s21_vna, s21)
 
 
 def findResonators():
@@ -595,30 +644,80 @@ def findResonators():
     import numpy as np
 
     # load S21 complex mags (Z) and frequencies (f) from file
-    # f, Z = np.load(f'{cfg.drone_dir}/s21.npy')
     f, Z = io.load(io.file.s21_vna)
 
-    # stitch so bins align
-    S21m = _stitchS21m(np.abs(Z), bw=500, sw=500)
-
-    # convert to dB and shift to all positive
-    S21m_dB = 20.*np.log10(S21m + 1.1*np.abs(np.min(S21m)))
-
-    # i_peaks = _resonatorIndicesInS21(Z)
-    i_peaks = _resonatorIndicesInS21dB(S21m_dB)
+    i_peaks = _resonatorIndicesInS21(
+        f, Z, 
+        stitch_bw=500, stitch_sw=100, 
+        f_hi=50, f_lo=1, prom_dB=1, 
+        testing=False)
     f_res = f[i_peaks]
 
     io.save(io.file.f_res_vna, f_res)
 
-    return f_res
+    # return f_res
+    return io.returnWrapper(io.file.f_res_vna, f_res)
 
 
-def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
+def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
+    """Determine the indices of calibration tones.
+    
+    f_hi:      (float) Highpass filter cutoff frequency (data units).
+    f_lo:      (float) lowpass filter cutoff frequency (data units).
+    tol:       (float) Reject tones tol*std_noise from continuum.
+    max_tones: (int) Maximum number of tones to return.
+    """
+    
+    import numpy as np
+    from scipy.signal import iirfilter, sosfiltfilt
+
+    ## load data from file
+    f, Z = io.load(io.file.s21_vna)
+    m = np.abs(Z)
+    freqs = io.load(io.file.f_res_vna).real
+    
+    fs  = abs(f[1] - f[0])                        ## sampling frequency
+    freqs_i = [np.abs(f - v).argmin() for v in freqs] ## indices of freqs
+    freqs_i = np.append(np.insert(freqs_i, 0, 0), len(f)) ## add end gaps
+    
+    ## isolate continuum w/ lowpass filter
+    filt_lo = iirfilter(2, f_lo, fs=fs, btype='lowpass', output='sos')
+    m_lo   = sosfiltfilt(filt_lo, m)
+
+    ## isolate noise w/ highpass filter
+    filt_hi = iirfilter(2, f_hi, fs=fs, btype='highpass', output='sos')
+    m_hi   = sosfiltfilt(filt_hi, m)
+    std_hi = np.std(m_hi)                         ## calculate std of noise
+
+    ## find gaps between resonators
+    gaps = np.diff(freqs_i)
+    gaps_i = (freqs_i[:-1] + freqs_i[1:]) // 2    ## gap center indices
+    
+    ## sort gaps (descending; w/ indices)
+    sort_i = np.argsort(gaps)[::-1]
+    # gaps_s = gaps[sort_i]
+    gaps_s_i = gaps_i[sort_i]
+   
+    ## filter any too far from continuum (m_lo)
+    cal_tones_i = gaps_s_i[(abs(m[gaps_s_i] - m_lo[gaps_s_i])) < tol*std_hi]
+    
+    ## limit to max_tones
+    cal_tones_i = cal_tones_i[:max_tones] 
+
+    f_cal_tones = f[cal_tones_i]
+
+    io.save(io.file.f_cal_tones, f_cal_tones)
+    
+    # return f_cal_tones
+    return io.returnWrapper(io.file.f_cal_tones, f_cal_tones)
+    
+
+def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
     f_res:           (1D array of floats) Current comb tone frequencies [Hz].
-    f_center:        (float) Center LO frequency for sweep [MHz].
+    f_center:        center frequency in [MHz].
     N_steps:         (int) Number of LO frequencies to divide each channel into.
     chan_bandwidth:  (float) Channel bandwidth [MHz].
     amps:            (1D array of floats) Current normalized tone amplitudes.
@@ -632,28 +731,38 @@ def targetSweep(f_res=None, f_center=600, N_steps=500, chan_bandwidth=0.2, amps=
 
     if f_res is None:
         try:
-            f_res = io.load(io.file.f_res_vna)
+            f_res = io.load(io.file.f_res_vna) # Hz
             # f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
         except:
             raise("Required file missing: f_res_vna. Perform a vna sweep first.")
 
     if amps is None:
         amps = np.ones_like(f_res)
+    if f_center is None:
+        try:
+            # load center LO frequency - stored in Hz
+            f_center = io.load(io.file.f_center_vna) # Hz
+        except:
+            raise("Required file missing: f_center_vna. Write NCLO frequency first.")
+    else:
+        f_center = f_center*1e6 # convert param MHz to Hz
     
-    writeTargComb()
-
-    # load S21 complex mags (Z) and frequencies (f) from file
-    f, Z  = _sweep(chan, f_center, f_res, N_steps, chan_bandwidth)
-    
-    freqs, A_res = _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps)
+    # perform target sweep after loading f_center
+    writeTargComb(write_cal_tones=True)
+    S21 = np.array(_sweep(chan, f_center/1e6, f_res-f_center, N_steps, chan_bandwidth)) 
+  
+    freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
 
     if save:
+        io.save(io.file.s21_targ, S21)
         io.save(io.file.f_res_targ, freqs)
-        io.save(io.file.a_res_targ, amps)
-        io.save(io.file.f_center_targ, f_center*1e6)
+        io.save(io.file.a_res_targ, A_res)
+        io.save(io.file.f_center_targ, f_center)
 
-    # return an array here
-    return (freqs, A_res)
+    # return (freqs, A_res)
+    return io.returnWrapperMultiple(
+        [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ], 
+        [freqs, A_res, S21])
 
 
 def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
@@ -693,21 +802,28 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
             chan_bandwidth=chan_bandwidth, amps=amps, 
             plot_step=200, save=False)
     
+        # sweep again if res freqs changed by more than f_tol
+        # or if tone amp change is more than A_tol
         if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
             or np.any(np.abs(1 - amps_new/amps) > A_tol)):
             sweep = True
             
         freqs, amps = freqs_new, amps_new
 
+        # stop re-sweeping after loops_max sweeps
+        # even if not in tolerances
         if loop_num > loops_max:
-            sweep = False # override any sweep=True statements
+            sweep = False
         loop_num += 1
         
     io.save(io.file.f_res_targ, freqs)
     io.save(io.file.a_res_targ, amps)
     io.save(io.file.f_center_targ, f_center*1e6)
 
-    return np.array([freqs, amps])
+    # return np.array([freqs, amps])    
+    return io.returnWrapperMultiple(
+        [io.file.f_res_targ, io.file.a_res_targ], 
+        [freqs, amps])
 
 
 def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
@@ -734,19 +850,18 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
     
     for l in range(max_loops_full):
             
-        try: retry(vnaSweep, 
-                   "Perform VNA sweep", 
-                   f_center=600)
+        # vna sweep
+        try: retry(vnaSweep, "Perform VNA sweep", f_center=600)
         except: fullFail(l); continue
         
-        try: retry(findResonators, 
-                   "Finding resonators")
+        # find resonators
+        try: retry(findResonators, "Finding resonators")
         except: fullFail(l); continue
         
-        try: retry(targetSweepLoop, 
-                   "Perform target sweep loop", 
-                   chan_bandwidth=0.2, f_center=600, N_steps=500, 
-                   f_tol=0.1, A_tol=0.3, loops_max=20)
+        # target sweep
+        try: retry(targetSweepLoop, "Perform target sweep loop", 
+                  chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                  f_tol=0.1, A_tol=0.3, loops_max=20)
         except: fullFail(l); continue
         
         fullSuccess(l)

@@ -4,9 +4,10 @@ import xrfdc
 
 try:
     # FIRMWARE UPLOAD
-    firmware = Overlay("tetra_v3p4.bit",ignore_version=True)
+    firmware = Overlay("tetra_v5p4.bit",ignore_version=True)
 
     # PLLs
+
     clksrc = 409.6 # MHz
     xrfclk.set_all_ref_clks(clksrc)
 

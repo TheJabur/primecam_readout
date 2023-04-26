@@ -31,17 +31,17 @@ logging.basicConfig(
 # alcove command keys start at 10
 def _com():
     return { 
-        10:utils.boardTemps, 
-        12:single_chan.writeVnaComb,
-        13:single_chan.writeTestTone,
-        14:single_chan.getAdcData,
+        # 10:utils.boardTemps, 
+        # 12:single_chan.writeVnaComb,
+        # 13:single_chan.writeTestTone,
+        # 14:single_chan.getAdcData,
         15:test.testFunction,
-        16:single_chan.getSnapData,
-        17:single_chan.vnaSweep,
-        18:single_chan.findResonators,
-        20:single_chan.writeTargComb,
-        21:single_chan.targetSweep,
-        22:single_chan.fullLoop,
+        # 16:single_chan.getSnapData,
+        # 17:single_chan.vnaSweep,
+        # 18:single_chan.findResonators,
+        # 20:single_chan.writeTargComb,
+        # 21:single_chan.targetSweep,
+        # 22:single_chan.fullLoop,
         40:multi_chan.setNCLO,
         41:multi_chan.writeTestTone,
         42:multi_chan.writeVnaComb,
@@ -51,7 +51,9 @@ def _com():
         46:multi_chan.findResonators,
         47:multi_chan.targetSweep,
         48:multi_chan.fullLoop,
-        49:multi_chan.loChop
+        49:multi_chan.loChop,
+        50:multi_chan.findCalTones,
+        51:multi_chan.updateTargComb
     }
 
 

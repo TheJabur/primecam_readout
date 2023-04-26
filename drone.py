@@ -166,7 +166,10 @@ def executeCommand(com_num, args, kwargs):
 def publishResponse(resp, r, chan_sub):
     # chanid = f'{bid}_{cid}'             # rebuild chanid
     # chan_pubs = f'board_rets_{chanid}'  # talking channel
+
     chan_pub = f'rets_{chan_sub}'
+    if chan_sub == 'all_boards': # to know who sent
+        chan_pub += f'_{cfg.bid}.{cfg.drid}'
 
     print(f"Preparing response... ", end="")
     try: #####

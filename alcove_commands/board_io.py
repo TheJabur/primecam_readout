@@ -88,3 +88,21 @@ class file:
                 'dname'         :cfg.drone_dir+'/targ',
                 'use_timestamp' :True}
     a_res_targ = _a_res_targ()
+    
+    class _s21_targ:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'s21_targ',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/targ',
+                'use_timestamp' :True}
+    s21_targ = _s21_targ()
+
+    class _f_cal_tones:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'f_cal_tones',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/cal_tones',
+                'use_timestamp' :True}
+    f_cal_tones = _f_cal_tones()

@@ -18,6 +18,7 @@ import numpy as np
 import logging
 import uuid
 import pickle
+from datetime import datetime
 # import tempfile
 
 import _cfg_queen as cfg
@@ -198,17 +199,24 @@ def listenMode():
     """
     Listen for Redis messages in thread.
     """
-    # the only way to stop listening is to kill process
+    # CTRL-C to exit listening mode
 
     r,p = _connectRedis()
 
     def handleMessage(message):
         '''actions to take on receiving message'''
         if message['type'] == 'pmessage':
-            print(message['data'].decode('utf-8')) # log/print message
-            _notificationHandler(message)  # send important notifications
+            # print(message['data'].decode('utf-8')) # log/print message
+            # _notificationHandler(message)  # send important notifications
+            print(f"{_timeMsg()} Message received on channel: {message['channel']}")
+            try:
+                _processCommandReturn(message['data'])
+            except Exception as e: 
+                return _fail(e, f'Failed to process a response.')
+            
+    # Message received: {'type': 'pmessage', 'pattern': b'rets_*', 'channel': b'rets_board_1.1_f9af519c-bea0-4093-81cf-8f8a423dc549', 'data': b'\x80 ...
 
-    p.psubscribe(**{'board_rets_*':handleMessage}) # all board return chans
+    p.psubscribe(**{'rets_*':handleMessage}) # all board return chans
     thread = p.run_in_thread(sleep_time=2) # move listening to thread
         # sleep_time is a socket timeout
          # too low and it will bog down server
@@ -216,9 +224,8 @@ def listenMode():
          # more research is recommended
     print('The Queen is listening...') 
 
-    # todo
-     # when do we stop listening?
-     # thread.stop()
+    # This thread isn't shut down - could lead to problems
+    # thread.stop()
 
 
 def getKeyValue(key):
@@ -277,13 +284,15 @@ def _connectRedis():
 def _processCommandReturn(dat):
     '''Process the return data from a command.'''
 
-    dat = pickle.loads(dat)             # assuming msg is pickled
-
-    # strings get printed, all else saved
-    if isinstance(dat, str):
+    d = pickle.loads(dat)             # assuming msg is pickled
+    
+    if isinstance(dat, str):          # print if string
         print(dat) 
-    else:
-        io.saveToTmp(dat)
+
+    try:
+        io.saveWrappedToTmp(d)        # save a wrapped return
+    except:
+        io.saveToTmp(dat)             # or save as tmp
 
 
 def _notificationHandler(message):
@@ -294,6 +303,18 @@ def _notificationHandler(message):
      # look through given message[s?]
      # and look through configured notifications
      # and send emails as appropriate
+
+
+def _timeMsg():
+    """A clear and concise time string for print statements."""
+
+    fmt = "%H:%M:%S_%y%m%d"
+
+    time_now = datetime.now()
+    time_str = time_now.strftime(fmt)
+    # ms_str = f".{time_now.microsecond // 1000:03}"
+    
+    return time_str
 
 
 def listToArgsAndKwargs(l):

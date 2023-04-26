@@ -2,6 +2,10 @@
 __pycache__/
 
 
+# Visual Studio Code
+.vscode
+
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
@@ -47,5 +51,11 @@ cython_debug/
 # Apple config files
 .DS_store
 
+
 # temp dir
 tmp/
+
+
+# config files
+_cfg_board.py
+_cfg_queen.py
