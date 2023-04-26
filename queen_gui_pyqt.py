@@ -59,6 +59,10 @@ class MainWindow(QMainWindow):
         self.textbox_timestream_id.setPlaceholderText("KID ID")
         layout_timestreamui.addWidget(self.textbox_timestream_id)
 
+        self.textbox_timestream_win = QLineEdit()
+        self.textbox_timestream_win.setPlaceholderText("last x points")
+        layout_timestreamui.addWidget(self.textbox_timestream_win)
+
         self.button_timestream = QPushButton("Start Time Stream")
         self.button_timestream.clicked.connect(self.clicked_button_timestream)
         layout_timestreamui.addWidget(self.button_timestream)
@@ -137,11 +141,27 @@ class MainWindow(QMainWindow):
         self.timer_timestream.start(100)  # milliseconds
 
     def update_figure_timestream(self):
+        # kid_id = self.textbox_timestream_id.text()
+        # new_dat = _getTimestreamData(delta_t=100, kid_id=kid_id)
+        # # append to data
+        # self.data_timestream.append(new_dat)
+        # # crop data to desired length
+        # self.figure_timestream.clear()
+        # plt.plot(self.data_timestream)
+        # self.canvas.draw()
+
         # random data for testing
-        x = len(self.data_timestream[0]) + 1
+        x = self.data_timestream[0][-1]+1 if len(self.data_timestream[0])>0 else 1
         y = random.uniform(0, 1)
         self.data_timestream[0].append(x)
         self.data_timestream[1].append(y)
+        try: 
+            ts_win = max(int(self.textbox_timestream_win.text()), 2)
+        except:
+            ts_win = 100
+        if len(self.data_timestream[0]) > ts_win:
+            del self.data_timestream[0][:-ts_win]
+            del self.data_timestream[1][:-ts_win]
         self.figure_timestream.clear()
         plt.plot(self.data_timestream[0], self.data_timestream[1])
         self.canvas.draw()
@@ -182,6 +202,16 @@ def _sendAlcoveCommand(com_str, com_to, com_args):
     # all-boards commands
     else:
         return queen.alcoveCommand(com_num, all_boards=True, args=com_args)
+
+
+def _getTimestreamData(delta_t=100, kid_id=None):
+    """Get a chunk of time stream data.
+    delta_t: (float) time length of chunck in ms.
+    kid_id:  (int) ID of resonator. If None get all.
+    """
+    
+    # record some small amount of ts data, maybe 100 ms
+    # and return
 
 
 if __name__ == "__main__":
