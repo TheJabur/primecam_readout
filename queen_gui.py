@@ -1,3 +1,16 @@
+########################################################
+### Queen GUI.                                       ###
+### Interfaces with queen.py.                        ###
+###                                                  ###
+### James Burgoyne jburgoyne@phas.ubc.ca             ###
+### CCAT Prime 2023                                  ###
+########################################################
+
+
+
+###############
+### IMPORTS ###
+
 import sys
 import numpy as np
 import random
@@ -14,6 +27,9 @@ import alcove
 
 
 
+###############
+### THREADS ###
+
 class AlcoveCommandThread(QThread):
     ret = pyqtSignal(object)
 
@@ -28,6 +44,9 @@ class AlcoveCommandThread(QThread):
         self.ret.emit((ret, self.com_str, self.com_to, self.com_args))
 
 
+
+###################
+### MAIN WINDOW ###
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -168,6 +187,9 @@ class MainWindow(QMainWindow):
     
 
 
+##########################
+### INTERNAL FUNCTIONS ###
+
 def _comsListQueen():
     return [queen.com[key].__name__ for key in queen.com.keys()]
 
@@ -212,6 +234,7 @@ def _getTimestreamData(delta_t=100, kid_id=None):
     
     # record some small amount of ts data, maybe 100 ms
     # and return
+
 
 
 if __name__ == "__main__":
