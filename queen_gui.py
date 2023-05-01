@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         self.timer_timestream = QTimer()
         self.timer_timestream.timeout.connect(self.updateFigureTimestream)
 
-        self.data_timestream = ([], []) # I, Q
+        self.data_timestream = np.array(([], [])) # I, Q
 
 
         # Alcove command
@@ -252,15 +252,19 @@ class MainWindow(QMainWindow):
     def updateFigureTimestream(self):
         kid_id = self.textbox_timestream_id.text()
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
-        self.data_timestream[0].append(I)
-        self.data_timestream[1].append(Q)
+
+        for i in range(self.data_timestream[0]):
+            self.data_timestream[0][i].append(I[i])
+            self.data_timestream[1][i].append(Q[i])
+        # self.data_timestream[0].append(I)
+        # self.data_timestream[1].append(Q)
         try: 
             ts_win = max(int(self.textbox_timestream_win.text()), 2)
         except:
             ts_win = 100
-        if len(self.data_timestream[0]) > ts_win:
-            del self.data_timestream[0][:-ts_win]
-            del self.data_timestream[1][:-ts_win]
+        if len(self.data_timestream[0][0]) > ts_win:
+            del self.data_timestream[0][:,:-ts_win]
+            del self.data_timestream[1][:,:-ts_win]
         self.figure_timestream.clear()
         plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
         self.canvas.draw()
