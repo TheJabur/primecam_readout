@@ -253,6 +253,8 @@ class MainWindow(QMainWindow):
         kid_id = self.textbox_timestream_id.text()
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
 
+        print(f"I={I}")
+
         I = np.concatenate((self.data_timestream[0], I), axis=1)
         Q = np.concatenate((self.data_timestream[1], Q), axis=1)
 
@@ -284,7 +286,7 @@ class MainWindow(QMainWindow):
         #     plt.plot(I**2 + Q**2)
         #     break
         # plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
-        
+
         self.canvas.draw()
 
         # # fake random data for testing
