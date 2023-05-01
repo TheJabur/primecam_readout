@@ -262,7 +262,7 @@ class MainWindow(QMainWindow):
             del self.data_timestream[0][:-ts_win]
             del self.data_timestream[1][:-ts_win]
         self.figure_timestream.clear()
-        plt.plot(self.data_timestream[0]**2 + self.data_timestream[1]**2)
+        plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
         self.canvas.draw()
 
         # # fake random data for testing
