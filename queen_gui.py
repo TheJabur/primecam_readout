@@ -253,7 +253,7 @@ class MainWindow(QMainWindow):
         kid_id = self.textbox_timestream_id.text()
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
 
-        for i in range(self.data_timestream[0]):
+        for i in range(len(self.data_timestream[0])):
             self.data_timestream[0][i].append(I[i])
             self.data_timestream[1][i].append(Q[i])
         # self.data_timestream[0].append(I)
