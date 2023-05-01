@@ -253,25 +253,38 @@ class MainWindow(QMainWindow):
         kid_id = self.textbox_timestream_id.text()
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
 
-        for i in range(len(self.data_timestream[0])):
-            self.data_timestream[0][i].append(I[i])
-            self.data_timestream[1][i].append(Q[i])
+        I = np.concatenate((self.data_timestream[0], I), axis=1)
+        Q = np.concatenate((self.data_timestream[1], Q), axis=1)
+
+        # for i in range(len(self.data_timestream[0])):
+        #     self.data_timestream[0][i].append(I[i])
+        #     self.data_timestream[1][i].append(Q[i])
+
         # self.data_timestream[0].append(I)
         # self.data_timestream[1].append(Q)
+
         try: 
             ts_win = max(int(self.textbox_timestream_win.text()), 2)
         except:
             ts_win = 100
+        I = I[:,-ts_win:]
+        Q = Q[:,-ts_win:]
+        
         # if len(self.data_timestream[0][0]) > ts_win:
         #     del self.data_timestream[0][:,:-ts_win]
         #     del self.data_timestream[1][:,:-ts_win]
+
         self.figure_timestream.clear()
-        for i in range(len(self.data_timestream[0])):
-            I = self.data_timestream[0][i]
-            Q = self.data_timestream[1][i]
-            plt.plot(I**2 + Q**2)
-            break
+
+        plt.plot(self.data_timestream[0][kid_id]**2 + self.data_timestream[1][kid_id]**2)
+
+        # for i in range(len(self.data_timestream[0])):
+        #     I = self.data_timestream[0][i]
+        #     Q = self.data_timestream[1][i]
+        #     plt.plot(I**2 + Q**2)
+        #     break
         # plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
+        
         self.canvas.draw()
 
         # # fake random data for testing
@@ -351,7 +364,7 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
     """
 
     I, Q = timestream.getTimeStreamChunk(packets)
-    print(I[0][:100])
+    # print(I[0][:100])
 
     # todo: filter by kid_id
 
