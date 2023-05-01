@@ -266,7 +266,12 @@ class MainWindow(QMainWindow):
         #     del self.data_timestream[0][:,:-ts_win]
         #     del self.data_timestream[1][:,:-ts_win]
         self.figure_timestream.clear()
-        plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
+        for i in range(len(self.data_timestream[0])):
+            I = self.data_timestream[0][i]
+            Q = self.data_timestream[1][i]
+            plt.plot(I**2 + Q**2)
+            break
+        # plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
         self.canvas.draw()
 
         # # fake random data for testing
@@ -346,6 +351,7 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
     """
 
     I, Q = timestream.getTimeStreamChunk(packets)
+    print(I[0][:100])
 
     # todo: filter by kid_id
 
