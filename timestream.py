@@ -31,7 +31,7 @@ class TimeStream:
         # return message.decode(), address
 
     def captureNpackets(self, N, buffer_size=9000):
-        return np.array([capturePacket(buffer_size) for _ in range(N)])
+        return np.array([self.capturePacket(buffer_size) for _ in range(N)])
     
     def byteshiftPackets(self, packets, byteshift=-1):
         return np.array([
