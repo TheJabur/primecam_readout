@@ -31,13 +31,28 @@ from timestream import TimeStream
 ###############
 ### THREADS ###
 
+
 class ConsoleEmitter(QObject):
     """Custom signal emitter for console output"""
     text_written = pyqtSignal(str)
 
 
+class QueenCommandThread(QThread):
+    finished = pyqtSignal(object)
+
+    def __init__(self, parent, com_str, com_args):
+        QThread.__init__(self, parent)
+        self.com_str = com_str
+        self.com_args = com_args
+
+    def run(self):
+        # time.sleep(3)
+        ret = _sendQueenCommand(self.com_str, self.com_args)
+        self.finished.emit((ret, self.com_str, self.com_args))
+
+
 class AlcoveCommandThread(QThread):
-    ret = pyqtSignal(object)
+    finished = pyqtSignal(object)
 
     def __init__(self, parent, com_str, com_to, com_args):
         QThread.__init__(self, parent)
@@ -46,13 +61,15 @@ class AlcoveCommandThread(QThread):
         self.com_args = com_args
 
     def run(self):
+        # time.sleep(3)
         ret = _sendAlcoveCommand(self.com_str, self.com_to, self.com_args)
-        self.ret.emit((ret, self.com_str, self.com_to, self.com_args))
+        self.finished.emit((ret, self.com_str, self.com_to, self.com_args))
 
 
 
 ###################
 ### MAIN WINDOW ###
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -72,6 +89,15 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
 
 
+        # Queen listen button
+        self.button_queenlisten = QPushButton('START Queen Listening', self)
+        self.button_queenlisten.setCheckable(True)
+        self.button_queenlisten.clicked.connect(self.onClickButtonQueenlisten)
+        layout.addWidget(self.button_queenlisten)
+        self.queenlisten_thread = None
+        self.button_queenlisten.click() # auto start queen listen
+
+
         # Time stream figure
         self.figure_timestream = plt.figure(figsize=(5, 3), dpi=100)
         self.canvas = FigureCanvas(self.figure_timestream)
@@ -89,11 +115,11 @@ class MainWindow(QMainWindow):
         layout_timestreamui.addWidget(self.textbox_timestream_win)
 
         self.button_timestream = QPushButton("Start Time Stream")
-        self.button_timestream.clicked.connect(self.clicked_button_timestream)
+        self.button_timestream.clicked.connect(self.onClickedButtonTimestream)
         layout_timestreamui.addWidget(self.button_timestream)
 
         self.timer_timestream = QTimer()
-        self.timer_timestream.timeout.connect(self.update_figure_timestream)
+        self.timer_timestream.timeout.connect(self.updateFigureTimestream)
 
         self.data_timestream = ([], []) # I, Q
 
@@ -115,7 +141,7 @@ class MainWindow(QMainWindow):
         layout_alcovecoms.addWidget(self.textbox_alcovecoms_args)
 
         self.button_alcovecoms = QPushButton("Send Alcove Command")
-        self.button_alcovecoms.clicked.connect(self.clicked_button_alcovecoms)
+        self.button_alcovecoms.clicked.connect(self.onClickButtonAlcovecoms)
         layout_alcovecoms.addWidget(self.button_alcovecoms)
 
         self.label_alcovecoms = QLabel("")
@@ -132,32 +158,65 @@ class MainWindow(QMainWindow):
         sys.stderr.write = self.stderr_write
 
 
-
-    def stdout_write(self, text):
-        """Redirects standard output to the console"""
-        self.emitter_console.text_written.emit(text)
-
-    def stderr_write(self, text):
-        """Redirects standard error to the console"""
-        self.emitter_console.text_written.emit(text)
-
-
-    def clicked_button_alcovecoms(self):
+    def onClickButtonAlcovecoms(self):
         com_str = self.pulldown_alcovecoms.currentText()
         com_to = self.textbox_alcovecoms_to.text()
         com_args = self.textbox_alcovecoms_args.text()
+        self.updateAlcoveComsUI(True, com_str, com_to, com_args)
         self.sendAlcoveCommand(com_str, com_to, com_args)
 
-    def sendAlcoveCommand(self, com_str, com_to, com_args):
-        self.updateAlcoveComsUI(True, com_str, com_to, com_args)
-        command_thread = AlcoveCommandThread(self, com_str, com_to, com_args)
-        command_thread.ret.connect(self.onAlcoveCommandFinished)
-        command_thread.start()
 
-    def onAlcoveCommandFinished(self, ret_tuple):
+    def onClickButtonQueenlisten(self):
+        if self.button_queenlisten.isChecked():
+            self.updateQueenListenUI(running=True)
+            self.sendQueenListenCommand()
+            
+        else:
+            self.updateQueenListenUI(running=False)
+            if self.queenlisten_thread is not None:
+                self.queenlisten_thread.terminate()
+                self.button_queenlisten.setChecked(False)
+
+
+    def onClickedButtonTimestream(self):
+        try:
+            self.timestream = TimeStream(host='192.168.3.40', port=4096)
+            self.timer_timestream.start(100)  # milliseconds
+        except Exception as e:
+            print(f"Error: Can't start timestream: {e}")
+
+
+    def onFinishAlcoveCommand(self, ret_tuple):
         ret, com_str, com_to, com_args = ret_tuple
         print(f"Return: {ret}")
         self.updateAlcoveComsUI(False, com_str, com_to, com_args)
+
+
+    def onFinishQueenlisten(self, ret):
+        print(f"Return: {ret}")
+        self.queenlisten_thread = None
+        self.updateQueenListenUI(False)
+
+
+    def sendAlcoveCommand(self, com_str, com_to, com_args):
+        # self.updateAlcoveComsUI(True, com_str, com_to, com_args)
+        alcovecom_thread = AlcoveCommandThread(self, com_str, com_to, com_args)
+        alcovecom_thread.finished.connect(self.onFinishAlcoveCommand)
+        alcovecom_thread.start()
+
+
+    # def sendQueenCommand(self, com_str, com_args):
+    #     self.updateQueenComsUI(True, com_str, com_args)
+    #     queencom_thread = QueenCommandThread(self, com_str, com_args)
+    #     queencom_thread.ret.connect(self.onQueenCommandFinished)
+    #     queencom_thread.start()
+
+
+    def sendQueenListenCommand(self):
+        self.queenlisten_thread = QueenCommandThread(self, com_str='listenMode', com_args='')
+        self.queenlisten_thread.finished.connect(self.onFinishQueenlisten)
+        self.queenlisten_thread.start()
+
 
     def updateAlcoveComsUI(self, busy, com_str, com_to, com_args):
         if busy: # waiting for command to finish
@@ -181,14 +240,16 @@ class MainWindow(QMainWindow):
             self.button_alcovecoms.setText("Send Alcove Command")   
 
 
-    def clicked_button_timestream(self):
-        try:
-            self.timestream = TimeStream(host='192.168.3.40', port=4096)
-            self.timer_timestream.start(100)  # milliseconds
-        except Exception as e:
-            print(f"Error: Can't start timestream: {e}")
+    def updateQueenListenUI(self, running):
+        if running:
+            self.button_queenlisten.setText('STOP Queen listening')
 
-    def update_figure_timestream(self):
+        else:
+            self.button_queenlisten.setText('START Queen listening')
+            self.button_queenlisten.setChecked(False)
+
+
+    def updateFigureTimestream(self):
         kid_id = self.textbox_timestream_id.text()
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
         self.data_timestream[0].append(I)
@@ -219,6 +280,15 @@ class MainWindow(QMainWindow):
         # self.figure_timestream.clear()
         # plt.plot(self.data_timestream[0], self.data_timestream[1])
         # self.canvas.draw()
+
+
+    def stdout_write(self, text):
+        """Redirects standard output to the console"""
+        self.emitter_console.text_written.emit(text)
+
+    def stderr_write(self, text):
+        """Redirects standard error to the console"""
+        self.emitter_console.text_written.emit(text)
     
 
 
@@ -241,9 +311,6 @@ def _comNumAlcove(com_str):
 
 
 def _sendAlcoveCommand(com_str, com_to, com_args):
-    # print(f"Sending alcove command {com_str}")
-    time.sleep(3)
-
     com_num = _comNumAlcove(com_str)
 
     # specific board/drone command
@@ -259,6 +326,12 @@ def _sendAlcoveCommand(com_str, com_to, com_args):
     # all-boards commands
     else:
         return queen.alcoveCommand(com_num, all_boards=True, args=com_args)
+    
+
+def _sendQueenCommand(com_str, com_args):
+    com_num = _comNumQueen(com_str)
+
+    return queen.callCom(com_num, com_args)
 
 
 def _getTimestreamData(timestream, packets=100, kid_id=None):
