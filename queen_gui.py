@@ -18,17 +18,23 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit
 from PyQt5.QtGui import QIcon, QMovie
 from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal
 
 import queen
 import alcove
+from timestream import TimeStream
 
 
 
 ###############
 ### THREADS ###
+
+class ConsoleEmitter(QObject):
+    """Custom signal emitter for console output"""
+    text_written = pyqtSignal(str)
+
 
 class AlcoveCommandThread(QThread):
     ret = pyqtSignal(object)
@@ -89,7 +95,7 @@ class MainWindow(QMainWindow):
         self.timer_timestream = QTimer()
         self.timer_timestream.timeout.connect(self.update_figure_timestream)
 
-        self.data_timestream = ([], []) # x, y
+        self.data_timestream = ([], []) # I, Q
 
 
         # Alcove command
@@ -115,6 +121,25 @@ class MainWindow(QMainWindow):
         self.label_alcovecoms = QLabel("")
         layout_alcovecoms.addWidget(self.label_alcovecoms)
 
+
+        # Console
+        self.console = QPlainTextEdit()
+        # self.setCentralWidget(self.console)
+        layout.addWidget(self.console)
+        self.emitter_console = ConsoleEmitter()
+        self.emitter_console.text_written.connect(self.console.insertPlainText)
+        sys.stdout.write = self.stdout_write
+        sys.stderr.write = self.stderr_write
+
+
+
+    def stdout_write(self, text):
+        """Redirects standard output to the console"""
+        self.emitter_console.text_written.emit(text)
+
+    def stderr_write(self, text):
+        """Redirects standard error to the console"""
+        self.emitter_console.text_written.emit(text)
 
 
     def clicked_button_alcovecoms(self):
@@ -157,23 +182,17 @@ class MainWindow(QMainWindow):
 
 
     def clicked_button_timestream(self):
-        self.timer_timestream.start(100)  # milliseconds
+        try:
+            self.timestream = TimeStream(host='192.168.3.40', port=4096)
+            self.timer_timestream.start(100)  # milliseconds
+        except Exception as e:
+            print(f"Error: Can't start timestream: {e}")
 
     def update_figure_timestream(self):
-        # kid_id = self.textbox_timestream_id.text()
-        # new_dat = _getTimestreamData(delta_t=100, kid_id=kid_id)
-        # # append to data
-        # self.data_timestream.append(new_dat)
-        # # crop data to desired length
-        # self.figure_timestream.clear()
-        # plt.plot(self.data_timestream)
-        # self.canvas.draw()
-
-        # random data for testing
-        x = self.data_timestream[0][-1]+1 if len(self.data_timestream[0])>0 else 1
-        y = random.uniform(0, 1)
-        self.data_timestream[0].append(x)
-        self.data_timestream[1].append(y)
+        kid_id = self.textbox_timestream_id.text()
+        I, Q = _getTimestreamData(self.timestream, 100, kid_id)
+        self.data_timestream[0].append(I)
+        self.data_timestream[1].append(Q)
         try: 
             ts_win = max(int(self.textbox_timestream_win.text()), 2)
         except:
@@ -182,8 +201,24 @@ class MainWindow(QMainWindow):
             del self.data_timestream[0][:-ts_win]
             del self.data_timestream[1][:-ts_win]
         self.figure_timestream.clear()
-        plt.plot(self.data_timestream[0], self.data_timestream[1])
+        plt.plot(self.data_timestream[0]**2 + self.data_timestream[1]**2)
         self.canvas.draw()
+
+        # # fake random data for testing
+        # x = self.data_timestream[0][-1]+1 if len(self.data_timestream[0])>0 else 1
+        # y = random.uniform(0, 1)
+        # self.data_timestream[0].append(x)
+        # self.data_timestream[1].append(y)
+        # try: 
+        #     ts_win = max(int(self.textbox_timestream_win.text()), 2)
+        # except:
+        #     ts_win = 100
+        # if len(self.data_timestream[0]) > ts_win:
+        #     del self.data_timestream[0][:-ts_win]
+        #     del self.data_timestream[1][:-ts_win]
+        # self.figure_timestream.clear()
+        # plt.plot(self.data_timestream[0], self.data_timestream[1])
+        # self.canvas.draw()
     
 
 
@@ -226,14 +261,18 @@ def _sendAlcoveCommand(com_str, com_to, com_args):
         return queen.alcoveCommand(com_num, all_boards=True, args=com_args)
 
 
-def _getTimestreamData(delta_t=100, kid_id=None):
+def _getTimestreamData(timestream, packets=100, kid_id=None):
     """Get a chunk of time stream data.
-    delta_t: (float) time length of chunck in ms.
+    timestream: (TimeStream) the timestream object.
+    packets: (int) number of packets to capture.
     kid_id:  (int) ID of resonator. If None get all.
     """
-    
-    # record some small amount of ts data, maybe 100 ms
-    # and return
+
+    I, Q = timestream.getTimeStreamChunk(packets)
+
+    # todo: filter by kid_id
+
+    return I, Q
 
 
 
