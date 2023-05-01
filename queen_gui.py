@@ -262,9 +262,9 @@ class MainWindow(QMainWindow):
             ts_win = max(int(self.textbox_timestream_win.text()), 2)
         except:
             ts_win = 100
-        if len(self.data_timestream[0][0]) > ts_win:
-            del self.data_timestream[0][:,:-ts_win]
-            del self.data_timestream[1][:,:-ts_win]
+        # if len(self.data_timestream[0][0]) > ts_win:
+        #     del self.data_timestream[0][:,:-ts_win]
+        #     del self.data_timestream[1][:,:-ts_win]
         self.figure_timestream.clear()
         plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
         self.canvas.draw()
