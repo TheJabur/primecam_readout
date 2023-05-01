@@ -49,8 +49,8 @@ class TimeStream:
         """
 
         x = self.captureNpackets(N)
-        x = self.byteshiftPackets(ts)
-        x = self.convertPackets(ts)
+        x = self.byteshiftPackets(x)
+        x = self.convertPackets(x)
 
         I, Q = x[:,16::2].T, x[:,17::2].T
         
