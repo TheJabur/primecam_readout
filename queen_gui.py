@@ -255,39 +255,21 @@ class MainWindow(QMainWindow):
 
         print(f"I={I}")
 
-        I = np.concatenate((self.data_timestream[0], I), axis=1)
-        Q = np.concatenate((self.data_timestream[1], Q), axis=1)
+        # I = np.concatenate((self.data_timestream[0], I), axis=1)
+        # Q = np.concatenate((self.data_timestream[1], Q), axis=1)
 
-        # for i in range(len(self.data_timestream[0])):
-        #     self.data_timestream[0][i].append(I[i])
-        #     self.data_timestream[1][i].append(Q[i])
+        # try: 
+        #     ts_win = max(int(self.textbox_timestream_win.text()), 2)
+        # except:
+        #     ts_win = 100
+        # I = I[:,-ts_win:]
+        # Q = Q[:,-ts_win:]
 
-        # self.data_timestream[0].append(I)
-        # self.data_timestream[1].append(Q)
+        # self.figure_timestream.clear()
 
-        try: 
-            ts_win = max(int(self.textbox_timestream_win.text()), 2)
-        except:
-            ts_win = 100
-        I = I[:,-ts_win:]
-        Q = Q[:,-ts_win:]
-        
-        # if len(self.data_timestream[0][0]) > ts_win:
-        #     del self.data_timestream[0][:,:-ts_win]
-        #     del self.data_timestream[1][:,:-ts_win]
+        # plt.plot(self.data_timestream[0][kid_id]**2 + self.data_timestream[1][kid_id]**2)
 
-        self.figure_timestream.clear()
-
-        plt.plot(self.data_timestream[0][kid_id]**2 + self.data_timestream[1][kid_id]**2)
-
-        # for i in range(len(self.data_timestream[0])):
-        #     I = self.data_timestream[0][i]
-        #     Q = self.data_timestream[1][i]
-        #     plt.plot(I**2 + Q**2)
-        #     break
-        # plt.plot(np.array(self.data_timestream[0])**2 + np.array(self.data_timestream[1])**2)
-
-        self.canvas.draw()
+        # self.canvas.draw()
 
         # # fake random data for testing
         # x = self.data_timestream[0][-1]+1 if len(self.data_timestream[0])>0 else 1
