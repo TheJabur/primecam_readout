@@ -100,8 +100,8 @@ class MainWindow(QMainWindow):
 
         # Time stream figure
         self.figure_timestream = plt.figure(figsize=(5, 3), dpi=100)
-        self.canvas = FigureCanvas(self.figure_timestream)
-        layout.addWidget(self.canvas)
+        self.canvas_timestream = FigureCanvas(self.figure_timestream)
+        layout.addWidget(self.canvas_timestream)
 
         layout_timestreamui = QHBoxLayout()
         layout.addLayout(layout_timestreamui)
@@ -121,7 +121,10 @@ class MainWindow(QMainWindow):
         self.timer_timestream = QTimer()
         self.timer_timestream.timeout.connect(self.updateFigureTimestream)
 
-        self.data_timestream = np.array(([], [])) # I, Q
+        self.data_timestream = None 
+        # 3D array of format: [[I], [Q]]
+        # where I and Q have format: [[res1], [res2], [res3], ..., [resM]]
+        # and resM have format: [val1, val2, ..., valN]
 
 
         # Alcove command
@@ -250,26 +253,37 @@ class MainWindow(QMainWindow):
 
 
     def updateFigureTimestream(self):
-        kid_id = self.textbox_timestream_id.text()
+        try:
+            kid_id = max(int(self.textbox_timestream_id.text()), 0)
+        except:
+            kid_id = 0 # default kid_id
+            # update GUI textbox to show using this kid_id
+            self.textbox_timestream_id.setText(str(kid_id))
+
+        # grab a chunk of timestream
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
 
-        print(f"I={I}")
+        if self.data_timestream is not None: # None if first loop
+            # add new data to already collected data 
+            I = np.concatenate((self.data_timestream[0], I), axis=1)
+            Q = np.concatenate((self.data_timestream[1], Q), axis=1)
 
-        # I = np.concatenate((self.data_timestream[0], I), axis=1)
-        # Q = np.concatenate((self.data_timestream[1], Q), axis=1)
+        # crop to desired data length (# of packets)
+        try: 
+            ts_win = max(int(self.textbox_timestream_win.text()), 2)
+        except:
+            ts_win = 100 # default ts_win length (# of packets)
+        I = I[:,-ts_win:] # crop each res stream to ts_win packets
+        Q = Q[:,-ts_win:]
 
-        # try: 
-        #     ts_win = max(int(self.textbox_timestream_win.text()), 2)
-        # except:
-        #     ts_win = 100
-        # I = I[:,-ts_win:]
-        # Q = Q[:,-ts_win:]
+        # save to instance variable for next loop
+        self.data_timestream[0] = I
+        self.data_timestream[1] = Q
 
-        # self.figure_timestream.clear()
-
-        # plt.plot(self.data_timestream[0][kid_id]**2 + self.data_timestream[1][kid_id]**2)
-
-        # self.canvas.draw()
+        # plot in timestream figure
+        self.figure_timestream.clear() # clear figure and replot
+        plt.plot(I[kid_id]**2 + Q[kid_id]**2)
+        self.canvas_timestream.draw()
 
         # # fake random data for testing
         # x = self.data_timestream[0][-1]+1 if len(self.data_timestream[0])>0 else 1
