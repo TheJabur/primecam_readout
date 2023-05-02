@@ -184,6 +184,7 @@ class MainWindow(QMainWindow):
     def onClickedButtonTimestream(self):
         try:
             self.timestream = TimeStream(host='192.168.3.40', port=4096)
+            # self.timestream = None # for testing with no connection
             self.timer_timestream.start(100)  # milliseconds
         except Exception as e:
             print(f"Error: Can't start timestream: {e}")
@@ -260,7 +261,7 @@ class MainWindow(QMainWindow):
             # update GUI textbox to show using this kid_id
             self.textbox_timestream_id.setText(str(kid_id))
 
-        # grab a chunk of timestream
+        # grab a chunk of timestream, hardcoded 100 packets
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
 
         if self.data_timestream is not None: # None if first loop
@@ -272,34 +273,17 @@ class MainWindow(QMainWindow):
         try: 
             ts_win = max(int(self.textbox_timestream_win.text()), 2)
         except:
-            ts_win = 100 # default ts_win length (# of packets)
+            ts_win = 1000 # default ts_win length (# of packets)
         I = I[:,-ts_win:] # crop each res stream to ts_win packets
         Q = Q[:,-ts_win:]
 
         # save to instance variable for next loop
-        self.data_timestream[0] = I
-        self.data_timestream[1] = Q
+        self.data_timestream = np.array([I, Q])
 
         # plot in timestream figure
         self.figure_timestream.clear() # clear figure and replot
         plt.plot(I[kid_id]**2 + Q[kid_id]**2)
         self.canvas_timestream.draw()
-
-        # # fake random data for testing
-        # x = self.data_timestream[0][-1]+1 if len(self.data_timestream[0])>0 else 1
-        # y = random.uniform(0, 1)
-        # self.data_timestream[0].append(x)
-        # self.data_timestream[1].append(y)
-        # try: 
-        #     ts_win = max(int(self.textbox_timestream_win.text()), 2)
-        # except:
-        #     ts_win = 100
-        # if len(self.data_timestream[0]) > ts_win:
-        #     del self.data_timestream[0][:-ts_win]
-        #     del self.data_timestream[1][:-ts_win]
-        # self.figure_timestream.clear()
-        # plt.plot(self.data_timestream[0], self.data_timestream[1])
-        # self.canvas.draw()
 
 
     def stdout_write(self, text):
@@ -362,9 +346,12 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
     """
 
     I, Q = timestream.getTimeStreamChunk(packets)
-    # print(I[0][:100])
 
-    # todo: filter by kid_id
+    # # fake data for testing
+    # X = 10 # number of kids
+    # N = 100 # number of packets
+    # I = np.random.rand(X, N)
+    # Q = np.random.rand(X, N)
 
     return I, Q
 
