@@ -115,12 +115,14 @@ class MainWindow(QMainWindow):
         layout_timestreamui.addWidget(self.textbox_timestream_win)
 
         self.button_timestream = QPushButton("Start Time Stream")
+        self.button_timestream.setCheckable(True)
         self.button_timestream.clicked.connect(self.onClickedButtonTimestream)
         layout_timestreamui.addWidget(self.button_timestream)
 
         self.timer_timestream = QTimer()
         self.timer_timestream.timeout.connect(self.updateFigureTimestream)
-
+        
+        self.timestream = None
         self.data_timestream = None 
         # 3D array of format: [[I], [Q]]
         # where I and Q have format: [[res1], [res2], [res3], ..., [resM]]
@@ -182,12 +184,20 @@ class MainWindow(QMainWindow):
 
 
     def onClickedButtonTimestream(self):
-        try:
-            self.timestream = TimeStream(host='192.168.3.40', port=4096)
-            # self.timestream = None # for testing with no connection
-            self.timer_timestream.start(100)  # milliseconds
-        except Exception as e:
-            print(f"Error: Can't start timestream: {e}")
+        if self.button_timestream.isChecked():
+            try:
+                self.timestream = TimeStream(host='192.168.3.40', port=4096)
+                self.timer_timestream.start(100)  # milliseconds
+                self.updateTimeStreamUI(running=True)
+            except Exception as e:
+                self.timer_timestream.stop()
+                self.updateTimeStreamUI(running=False)
+                print(f"Error: Can't start timestream: {e}")
+
+        else:
+            self.timestream = None
+            self.timer_timestream.stop()
+            self.updateTimeStreamUI(running=False)
 
 
     def onFinishAlcoveCommand(self, ret_tuple):
@@ -253,7 +263,19 @@ class MainWindow(QMainWindow):
             self.button_queenlisten.setChecked(False)
 
 
+    def updateTimeStreamUI(self, running):
+        if running:
+            self.button_timestream.setText('Stop Time Stream')
+            self.button_timestream.setChecked(True)
+        else:
+            self.button_timestream.setText('Start Time Stream')
+            self.button_timestream.setChecked(False)
+
+
     def updateFigureTimestream(self):
+        if self.timestream is None:
+            return
+
         try:
             kid_id = max(int(self.textbox_timestream_id.text()), 0)
         except:
@@ -282,7 +304,7 @@ class MainWindow(QMainWindow):
 
         # plot in timestream figure
         self.figure_timestream.clear() # clear figure and replot
-        plt.plot(I[kid_id]**2 + Q[kid_id]**2)
+        plt.plot(I[kid_id]**2 + Q[kid_id]**2, color='tab:green')
         self.canvas_timestream.draw()
 
 
@@ -345,13 +367,13 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
     kid_id:  (int) ID of resonator. If None get all.
     """
 
-    I, Q = timestream.getTimeStreamChunk(packets)
+    # I, Q = timestream.getTimeStreamChunk(packets)
 
-    # # fake data for testing
-    # X = 10 # number of kids
-    # N = 100 # number of packets
-    # I = np.random.rand(X, N)
-    # Q = np.random.rand(X, N)
+    # fake data for testing
+    X = 10 # number of kids
+    N = 100 # number of packets
+    I = np.random.rand(X, N)
+    Q = np.random.rand(X, N)
 
     return I, Q
 
