@@ -121,7 +121,8 @@ def saveToTmp(data):
 
     else:                               # write other types to tmp file
         with tempfile.NamedTemporaryFile(dir=dname, delete=False) as tf:
-            tf.write(pickle.dumps(data))
+            # tf.write(pickle.dumps(data))
+            tf.write(data)
 
 
 def saveWrappedToTmp(wrappedData):
