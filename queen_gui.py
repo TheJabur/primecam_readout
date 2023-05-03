@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit
-from PyQt5.QtGui import QIcon, QMovie
+from PyQt5.QtGui import QIcon, QMovie, QPixmap
 from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal
 
 import queen
@@ -75,7 +75,14 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        # window title
         self.setWindowTitle("CCATpHive Experimental Readout GUI (PyQt)")
+
+        # application icon
+        self.setWindowIcon(QIcon(QPixmap('./gui_assets/icon.png')))
+        # icon = QIcon()
+        # icon.addPixmap(QPixmap("./gui_assets/icon.png"), QIcon.Normal, QIcon.Off)
+        # self.setWindowIcon(icon)
 
         # Loading gif
         self.movie_loading = QMovie('./gui_assets/loading.gif')
