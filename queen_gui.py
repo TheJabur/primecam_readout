@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit
-from PyQt5.QtGui import QIcon, QMovie, QPixmap
+from PyQt5.QtGui import QIcon, QMovie, QPixmap, QTextCursor
 from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal
 
 import queen
@@ -30,11 +30,6 @@ from timestream import TimeStream
 
 ###############
 ### THREADS ###
-
-
-class ConsoleEmitter(QObject):
-    """Custom signal emitter for console output"""
-    text_written = pyqtSignal(str)
 
 
 class QueenCommandThread(QThread):
@@ -162,12 +157,12 @@ class MainWindow(QMainWindow):
 
         # Console
         self.console = QPlainTextEdit()
-        # self.setCentralWidget(self.console)
         layout.addWidget(self.console)
         self.emitter_console = ConsoleEmitter()
         self.emitter_console.text_written.connect(self.console.insertPlainText)
-        sys.stdout.write = self.stdout_write
-        sys.stderr.write = self.stderr_write
+        sys.stdout.write = self.addConsoleMessage
+        sys.stderr.write = self.addConsoleMessage
+
 
 
     def onClickButtonAlcovecoms(self):
@@ -187,7 +182,7 @@ class MainWindow(QMainWindow):
             self.updateQueenListenUI(running=False)
             if self.queenlisten_thread is not None:
                 self.queenlisten_thread.terminate()
-                self.button_queenlisten.setChecked(False)
+                # self.button_queenlisten.setChecked(False)
 
 
     def onClickedButtonTimestream(self):
@@ -315,18 +310,21 @@ class MainWindow(QMainWindow):
         self.canvas_timestream.draw()
 
 
-    def stdout_write(self, text):
-        """Redirects standard output to the console"""
+    def addConsoleMessage(self, text):
         self.emitter_console.text_written.emit(text)
-
-    def stderr_write(self, text):
-        """Redirects standard error to the console"""
-        self.emitter_console.text_written.emit(text)
+        self.console.moveCursor(QTextCursor.End)
+        # self.console.ensureCursorVisible()
     
 
 
 ##########################
 ### INTERNAL FUNCTIONS ###
+
+
+class ConsoleEmitter(QObject):
+    """Custom signal emitter for console output"""
+    text_written = pyqtSignal(str)
+
 
 def _comsListQueen():
     return [queen.com[key].__name__ for key in queen.com.keys()]
