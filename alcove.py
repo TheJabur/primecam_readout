@@ -53,7 +53,8 @@ def _com():
         48:multi_chan.fullLoop,
         49:multi_chan.loChop,
         50:multi_chan.findCalTones,
-        51:multi_chan.updateTargComb
+        51:multi_chan.updateTargComb,
+        52:multi_chan.setFineNCLO
     }
 
 
