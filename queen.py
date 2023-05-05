@@ -317,25 +317,28 @@ def _timeMsg():
     return time_str
 
 
-def listToArgsAndKwargs(l):
-    '''Split a list into args and kwargs.
-    l: List to split.
-    Returns args (list) and kwargs (dictionary).'''
-
+def listToArgsAndKwargs(args_list):
+    """Split an arg list into args and kwargs.
+    l: Args list to split.
+    Returns args (list) and kwargs (dictionary)."""
+    
+    args_str = ' '.join(args_list)
+    args_str = args_str.replace(",", " ")
+    args_str = args_str.replace("=", " = ")
+    args_str = ' '.join(args_str.split()) # remove excess whitespace
+    l = args_str.split(' ')
+    
     args = []
     kwargs = {}
     while len(l)>0:
         v = l.pop(0)
 
-        # if this doesn't have a dash in front
-        # or theres no more items
-        # or the next item has a dash in front
-        if v[0]!='-' or len(l)==0 or l[0][0]=='-':
-            args.append(v)             # then this is an arg
+        if len(l)>0 and l[0]=='=': # kwarg
+            l.pop(0) # get rid of =
+            kwargs[v] = l.pop(0)
 
-        else:
-            v = v.lstrip('-')          # remove dashes in front
-            kwargs[v] = l.pop(0)       # this is a kwarg
+        else: # arg
+            args.append(v)
 
     return args, kwargs
 
