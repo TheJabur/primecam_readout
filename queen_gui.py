@@ -13,6 +13,7 @@
 
 import sys
 import numpy as np
+import math
 import random
 import time
 import matplotlib.pyplot as plt
@@ -111,6 +112,10 @@ class MainWindow(QMainWindow):
         self.textbox_timestream_win = QLineEdit()
         self.textbox_timestream_win.setPlaceholderText("last x points")
         layout_timestreamui.addWidget(self.textbox_timestream_win)
+
+        self.pulldown_timestream = QComboBox()
+        self.pulldown_timestream.addItems(['power', 'phase'])
+        layout_timestreamui.addWidget(self.pulldown_timestream)
 
         self.button_timestream = QPushButton("Start Time Stream")
         self.button_timestream.setCheckable(True)
@@ -302,7 +307,12 @@ class MainWindow(QMainWindow):
 
         # plot in timestream figure
         self.figure_timestream.clear() # clear figure and replot
-        plt.plot(I[kid_id]**2 + Q[kid_id]**2, color='tab:green')
+        if self.pulldown_timestream.currentText() == 'power':
+            plt.plot(I[kid_id]**2 + Q[kid_id]**2, 
+                     label='power', color='tab:green')
+        else:
+            plt.plot(np.arctan2(Q[kid_id], I[kid_id]), 
+                    label='phase', color='tab:green')
         self.canvas_timestream.draw()
 
 
