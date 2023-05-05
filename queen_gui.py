@@ -18,7 +18,7 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit, QMessageBox
 from PyQt5.QtGui import QIcon, QMovie, QPixmap, QTextCursor
 from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal
 
@@ -70,18 +70,14 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # window title
+        # Window title and icon
         self.setWindowTitle("CCATpHive Experimental Readout GUI (PyQt)")
-
-        # application icon
         self.setWindowIcon(QIcon(QPixmap('./gui_assets/icon.png')))
-        # icon = QIcon()
-        # icon.addPixmap(QPixmap("./gui_assets/icon.png"), QIcon.Normal, QIcon.Off)
-        # self.setWindowIcon(icon)
 
         # Loading gif
         self.movie_loading = QMovie('./gui_assets/loading.gif')
         self.movie_loading.setScaledSize(QSize(10, 10))
+
 
         # Create the main widget
         widget = QWidget(self)
@@ -314,6 +310,26 @@ class MainWindow(QMainWindow):
         self.emitter_console.text_written.emit(text)
         self.console.moveCursor(QTextCursor.End)
         # self.console.ensureCursorVisible()
+
+
+    def confirmClose(self):
+        result = QMessageBox.question(self,
+                      "Confirm Exit...",
+                      "Are you sure you want to exit ?",
+                      QMessageBox.Yes| QMessageBox.No)
+        
+        return result == QMessageBox.Yes
+    
+
+    def closeEvent(self, event):
+        """Runs when app is being closed."""
+
+        
+
+        # ask user for exit confirmation
+        event.ignore()
+        if self.confirmClose():
+            event.accept()
     
 
 
@@ -388,4 +404,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
+    app.aboutToQuit.connect(lambda: print("Running cleanup code before closing the app"))
     sys.exit(app.exec_())
