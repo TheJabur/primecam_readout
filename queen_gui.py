@@ -176,14 +176,15 @@ class MainWindow(QMainWindow):
 
     def onClickButtonQueenlisten(self):
         if self.button_queenlisten.isChecked():
+            print("Starting Queen listen mode...")
             self.updateQueenListenUI(running=True)
             self.sendQueenListenCommand()
             
         else:
+            print("Stopping Queen listen mode...")
             self.updateQueenListenUI(running=False)
             if self.queenlisten_thread is not None:
-                self.queenlisten_thread.terminate()
-                # self.button_queenlisten.setChecked(False)
+                self.queenlisten_thread.stop()
 
 
     def onClickedButtonTimestream(self):
@@ -210,9 +211,9 @@ class MainWindow(QMainWindow):
 
 
     def onFinishQueenlisten(self, ret):
-        print(f"Return: {ret}")
-        self.queenlisten_thread = None
-        self.updateQueenListenUI(False)
+        thread, com_str, com_args = ret
+        self.queenlisten_thread = thread
+        self.updateQueenListenUI(thread is not None)
 
 
     def sendAlcoveCommand(self, com_str, com_to, com_args):
@@ -334,8 +335,10 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """Runs when app is being closed."""
 
+        # stop the queen listening thread
+        if self.queenlisten_thread is not None:
+            self.queenlisten_thread.stop()
         
-
         # ask user for exit confirmation
         event.ignore()
         if self.confirmClose():
@@ -414,5 +417,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    app.aboutToQuit.connect(lambda: print("Running cleanup code before closing the app"))
+    app.aboutToQuit.connect(lambda: print("Closing..."))
     sys.exit(app.exec_())

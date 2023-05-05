@@ -166,7 +166,6 @@ def callCom(com_num, args=None):
         
     try:
         com_num, args, kwargs = payloadToCom(payload) # split payload into command
-        print(f"args={args}")
         ret = com[com_num](*args, **kwargs)
     except BaseException as e: 
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -174,26 +173,9 @@ def callCom(com_num, args=None):
         ret = message
 
     if ret is not None:              # default success return is None
-        # what if ret is not a string, e.g. data?
-        # can we signal that in the ret or need to check?
-        # and then what to do with them?
         print(f"{com[com_num].__name__}: {ret}") # monkeypatched to log
-    
-
-
-    # else:
-    #     try:                             # attempt to run command
-    #         ret = com[key](*args, **kwargs)
-    #     except BaseException as e: 
-    #         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-    #         message = template.format(type(e).__name__, e.args)
-    #         ret = message
-
-    #     if ret is not None:              # default success return is None
-    #         # what if ret is not a string, e.g. data?
-    #         # can we signal that in the ret or need to check?
-    #         # and then what to do with them?
-    #         print(f"{com[key].__name__}: {ret}") # monkeypatched to log
+        
+    return ret
 
 
 def listenMode():
@@ -227,6 +209,7 @@ def listenMode():
 
     # This thread isn't shut down - could lead to problems
     # thread.stop()
+    return thread
 
 
 def getKeyValue(key):
