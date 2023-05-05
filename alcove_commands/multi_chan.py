@@ -609,6 +609,23 @@ def setNCLO(f_lo):
     io.save(io.file.f_center_vna, f_lo*1e6)
 
 
+def setFineNCLO(f_lo):
+    """
+    setFineNCLO: set the fine frequency numerically controlled local oscillator
+           
+
+    f_lo: center frequency in [MHz]
+    """
+
+    # import numpy as np
+
+    chan = cfg.drid
+    f_lo = float(f_lo)
+    return _setNCLO2(chan, f_lo)
+    # TODO: modify f_center to reflect this fine adjustment
+    # io.save(io.file.f_center_vna, f_lo*1e6)
+
+
 def vnaSweep(f_center=600):
     """
     vnaSweep: perform a stepped frequency sweep centered at f_center \\
