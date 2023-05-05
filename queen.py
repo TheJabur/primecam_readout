@@ -166,6 +166,7 @@ def callCom(com_num, args=None):
         
     try:
         com_num, args, kwargs = payloadToCom(payload) # split payload into command
+        print(f"args={args}")
         ret = com[com_num](*args, **kwargs)
     except BaseException as e: 
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
@@ -326,7 +327,7 @@ def listToArgsAndKwargs(args_list):
     args_str = args_str.replace(",", " ")
     args_str = args_str.replace("=", " = ")
     args_str = ' '.join(args_str.split()) # remove excess whitespace
-    l = args_str.split(' ')
+    l = args_str.split()
     
     args = []
     kwargs = {}

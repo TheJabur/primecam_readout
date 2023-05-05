@@ -203,7 +203,7 @@ def listToArgsAndKwargs(args_list):
     args_str = args_str.replace(",", " ")
     args_str = args_str.replace("=", " = ")
     args_str = ' '.join(args_str.split()) # remove excess whitespace
-    l = args_str.split(' ')
+    l = args_str.split()
     
     args = []
     kwargs = {}
