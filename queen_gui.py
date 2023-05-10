@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVB
 from PyQt5.QtGui import QIcon, QMovie, QPixmap, QTextCursor
 from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal
 
+import base_io as io
 import queen
 import alcove
 from timestream import TimeStream
@@ -122,14 +123,28 @@ class MainWindow(QMainWindow):
         self.button_timestream.clicked.connect(self.onClickedButtonTimestream)
         layout_timestreamui.addWidget(self.button_timestream)
 
+        self.button_timestream_save = QPushButton("Start Capture")
+        self.button_timestream_save.setCheckable(True)
+        self.button_timestream_save.clicked.connect(self.onClickedButtonTimestreamSave)
+        layout_timestreamui.addWidget(self.button_timestream_save)
+        self.button_timestream_save.setEnabled(False)
+
+        self.label_timestream_save = QLabel("")
+        layout_timestreamui.addWidget(self.label_timestream_save)
+
+        self.timer_timestream_save = QTimer()
+        self.timer_timestream_save.timeout.connect(self.updateTimeStreamTimer)
+        self.timestream_save_time = 0
+
         self.timer_timestream = QTimer()
         self.timer_timestream.timeout.connect(self.updateFigureTimestream)
-        
+
         self.timestream = None
         self.data_timestream = None 
         # 3D array of format: [[I], [Q]]
         # where I and Q have format: [[res1], [res2], [res3], ..., [resM]]
         # and resM have format: [val1, val2, ..., valN]
+        self.data_timestream_save = None
 
 
         # Alcove command
@@ -190,7 +205,7 @@ class MainWindow(QMainWindow):
     def onClickedButtonTimestream(self):
         if self.button_timestream.isChecked():
             try:
-                self.timestream = TimeStream(host='192.168.3.40', port=4096)
+                # self.timestream = TimeStream(host='192.168.3.40', port=4096)
                 self.timer_timestream.start(100)  # milliseconds
                 self.updateTimeStreamUI(running=True)
             except Exception as e:
@@ -202,6 +217,30 @@ class MainWindow(QMainWindow):
             self.timestream = None
             self.timer_timestream.stop()
             self.updateTimeStreamUI(running=False)
+
+            self.data_timestream_save = None
+            self.button_timestream_save.setChecked(False)
+
+
+    def onClickedButtonTimestreamSave(self):
+        if self.button_timestream_save.isChecked():
+            # assuming can only click if timestream running
+            # isChecked used in updateFigureTimestream()
+            self.updateTimeStreamSaveUI(running=True)
+            self.timestream_save_time = 0
+            self.timer_timestream_save.start(1000) # 1 s
+
+        else:
+            self.saveToFileTimestreamSave()
+            self.updateTimeStreamSaveUI(running=False)
+            self.timer_timestream_save.stop()
+            self.timestream_save_time = 0
+
+
+    def saveToFileTimestreamSave(self):
+        io.saveToTmp(self.data_timestream_save)
+        # print("TODO: Implement save captured timestream to file!")
+        self.data_timestream_save = None
 
 
     def onFinishAlcoveCommand(self, ret_tuple):
@@ -271,14 +310,31 @@ class MainWindow(QMainWindow):
         if running:
             self.button_timestream.setText('Stop Time Stream')
             self.button_timestream.setChecked(True)
+            self.button_timestream_save.setEnabled(True)
         else:
             self.button_timestream.setText('Start Time Stream')
             self.button_timestream.setChecked(False)
+            self.button_timestream_save.setEnabled(False)
+
+
+    def updateTimeStreamSaveUI(self, running):
+        if running:
+            self.button_timestream_save.setText("Save Capture")
+            self.label_timestream_save.setText(f"{self.timestream_save_time}")
+
+        else:
+            self.button_timestream_save.setText("Start Capture")
+            self.label_timestream_save.setText("")
+
+        
+    def updateTimeStreamTimer(self):
+        self.timestream_save_time += 1
+        self.label_timestream_save.setText(f"{self.timestream_save_time}")
 
 
     def updateFigureTimestream(self):
-        if self.timestream is None:
-            return
+        # if self.timestream is None:
+        #     return
 
         try:
             kid_id = max(int(self.textbox_timestream_id.text()), 0)
@@ -290,8 +346,18 @@ class MainWindow(QMainWindow):
         # grab a chunk of timestream, hardcoded 100 packets
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
 
+        # add new data to capture data
+        if self.button_timestream_save.isChecked():
+            if self.data_timestream_save is None:
+                self.data_timestream_save = np.array([I, Q])
+            else:
+                I_save = np.concatenate((self.data_timestream_save[0], I), axis=1)
+                Q_save = np.concatenate((self.data_timestream_save[1], Q), axis=1)
+                self.data_timestream_save = np.array([I_save, Q_save])
+
+
+        # add new data to already collected data 
         if self.data_timestream is not None: # None if first loop
-            # add new data to already collected data 
             I = np.concatenate((self.data_timestream[0], I), axis=1)
             Q = np.concatenate((self.data_timestream[1], Q), axis=1)
 
@@ -405,7 +471,7 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
 
     # fake data for testing
     X = 10 # number of kids
-    N = 100 # number of packets
+    N = packets # number of packets
     I = np.random.rand(X, N)
     Q = np.random.rand(X, N)
 
