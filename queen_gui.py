@@ -238,8 +238,10 @@ class MainWindow(QMainWindow):
 
 
     def saveToFileTimestreamSave(self):
-        io.saveToTmp(self.data_timestream_save)
-        # print("TODO: Implement save captured timestream to file!")
+        base_fname = f'timestream_{self.textbox_timestream_id.text()}_'
+        fname = io.saveToTmp(self.data_timestream_save, 
+                             filename=base_fname, use_timestamp=True)
+        print(f"Saving captured timestream to file: {fname}")
         self.data_timestream_save = None
 
 
