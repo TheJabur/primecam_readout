@@ -96,11 +96,13 @@ def loadVersion(file, timestamp):
     return data
 
 
-def saveToTmp(data):
+def saveToTmp(data, filename=None, use_timestamp=True):
     """
     Save a new file to tmp directory.
     
     data: The data to save to file.
+    filename: (str) The filename to use.
+    use_timestamp: (bool) Append timestamp to filename if True.
     """
 
     # add functionality to clear out old tmp files?
@@ -111,18 +113,33 @@ def saveToTmp(data):
     from pathlib import Path
 
     dname = 'tmp'
+    suffix = ''
+    prefix = ''
 
     # this will make the tmp dir exist if possible
     Path(dname).mkdir(parents=True, exist_ok=True)
 
+    # filename modifiction
+    if filename is not None:
+        prefix += filename
+
+    # timestamp modification
+    if use_timestamp:
+        suffix += f'_{_timestamp()}'  
+
     if isinstance(data, np.ndarray):    # save arrays to tmp .npy file
-        with tempfile.NamedTemporaryFile(dir=dname, suffix='.npy', delete=False) as tf:
+        suffix += '.npy'
+        with tempfile.NamedTemporaryFile(
+            dir=dname, prefix=prefix, suffix=suffix, delete=False) as tf:
             np.save(tf, data)
+            return tf.name
 
     else:                               # write other types to tmp file
-        with tempfile.NamedTemporaryFile(dir=dname, delete=False) as tf:
+        with tempfile.NamedTemporaryFile(
+            dir=dname, prefix=prefix, suffix=suffix, delete=False) as tf:
             # tf.write(pickle.dumps(data))
             tf.write(data)
+            return tf.name
 
 
 def saveWrappedToTmp(wrappedData):
