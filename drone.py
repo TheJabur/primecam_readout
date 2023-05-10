@@ -59,6 +59,8 @@ def main():
 
     r,p = connectRedis()                # redis and pubsub objects
 
+    r.client_setname(f'drone_{bid}.{drid}')
+
     # listenMode(r, p, bid, chan_subs)    # listen for redis messages
     listenMode(r, p, chan_subs)
     # currently, only way to exit out of listen mode is CTRL-c

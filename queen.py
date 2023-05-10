@@ -49,6 +49,7 @@ def _com():
         2:listenMode,
         3:getKeyValue,
         4:setKeyValue,
+        5:getClientList,
         9:test.testFunc1
     }
 
@@ -174,7 +175,7 @@ def callCom(com_num, args=None):
 
     if ret is not None:              # default success return is None
         print(f"{com[com_num].__name__}: {ret}") # monkeypatched to log
-        
+
     return ret
 
 
@@ -233,6 +234,26 @@ def setKeyValue(key, value):
     r.set(bytes(key, encoding='utf-8'), bytes(value, encoding='utf-8'))   
 
 
+def getClientList(do_print=True):
+    """
+    Print the Redis client list.
+    """
+
+    r,p = _connectRedis()
+
+    client_list = r.client_list()
+
+    if do_print:
+        for client in client_list:
+            # client_address = f"{client['addr']}:{client['port']}"
+            client_address = f"{client['addr']}"
+            client_name = client.get('name', 'N/A')
+            print(f"Client: {client_address} {client_name}")
+
+    else:
+        return client_list
+
+
 
 ##########################
 ### INTERNAL FUNCTIONS ###
@@ -262,6 +283,9 @@ def _connectRedis():
 
     r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
     p = r.pubsub()
+
+    r.client_setname(f'queen')
+
     return r, p
 
 
