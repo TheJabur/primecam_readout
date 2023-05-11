@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
             self.queenlisten_thread = thread
             running = thread is not None
         except:
-            print("onFinishQueenlisten exception")
+            print("### EXCEPTION in onFinishQueenlisten")
             running = False
         self.updateQueenListenUI(running)
     
@@ -378,9 +378,12 @@ class MainWindow(QMainWindow):
 
 
     def onFinishAlcoveCommand(self, ret_tuple):
-        ret, com_str, com_to, com_args = ret_tuple
-        print(f"Return: {ret}")
-        self.updateAlcoveComsUI(False, com_str, com_to, com_args)
+        try:
+            ret, com_str, com_to, com_args = ret_tuple
+            print(f"Return: {ret}")
+            self.updateAlcoveComsUI(False, com_str, com_to, com_args)
+        except:
+            print("### EXCEPTION in onFinishAlcoveCommand")
 
 
     # def sendQueenCommand(self, com_str, com_args):
@@ -413,9 +416,13 @@ class MainWindow(QMainWindow):
         text: (str) The message to add.
         """
 
-        self.emitter_console.text_written.emit(text)
-        self.console.moveCursor(QTextCursor.End)
-        # self.console.ensureCursorVisible()
+        self.emitter_console.text_written.emit(text) # override
+        self.emitter_console.write(text) # also send to console
+        self.console.moveCursor(QTextCursor.End) # snap console to bottom
+        self.console.ensureCursorVisible()
+
+        
+
     
 
 
@@ -436,7 +443,7 @@ class QueenCommandThread(QThread):
         ret = _sendQueenCommand(self.com_str, self.com_args)
         self.finished.emit((ret, self.com_str, self.com_args))
 
-#region
+
 class AlcoveCommandThread(QThread):
     finished = pyqtSignal(object)
 
@@ -450,7 +457,6 @@ class AlcoveCommandThread(QThread):
         # time.sleep(3)
         ret = _sendAlcoveCommand(self.com_str, self.com_to, self.com_args)
         self.finished.emit((ret, self.com_str, self.com_to, self.com_args))
-#endregion
 
 
 
@@ -460,8 +466,11 @@ class AlcoveCommandThread(QThread):
 
 
 class ConsoleEmitter(QObject):
-    """Custom signal emitter for console output"""
-    text_written = pyqtSignal(str)
+    """Custom signal emitter for console output
+    """
+
+    text_written = pyqtSignal(str) # override
+    write = sys.stdout.write # hold connection console
 
 
 def _comsListQueen():
