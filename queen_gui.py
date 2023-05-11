@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
     def onClickedButtonTimestream(self):
         if self.button_timestream.isChecked():
             try:
-                # self.timestream = TimeStream(host='192.168.3.40', port=4096)
+                self.timestream = TimeStream(host='192.168.3.40', port=4096)
                 self.timer_timestream.start(100)  # milliseconds
                 self.updateTimeStreamUI(running=True)
             except Exception as e:
@@ -258,8 +258,8 @@ class MainWindow(QMainWindow):
 
 
     def updateFigureTimestream(self):
-        # if self.timestream is None:
-        #     return
+        if self.timestream is None:
+            return
 
         try:
             kid_id = max(int(self.textbox_timestream_id.text()), 0)
@@ -519,13 +519,13 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
     kid_id:  (int) ID of resonator. If None get all.
     """
 
-    # I, Q = timestream.getTimeStreamChunk(packets)
+    I, Q = timestream.getTimeStreamChunk(packets)
 
-    # fake data for testing
-    X = 10 # number of kids
-    N = packets # number of packets
-    I = np.random.rand(X, N)
-    Q = np.random.rand(X, N)
+    # # fake data for testing
+    # X = 10 # number of kids
+    # N = packets # number of packets
+    # I = np.random.rand(X, N)
+    # Q = np.random.rand(X, N)
 
     return I, Q
 
