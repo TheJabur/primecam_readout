@@ -1,17 +1,15 @@
-########################################################
-### Main server-side script.                         ###
-### Allows execution of server command functions     ###
-### and remote alcove (on board) functions.          ###
-###                                                  ###
-### James Burgoyne jburgoyne@phas.ubc.ca             ###
-### CCAT Prime 2022                                  ###
-########################################################
+# ============================================================================ #
+# queen.py
+# Control computer script to send commands to drones.
+# James Burgoyne jburgoyne@phas.ubc.ca
+# CCAT Prime 2022   
+# ============================================================================ #
 
 
 
-###############
-### IMPORTS ###
-
+# ============================================================================ #
+# IMPORTS
+# ============================================================================ #
 
 import redis
 import numpy as np
@@ -28,8 +26,9 @@ import queen_commands.test_functions as test
 
 
 
-##############
-### CONFIG ###
+# ============================================================================ #
+# CONFIG
+# ============================================================================ #
 
 
 logging.basicConfig(
@@ -39,10 +38,8 @@ logging.basicConfig(
 )
 
 
-# official list of queen commands
-# combined with alcove commands
-# alcove command keys start at 10
-# queen command keys start at 20
+# ============================================================================ #
+#  queen commands list
 def _com():
     return {
         1:alcoveCommand,
@@ -55,10 +52,13 @@ def _com():
 
 
 
-#########################
-### COMMAND FUNCTIONS ###
+# ============================================================================ #
+# COMMAND FUNCTIONS
+# ============================================================================ #
 
 
+# ============================================================================ #
+#  alcoveCommand
 def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
     '''Send an alcove command to given board.
     com_num: Command number.
@@ -147,12 +147,14 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
         print("Command not sent: bid required if not sending to all boards.")
 
 
+# ============================================================================ #
+#  callCom
 def callCom(com_num, args=None):
-    '''execute a queen command function by key'''
+    '''execute a queen command function by key
 
-    # dictionary keys are stored as integers
-    # but redis may convert to string
-    # key = int(key)                       # want int for com
+    com_num: (int) command number (see queen commands list).
+    args: (str) arguments for command (see payloadToCom).
+    '''
 
     if com_num not in com:               # invalid command
         print('Invalid command: '+str(com_num))
@@ -179,9 +181,10 @@ def callCom(com_num, args=None):
     return ret
 
 
+# ============================================================================ #
+#  listenMode
 def listenMode():
-    """
-    Listen for Redis messages in thread.
+    """Listen for Redis messages (threaded).
     """
     # CTRL-C to exit listening mode
 
@@ -213,6 +216,8 @@ def listenMode():
     return thread
 
 
+# ============================================================================ #
+#  get/setKeyValue
 def getKeyValue(key):
     """
     GET the value of given key.
@@ -224,7 +229,6 @@ def getKeyValue(key):
     print(ret) # log/print message
     _notificationHandler(ret)  # send important notifications
 
-
 def setKeyValue(key, value):
     """
     SET the given value for the given key.
@@ -234,9 +238,12 @@ def setKeyValue(key, value):
     r.set(bytes(key, encoding='utf-8'), bytes(value, encoding='utf-8'))   
 
 
+# ============================================================================ #
+#  getClientList
 def getClientList(do_print=True):
-    """
-    Print the Redis client list.
+    """Print the Redis client list.
+
+    do_print: (bool) prints list if True, else returns.
     """
 
     r,p = _connectRedis()
@@ -255,21 +262,24 @@ def getClientList(do_print=True):
 
 
 
-##########################
-### INTERNAL FUNCTIONS ###
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
 
 
-# monkeypatch the print statement
+# ============================================================================ #
+#  print monkeypatch
 _print = print 
 def print(*args, **kw):
     _print(*args, **kw)            # print to terminal
     logging.info(' '.join(args))   # log to file
 
 
+# ============================================================================ #
+#  _success/_fail
 def _success(msg):
     _print("Done.")
     if msg is not None: logging.info(msg)
-
 
 def _fail(e, msg=None):
     _print("Failed.")
@@ -278,6 +288,8 @@ def _fail(e, msg=None):
     return e
 
 
+# ============================================================================ #
+#  _connectRedis
 def _connectRedis():
     '''connect to redis server'''
 
@@ -289,6 +301,8 @@ def _connectRedis():
     return r, p
 
 
+# ============================================================================ #
+#  _processCommandReturn
 def _processCommandReturn(dat):
     '''Process the return data from a command.'''
 
@@ -303,6 +317,8 @@ def _processCommandReturn(dat):
         io.saveToTmp(dat)             # or save as tmp
 
 
+# ============================================================================ #
+#  _notificationHandler
 def _notificationHandler(message):
     '''process given messages for sending notifications to end-users'''
 
@@ -313,6 +329,8 @@ def _notificationHandler(message):
      # and send emails as appropriate
 
 
+# ============================================================================ #
+#  _timeMsg
 def _timeMsg():
     """A clear and concise time string for print statements."""
 
@@ -325,6 +343,8 @@ def _timeMsg():
     return time_str
 
 
+# ============================================================================ #
+#  listToArgsAndKwargs
 def listToArgsAndKwargs(args_list):
     """Split an arg list into args and kwargs.
     l: Args list to split.
@@ -351,6 +371,8 @@ def listToArgsAndKwargs(args_list):
     return args, kwargs
 
 
+# ============================================================================ #
+#  payloadToCom
 def payloadToCom(payload):
     '''Convert payload to com_num, args, kwargs.
     payload: Command string data.
@@ -365,7 +387,10 @@ def payloadToCom(payload):
 
 
 
-############
-### INIT ###
+
+# ============================================================================ #
+# INIT
+# ============================================================================ #
+ 
 
 com = _com()
