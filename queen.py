@@ -14,7 +14,7 @@
 import redis
 import numpy as np
 import logging
-import uuid
+# import uuid
 import pickle
 from datetime import datetime
 # import tempfile
@@ -22,6 +22,7 @@ from datetime import datetime
 import _cfg_queen as cfg
 
 import queen_commands.control_io as io
+import redis_channels as rc
 import queen_commands.test_functions as test
 
 
@@ -67,55 +68,40 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
     all_boards: Send to all boards instead of bid/drid.
     args: String command arguments.'''
 
-    ## Connect to Redis server
     print(f"Connecting to Redis server... ", end="")
     try:
-        r,p = _connectRedis()  # redis and pubsub objects
+        r,p = _connectRedis()
     except Exception as e: return _fail(e, f'Failed to connect to Redis server.')
     else: _success("Connected to Redis server.")
 
-    ## build payload
-    # payload consists of commmand number and arguments
-    if args is None:
-        payload = com_num
-    else:
-        payload = f"{com_num} {args}"
+    payload = com_num if args is None else f"{com_num} {args}"
 
     ## Send to all boards
     if all_boards:
-        #p.psubscribe(f'board_rets_*')     # all bid return channels
-        # don't listen for responses
-        # they will go into the log from the monitoring version of queen
+        # don't listen for responses here
+        # let listening queen pick them up
 
         ## Publish command to all boards
         print(f"Publishing command {com_num} to all boards... ", end="")
         try:
-            num_clients = r.publish(f'all_boards', payload)     # send command
+            num_clients = r.publish(rc.getAllBoardsChan(), payload)
         except Exception as e: return _fail(e, f'Failed to publish command.')
         else: _success("Published command.")
 
-        print(f"{num_clients} drones received this command. Returns will be logged.")
-        return True # done
+        print(f"{num_clients} drones received this command.")
+        return True
 
     ## Send to a single board
     elif bid:
 
-        ## Generate unique channels
-        print(f"Generating unique channels... ", end="")
-        try:
-            id       = f'{bid}.{drid}' if drid else f'{bid}'
-            cid      = uuid.uuid4() # unique string
-            chanid   = f'{id}_{cid}'
-            chan_pub = f'board_{chanid}'
-            chan_sub = f'rets_{chan_pub}'
-        except Exception as e: return _fail(e, f'Failed to generate unique channel ID.')
-        else: _success("Generated unique channel ID.")
+        # Generate unique command channel
+        com_chan = rc.comChan(bid, drid if drid is not None else 0)
 
-        ## Publish command to single board
-        print(f"Publishing command {com_num} to board {id}... ", end="")
+        # Publish command
+        print(f"Publishing command {com_num} to board {com_chan.id}... ", end="")
         try:
-            p.psubscribe(chan_sub)                     # return channel
-            num_clients = r.publish(chan_pub, payload) # send command
+            p.psubscribe(com_chan.sub)                     # return channel
+            num_clients = r.publish(com_chan.pub, payload) # send command
         except Exception as e: return _fail(e, f'Failed to publish command.')
         else: _success("Published command.")
 
@@ -124,7 +110,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
             print(f"No client received this command!")
             return True
 
-        ## Listen for a response
+        # Listen for a response
         print(f"Listening for a response... ", end="")
         for new_message in p.listen():              # listen for a return
             if new_message['type'] != 'pmessage': continue # not correct message
@@ -132,7 +118,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
 
             # add a timeout?
 
-            ## Process response
+            # Process response
             print(f"Processing response... ", end="")
             try:
                 _processCommandReturn(new_message['data'])
@@ -140,7 +126,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
             else: _success("Processed response.")
 
             # stop listening; we only expect a single response
-            return True # done
+            return True
 
     # not clear who to send command to
     else:
@@ -203,7 +189,8 @@ def listenMode():
             
     # Message received: {'type': 'pmessage', 'pattern': b'rets_*', 'channel': b'rets_board_1.1_f9af519c-bea0-4093-81cf-8f8a423dc549', 'data': b'\x80 ...
 
-    p.psubscribe(**{'rets_*':handleMessage}) # all board return chans
+    rets_chan = rc.getAllReturnsChan()
+    p.psubscribe(**{rets_chan:handleMessage})
     thread = p.run_in_thread(sleep_time=2) # move listening to thread
         # sleep_time is a socket timeout
          # too low and it will bog down server
@@ -224,7 +211,8 @@ def getKeyValue(key):
     """
 
     r,p = _connectRedis()
-    ret = r.get(bytes(key, encoding='utf-8')).decode('utf-8')
+    ret = r.get(bytes(key, encoding='utf-8'))
+    ret = None if ret is None else ret.decode('utf-8')
 
     print(ret) # log/print message
     _notificationHandler(ret)  # send important notifications
