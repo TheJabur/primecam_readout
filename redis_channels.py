@@ -104,3 +104,20 @@ class comChan:
 class thisComChan(comChan):
     bid = cfg_b.bid
     drid = cfg_b.drid
+
+
+
+# ============================================================================ #
+# return channels
+
+
+def _returnChanModifier():
+    return 'rets'
+
+
+def getAllReturnsChan():
+    return f'{_returnChanModifier()}_*'
+
+
+def getReturnChan(chan:str):
+    return f'{_returnChanModifier()}_chan'
