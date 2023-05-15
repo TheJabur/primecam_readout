@@ -111,13 +111,19 @@ class thisComChan(comChan):
 # return channels
 
 
-def _returnChanModifier():
+def _returnChanPrefix():
     return 'rets'
 
 
 def getAllReturnsChan():
-    return f'{_returnChanModifier()}_*'
+    return f'{_returnChanPrefix()}_*'
 
 
 def getReturnChan(chan:str):
-    return f'{_returnChanModifier()}_chan'
+    ret_chan = f'{_returnChanPrefix()}_{chan}'
+    if ret_chan == getAllBoardsChan(): # to know who sent
+        ret_chan += f'_{cfg_b.bid}.{cfg_b.drid}'
+
+    return ret_chan
+
+

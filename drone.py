@@ -22,8 +22,8 @@ import logging
 import pickle
 import argparse
 
-import _cfg_board as cfg
-# import _cfg_drone done in main()
+import _cfg_board as cfg # import _cfg_drone done in main()
+import redis_channels as rc
 
 
 
@@ -42,28 +42,19 @@ logging.basicConfig(
 ### MAIN EXECUTION ###
 
 
-def main():   
+def main():
+    # CTRL-c to exit out of listen mode
 
-    args = setupArgparse()              # get command line arguments
+    args = setupArgparse() # get command line arguments
 
-    modifyConfig(args)                  # modify execution level configs
+    modifyConfig(args) # modify execution level configs
 
-    bid  = cfg.bid                      # board identifier
-    drid = cfg.drid                     # drone identifier
-    chan_subs = [                       # listening channels
-        f'board_{bid}_*',               # this boards listening channels
-        f'board_{bid}.{drid}_*',        # this drones listening channels
-        'all_boards']                   # an all-boards listening channel
+    r,p = connectRedis()
+    r.client_setname(f'drone_{cfg.bid}.{cfg.drid}')
 
-    print(chan_subs)
-
-    r,p = connectRedis()                # redis and pubsub objects
-
-    r.client_setname(f'drone_{bid}.{drid}')
-
-    # listenMode(r, p, bid, chan_subs)    # listen for redis messages
-    listenMode(r, p, chan_subs)
-    # currently, only way to exit out of listen mode is CTRL-c
+    print(f"Drone {cfg.bid}.{cfg.drid} is running...")
+    sub_chan_list = rc.getThisChanList()
+    listenMode(r, p, sub_chan_list)
             
 
 
@@ -122,8 +113,9 @@ def connectRedis():
 # def listenMode(r, p, bid, chan_subs):
 def listenMode(r, p, chan_subs):
     p.psubscribe(chan_subs)             # channels to listen to
+
     for new_message in p.listen():      # infinite listening loop
-        print(new_message)              # output message to term/log
+        # print(new_message)              # output message to term/log
 
         if new_message['type'] != 'pmessage': # not a command
             continue                    # skip this message
@@ -135,7 +127,7 @@ def listenMode(r, p, chan_subs):
         payload = new_message['data'].decode('utf-8')
         try:
             com_num, args, kwargs = payloadToCom(payload) # split payload into command
-            print(com_num, args, kwargs)
+            # print(com_num, args, kwargs)
             com_ret = executeCommand(com_num, args, kwargs) # attempt execution
         except Exception as e:
             com_ret = f"Payload error ({payload}): {e}"
@@ -169,9 +161,8 @@ def publishResponse(resp, r, chan_sub):
     # chanid = f'{bid}_{cid}'             # rebuild chanid
     # chan_pubs = f'board_rets_{chanid}'  # talking channel
 
-    chan_pub = f'rets_{chan_sub}'
-    if chan_sub == 'all_boards': # to know who sent
-        chan_pub += f'_{cfg.bid}.{cfg.drid}'
+    chan_pub = rc.getReturnChan(chan_sub)
+    print(chan_pub)
 
     print(f"Preparing response... ", end="")
     try: #####
@@ -243,7 +234,8 @@ def getKeyValue(key):
     """
 
     r,p = connectRedis()
-    ret = r.get(bytes(key, encoding='utf-8')).decode('utf-8')
+    ret = r.get(bytes(key, encoding='utf-8'))
+    ret = None if ret is None else ret.decode('utf-8')
 
     return ret
 
