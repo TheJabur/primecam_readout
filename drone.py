@@ -1,16 +1,15 @@
-########################################################
-### Remote-side Redis interface.                     ###
-### Interfaces with redis-client to execute alcove   ###
-### commands from queen.                             ###
-###                                                  ###
-### James Burgoyne jburgoyne@phas.ubc.ca             ###
-### CCAT Prime 2022                                  ###
-########################################################
+# ============================================================================ #
+# drone.py
+# Board side Redis interface script.
+# James Burgoyne jburgoyne@phas.ubc.ca
+# CCAT/FYST 2023 
+# ============================================================================ #
 
 
 
-###############
-### IMPORTS ###
+# ============================================================================ #
+# IMPORTS
+# ============================================================================ #
 
 
 import alcove
@@ -27,8 +26,10 @@ import redis_channels as rc
 
 
 
-##############
-### CONFIG ###
+# ============================================================================ #
+# CONFIG
+# ============================================================================ #
+
 
 logging.basicConfig(
     filename='logs/board.log', level=logging.DEBUG,
@@ -38,8 +39,9 @@ logging.basicConfig(
 
 
 
-######################
-### MAIN EXECUTION ###
+# ============================================================================ #
+# MAIN
+# ============================================================================ #
 
 
 def main():
@@ -58,11 +60,13 @@ def main():
             
 
 
-##########################
-### INTERNAL FUNCTIONS ###
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
 
 
-# monkeypatch the print statement
+# ============================================================================ #
+# print monkeypatch
 # the print statement should be further modified
 # to save all statements into a log file
 _print = print 
@@ -72,6 +76,8 @@ def print(*args, **kw):
     _print(*args, **kw)
 
 
+# ============================================================================ #
+# setupArgparse
 def setupArgparse():
     '''Setup the argparse arguments'''
 
@@ -86,6 +92,8 @@ def setupArgparse():
     return parser.parse_args()
 
 
+# ============================================================================ #
+# modifyConfig
 def modifyConfig(args):
     '''modify config level variables'''
 
@@ -103,6 +111,8 @@ def modifyConfig(args):
     cfg.drid = cfg_dr.drid
 
 
+# ============================================================================ #
+# connectRedis
 def connectRedis():
     '''connect to redis server'''
     r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
@@ -110,12 +120,13 @@ def connectRedis():
     return r, p
 
 
-# def listenMode(r, p, bid, chan_subs):
+# ============================================================================ #
+# listenMode
 def listenMode(r, p, chan_subs):
     p.psubscribe(chan_subs)             # channels to listen to
 
     for new_message in p.listen():      # infinite listening loop
-        # print(new_message)              # output message to term/log
+        # print(new_message)
 
         if new_message['type'] != 'pmessage': # not a command
             continue                    # skip this message
@@ -137,6 +148,8 @@ def listenMode(r, p, chan_subs):
         publishResponse(com_ret, r, chan_sub) # send response
 
 
+# ============================================================================ #
+# executeCommand
 def executeCommand(com_num, args, kwargs):
     print(f"Executing command: {com_num}... ")
     try: #####
@@ -156,10 +169,9 @@ def executeCommand(com_num, args, kwargs):
     return ret
 
 
-# def publishResponse(resp, r, bid, cid):
+# ============================================================================ #
+# publishResponse
 def publishResponse(resp, r, chan_sub):
-    # chanid = f'{bid}_{cid}'             # rebuild chanid
-    # chan_pubs = f'board_rets_{chanid}'  # talking channel
 
     chan_pub = rc.getReturnChan(chan_sub)
     print(chan_pub)
@@ -177,7 +189,6 @@ def publishResponse(resp, r, chan_sub):
 
     print(f"Sending response... ", end="")
     try: #####
-        # r.publish(chan_pubs, ret)       # publish with redis
         r.publish(chan_pub, ret)       # publish with redis
     except Exception as e:
         _print("Failed.")
@@ -187,6 +198,8 @@ def publishResponse(resp, r, chan_sub):
         logging.info(f'Publish response successful.')
 
 
+# ============================================================================ #
+# listToArgsAndKwargs
 def listToArgsAndKwargs(args_list):
     """Split an arg list into args and kwargs.
     l: Args list to split.
@@ -213,6 +226,8 @@ def listToArgsAndKwargs(args_list):
     return args, kwargs
 
 
+# ============================================================================ #
+# payloadToCom
 def payloadToCom(payload):
     """
     Convert payload to com_num, args, kwargs.
@@ -228,6 +243,8 @@ def payloadToCom(payload):
     return com_num, args, kwargs
 
 
+# ============================================================================ #
+# get/setKeyValue
 def getKeyValue(key):
     """
     GET the value of given key.
@@ -239,7 +256,6 @@ def getKeyValue(key):
 
     return ret
 
-
 def setKeyValue(key, value):
     """
     SET the given value for the given key.
@@ -248,6 +264,11 @@ def setKeyValue(key, value):
     r,p = connectRedis()
     r.set(bytes(key, encoding='utf-8'), bytes(value, encoding='utf-8'))   
 
+
+
+# ============================================================================ #
+# MAIN
+# ============================================================================ #
 
 
 if __name__ == "__main__":
