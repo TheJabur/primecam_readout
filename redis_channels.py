@@ -1,6 +1,6 @@
 # ============================================================================ #
 # redis_channels.py
-# Class to produce Redis channels.
+# Module to produce Redis channels.
 # James Burgoyne jburgoyne@phas.ubc.ca
 # CCAT/FYST 2023
 # ============================================================================ #
@@ -12,13 +12,9 @@
 # ============================================================================ #
 
 
-# import redis
-# import logging
 import uuid
-# from datetime import datetime
 from dataclasses import dataclass, field
 
-# import _cfg_queen as cfg_q
 import _cfg_board as cfg_b
 
 
