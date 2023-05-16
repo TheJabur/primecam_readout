@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
         result = QMessageBox.question(self,
                       "Confirm Exit...",
                       "Are you sure you want to exit ?",
-                      QMessageBox.Yes| QMessageBox.No)
+                      QMessageBox.Yes| QMessageBox.No) # type: ignore
         
         return result == QMessageBox.Yes
 
@@ -191,6 +191,8 @@ class MainWindow(QMainWindow):
     def onClickedButtonTimestream(self):
         if self.button_timestream.isChecked():
             try:
+#====# 
+# -TODO- hardcoded ip address no good
                 self.timestream = TimeStream(host='192.168.3.40', port=4096)
                 self.timer_timestream.start(100)  # milliseconds
                 self.updateTimeStreamUI(running=True)
@@ -362,7 +364,7 @@ class MainWindow(QMainWindow):
             self.movie_loading.stop()
             self.movie_loading.start() # what?
             self.movie_loading.stop() # what? why needed?
-            self.label_alcovecoms.setMovie(None)
+            self.label_alcovecoms.setMovie(None) # type: ignore
             self.pulldown_alcovecoms.setEnabled(True)
             self.textbox_alcovecoms_to.setEnabled(True)
             self.textbox_alcovecoms_args.setEnabled(True)
