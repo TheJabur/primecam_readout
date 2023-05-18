@@ -25,6 +25,7 @@ import base_io as io
 import queen
 import alcove
 from timestream import TimeStream
+import ip_addr as ip
 
 
 
@@ -192,8 +193,11 @@ class MainWindow(QMainWindow):
         if self.button_timestream.isChecked():
             try:
 #====# 
-# -TODO- hardcoded ip address no good
+# -TODO- switch to ip_addr module produced IP
                 self.timestream = TimeStream(host='192.168.3.40', port=4096)
+                # self.timestream = TimeStream(
+                #     host=ip.getDroneTimestreamIP(),
+                #     port=ip.getDroneTimestreamPort())
                 self.timer_timestream.start(100)  # milliseconds
                 self.updateTimeStreamUI(running=True)
             except Exception as e:
