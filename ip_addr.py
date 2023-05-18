@@ -42,7 +42,7 @@ def getDroneTimestreamIP():
     """
 
     cIP = getBoardControlIP()
-    cIP_octets = cIP.split('.')
+    cIP_octets = cIP.split('.') # type: ignore
     octets = cIP_octets
     
     # 3rd octet
