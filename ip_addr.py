@@ -14,8 +14,7 @@
 
 import socket
 import psutil
-
-import _cfg_board as cfg
+import redis
 
 
 
@@ -25,9 +24,12 @@ import _cfg_board as cfg
 
 
 # ============================================================================ #
-# getBoardControlIP
-def getBoardControlIP():
+# Control IP (cIP)
+
+
+def cIPofThisBoard():
     """The control network IP address of this board.
+    Assumes it is eth0.
     """
 
     ip_address = _getIPv4WithNIC('eth0')
@@ -35,13 +37,29 @@ def getBoardControlIP():
     return ip_address
 
 
-# ============================================================================ #
-# getDroneTimestreamIP
-def getDroneTimestreamIP():
-    """The UDP timestream network IP address of this drone.
+def cIP(r:redis.Redis, bid:int):
+    """The control network IP address of board with bid. 
+    Uses the Redis client list to find IP (or returns None).
     """
 
-    cIP = getBoardControlIP()
+    client_list = r.client_list()
+    for client in client_list:
+        if client.get('name', '').startswith(f'drone_{bid}.'):
+            cIP = f"{client['addr']}"
+
+            return cIP
+
+    return None
+
+
+# ============================================================================ #
+# Time Stream IP (tIP)
+
+
+def tIP(cIP:str, drid:int):
+    """The UDP timestream network IP address algorithmically generated from the control IP (cIP) and drone ID (drid).
+    """
+
     cIP_octets = cIP.split('.') # type: ignore
     octets = cIP_octets
     
@@ -50,11 +68,18 @@ def getDroneTimestreamIP():
     
     # 4th octet
     # this algorithm makes space for 4 drones for each board
-    octets[3] = str(4*(int(cIP_octets[3]) - 1) + cfg.drid)
+    octets[3] = str(4*(int(cIP_octets[3]) - 1) + drid)
     
     IP = '.'.join(octets)
 
     return IP
+
+
+def getDroneTimestreamPort():
+    """The UDP timestream network port.
+    """
+
+    return 4096
 
 
 # ============================================================================ #
