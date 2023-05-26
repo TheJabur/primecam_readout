@@ -117,6 +117,17 @@ class MainWindow(QMainWindow):
 
 
     def updateDroneMonitorUI(self):
+        # set all back to grey
+        # for i in range(self.drone_grid.count()):
+        #     square = self.drone_grid.itemAt(i).widget()
+        #     square.setStyleSheet("background-color: lightgrey")
+        for row in range(self.drone_grid.rowCount()):
+            for col in range(self.drone_grid.columnCount()):
+                if col > 0: # first col is bid label
+                    square = self.drone_grid.itemAtPosition(row, col).widget()
+                    square.setStyleSheet("background-color: lightgrey")
+
+        # set active drones to green
         client_list = self.getClientList()
         for client in client_list:
             try:
