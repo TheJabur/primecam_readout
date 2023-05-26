@@ -161,8 +161,9 @@ def callCom(com_num, args=None):
         message = template.format(type(e).__name__, e.args)
         ret = message
 
-    if ret is not None:              # default success return is None
-        print(f"{com[com_num].__name__}: {ret}") # monkeypatched to log
+    # supressing this as some commands are called on timer
+    # if ret is not None:              # default success return is None
+        # print(f"{com[com_num].__name__}: {ret}") # monkeypatched to log
 
     return ret
 
