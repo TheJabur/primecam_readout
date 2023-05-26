@@ -79,27 +79,47 @@ def getThisChanList():
 # - each command has a unique command channel
 
 
-@dataclass
-class comChan:
-    bid: int
-    drid: int = 0
-    id: str = field(init=False)
-    cid: str = field(init=False)
-    pub: str = field(init=False)
-    sub: str = field(init=False)
+# @dataclass
+# class comChan:
+#     bid: int
+#     drid: int = 0
+#     id: str = field(init=False)
+#     cid: str = field(init=False)
+#     pub: str = field(init=False)
+#     sub: str = field(init=False)
 
-    def __post_init__(self):
+#     def __post_init__(self):
+#         self.id = f'{self.bid}.{self.drid}' if self.drid else f'{self.bid}'
+#         self.cid = str(uuid.uuid4())
+#         chanid   = f'{self.id}_{self.cid}'
+#         self.pub = f'board_{chanid}'
+#         self.sub = f'rets_{self.pub}'
+
+class comChan:
+    def __init__(self, bid: int, drid: int = 0):
+        self.bid = bid
+        self.drid = drid
         self.id = f'{self.bid}.{self.drid}' if self.drid else f'{self.bid}'
         self.cid = str(uuid.uuid4())
-        chanid   = f'{self.id}_{self.cid}'
+        chanid = f'{self.id}_{self.cid}'
         self.pub = f'board_{chanid}'
         self.sub = f'rets_{self.pub}'
 
 
-@dataclass
+# @dataclass
+# class thisComChan(comChan):
+#     bid = cfg_b.bid
+#     drid = cfg_b.drid
+
 class thisComChan(comChan):
-    bid = cfg_b.bid
-    drid = cfg_b.drid
+    def __init__(self, cfg_b):
+        self.bid = cfg_b.bid
+        self.drid = cfg_b.drid
+        self.id = f'{self.bid}.{self.drid}' if self.drid else f'{self.bid}'
+        self.cid = str(uuid.uuid4())
+        chanid = f'{self.id}_{self.cid}'
+        self.pub = f'board_{chanid}'
+        self.sub = f'rets_{self.pub}'
 
 
 
