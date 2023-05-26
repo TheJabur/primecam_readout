@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QGridLayout, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit, QMessageBox
 from PyQt5.QtGui import QIcon, QMovie, QPixmap, QTextCursor
 from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal
 
@@ -47,7 +47,14 @@ class MainWindow(QMainWindow):
 
         widget = QWidget(self) # main widget
         self.setCentralWidget(widget)
-        layout = QVBoxLayout(widget) # use a vertical layout
+        suplayout = QHBoxLayout(widget)
+        layout = QVBoxLayout()
+        suplayout.addLayout(layout)
+        layout2 = QVBoxLayout()
+        suplayout.addLayout(layout2)
+
+        # setup drone monitoring elements
+        self.uisetupDroneMonitor(layout2)
 
         # setup UI elements
         self.uisetupQueenListen(layout) # Queen listen button
@@ -80,6 +87,54 @@ class MainWindow(QMainWindow):
                       QMessageBox.Yes| QMessageBox.No) # type: ignore
         
         return result == QMessageBox.Yes
+
+
+
+# ============================================================================ #
+# Interface: Drone Monitoring
+
+
+    def uisetupDroneMonitor(self, layout):
+        layout.addWidget(QLabel("Drones Status"))
+        self.drone_grid = QGridLayout()
+        self.drone_grid.setSpacing(1)
+        layout.addLayout(self.drone_grid) 
+        
+        rows = 40 # num. boards could exceed this
+        cols = 4 # each row is a board, 4 drones per board
+        for row in range(rows):
+            self.drone_grid.addWidget(QLabel(f"{row+1}"), row, 0)
+            for col in range(cols):
+                square = QLabel(self)
+                self.drone_grid.addWidget(square, row, col+1)
+                square.setStyleSheet("background-color: lightgrey")
+
+        self.timer_drone_monitor = QTimer()
+        self.timer_drone_monitor.timeout.connect(self.updateDroneMonitorUI)
+        self.timer_drone_monitor.start(5000) # ms
+
+        # self.updateDroneMonitorUI()
+
+
+    def updateDroneMonitorUI(self):
+        client_list = self.getClientList()
+        for client in client_list:
+            try:
+                client_name = client.get('name', '')
+                bid, drid = list(map(int, client_name[-3:].split('.')))
+                square = self.drone_grid.itemAtPosition(bid-1, drid).widget()
+                # rows are 0-indexed but bids are 1-indexed
+                # same w/ drids but 1st col is row label
+                square.setStyleSheet("background-color: green")
+            except:
+                continue
+
+
+    def getClientList(self):
+        # QueenCommandThread(self, com_str='getClientList', com_args='')
+        client_list =  _sendQueenCommand(com_str='getClientList', com_args='do_print=False')
+
+        return client_list
 
 
 
@@ -195,9 +250,6 @@ class MainWindow(QMainWindow):
 #====# 
 # -TODO- switch to ip_addr module produced IP
                 self.timestream = TimeStream(host='192.168.3.40', port=4096)
-                # self.timestream = TimeStream(
-                #     host=ip.getDroneTimestreamIP(),
-                #     port=ip.getDroneTimestreamPort())
                 self.timer_timestream.start(100)  # milliseconds
                 self.updateTimeStreamUI(running=True)
             except Exception as e:
@@ -467,10 +519,12 @@ class AlcoveCommandThread(QThread):
 
 
 # ============================================================================ #
-# Internal Functions
+# INTERNAL FUNCTIONS
 # ============================================================================ #
 
 
+# ============================================================================ #
+# ConsoleEmitter
 class ConsoleEmitter(QObject):
     """Custom signal emitter for console output
     """
@@ -478,6 +532,9 @@ class ConsoleEmitter(QObject):
     text_written = pyqtSignal(str) # override
     write = sys.stdout.write # hold connection console
 
+
+# ============================================================================ #
+# Alcove/Queen Commands
 
 def _comsListQueen():
     return [queen.com[key].__name__ for key in queen.com.keys()]
@@ -518,6 +575,8 @@ def _sendQueenCommand(com_str, com_args):
     return queen.callCom(com_num, com_args)
 
 
+# ============================================================================ #
+# Time Stream
 def _getTimestreamData(timestream, packets=100, kid_id=None):
     """Get a chunk of time stream data.
     timestream: (TimeStream) the timestream object.
@@ -537,6 +596,8 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
 
 
 
+# ============================================================================ #
+# __main__
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()

@@ -230,9 +230,10 @@ def setKeyValue(key, value):
 #  getClientList
 def getClientList(do_print=True):
     """Print the Redis client list.
-
     do_print: (bool) prints list if True, else returns.
     """
+    # args are string only
+    do_print = False if not do_print or do_print=='False' else True
 
     r,p = _connectRedis()
 
