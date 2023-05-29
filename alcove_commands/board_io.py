@@ -62,6 +62,25 @@ class file:
                 'use_timestamp' :True}
     f_res_vna = _f_res_vna()
 
+    class _phis_vna:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'phis_vna',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/vna',
+                'use_timestamp' :True}
+    phis_vna = _phis_vna()
+    
+    class _amps_vna:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'amps_vna',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/vna',
+                'use_timestamp' :True}
+    amps_vna = _amps_vna()
+    
+
     class _f_center_targ:
         def __get__(self, obj, cls):
             return {

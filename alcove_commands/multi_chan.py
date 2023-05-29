@@ -80,12 +80,14 @@ def _setNCLO2(chan, lofreq):
     mix.write(offset, digi_val) # frequency
     return
 
-def _generateWaveDdr4(freq_list):  
+def _generateWaveDdr4(freq_list, amp_list, phi):  
 
     import numpy as np
 
     # freq_list may be complex but imag parts should all be zero
     freq_list = np.real(freq_list)
+    amp_list = np.real(amp_list)
+    phi = np.real(phi)
 
     fs = 512e6 
     lut_len = 2**20
@@ -93,9 +95,9 @@ def _generateWaveDdr4(freq_list):
     k = np.int64(np.round(freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
     X = np.zeros(lut_len,dtype='complex')
-    phi = np.random.uniform(-np.pi, np.pi, np.size(freq_list))
-    X[k] = np.exp(-1j*phi)
-    x = np.fft.ifft(X) * lut_len/np.sqrt(2)
+    #phi = np.random.uniform(-np.pi, np.pi, np.size(freq_list))
+    X[k] = np.exp(-1j*phi)*amp_list # multiply by amplitude
+    x = np.fft.ifft(X) * lut_len
     bin_num = np.int64(np.round(freq_actual / (fs / fft_len)))
     f_beat = bin_num*fs/fft_len - freq_actual
     dphi0 = f_beat/(fs/fft_len)*2**16
@@ -118,6 +120,11 @@ def _normWave(wave, max_amp=2**15-1):
     wave_real = ((wave.real/norm)*max_amp).astype("int16")
     wave_imag = ((wave.imag/norm)*max_amp).astype("int16")
     return wave_real, wave_imag
+
+def _waveAmpTest(wave, max_amp=2**15-1):
+    import numpy as np
+    maximum = np.max(np.abs(wave))
+    print(f"max amplitude {maximum:.10f}")
 
 
 def _loadBinList(chan, freq_list):
@@ -365,7 +372,7 @@ def _getCleanAccum(Itemplate, Qtemplate):
     return I, Q
 
 
-def _writeComb(chan, freqs):
+def _writeComb(chan, freqs, amps, phi):
    
     import numpy as np
 
@@ -373,8 +380,10 @@ def _writeComb(chan, freqs):
         # what do we want to do if freqs empty?
         raise("freqs must not be empty.")
 
-    wave, dphi, freq_actual = _generateWaveDdr4(freqs)
-    wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
+    wave, dphi, freq_actual = _generateWaveDdr4(freqs, amps, phi)
+    #wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
+    wave_real, wave_imag = wave.real.astype("int16"), wave.imag.astype("int16") 
+    _waveAmpTest(wave, max_amp=2**15-1)
     _loadDdr4(chan, wave_real, wave_imag, dphi)
     _loadBinList(chan, freq_actual)
     _resetAccumAndSync(chan, freq_actual)
@@ -536,7 +545,9 @@ def writeTestTone():
     
     chan = cfg.drid # drone (chan) id is from config
     freqs = np.array(np.linspace(50e6, 255.00e6, 1))
-    freq_actual = _writeComb(chan, freqs)
+    amps = np.ones(1)*(2**15 - 1)
+    phi=np.array((np.pi))
+    freq_actual = _writeComb(chan, freqs, amps, phi)
 
 
 def writeVnaComb():
@@ -545,8 +556,20 @@ def writeVnaComb():
     
     chan = cfg.drid # drone (chan) id is from config
     freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    freq_actual = _writeComb(chan, freqs)
+    num_freqs = np.size(freqs)
+    amps = np.ones(num_freqs)*(2**15-1)/np.sqrt(num_freqs)*0.3 # 0.3 reasonable phase solve time
+    maximum = 40000 # greater than 2**15-1 to start loop
+    while maximum > (2**15-1):
+        phi = np.random.uniform(-np.pi, np.pi, np.size(freqs))
+        x, _, _ = _generateWaveDdr4(freqs, amps, phi)
+        x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
+        maximum = np.max(np.abs(x.real + 1j*x.imag))
+        #maximum = max(np.max(np.abs(x.real)), np.max(np.abs(x.imag)))
+    #np.save("phis.npy", phi)
+    freq_actual = _writeComb(chan, freqs, amps, phi)
     io.save(io.file.freqs_vna, freq_actual)
+    io.save(io.file.amps_vna, amps)
+    io.save(io.file.phis_vna, phi)
 
 
 def writeTargComb(write_cal_tones=True, update=False):
