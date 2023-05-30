@@ -579,6 +579,38 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     return (freqs, A_res)
 
 
+# ============================================================================ #
+# _genAmpsAndPhis
+def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
+    """Generate lists of amplitudes and phases.
+    amp_max: Maximum allowable time stream amplitude.
+    """
+
+    import numpy as np
+
+    N = np.size(freqs)
+
+    amps = np.ones(N)*(2**15-1)/np.sqrt(N)*0.3 
+    # 0.3 yields a reasonable phase solve time in testing
+
+    # randomly generate phases until peak amp is lower than required max
+    loops_max = 100; loop = 0 # could infinitely loop otherwise
+    while True: # conditional at bottom to act like do-while
+        loop += 1
+
+        phis = np.random.uniform(-np.pi, np.pi, N) # phases
+
+        x, _, _ = _generateWaveDdr4(freqs, amps, phis)
+        x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
+
+        amp_peak = np.max(np.abs(x.real + 1j*x.imag))
+
+        if (amp_peak < amp_max) or (loop > loops_max):
+            break
+
+    return amps, phis
+
+
 
 # ============================================================================ #
 # COMMAND FUNCTIONS
@@ -602,25 +634,20 @@ def writeTestTone():
 # ============================================================================ #
 # writeVnaComb
 def writeVnaComb():
+    """Write the blind sweep tone comb.
+    """
 
     import numpy as np
     
     chan = cfg.drid # drone (chan) id is from config
     freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    num_freqs = np.size(freqs)
-    amps = np.ones(num_freqs)*(2**15-1)/np.sqrt(num_freqs)*0.3 # 0.3 reasonable phase solve time
-    maximum = 40000 # greater than 2**15-1 to start loop
-    while maximum > (2**15-1):
-        phi = np.random.uniform(-np.pi, np.pi, np.size(freqs))
-        x, _, _ = _generateWaveDdr4(freqs, amps, phi)
-        x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
-        maximum = np.max(np.abs(x.real + 1j*x.imag))
-        #maximum = max(np.max(np.abs(x.real)), np.max(np.abs(x.imag)))
-    #np.save("phis.npy", phi)
-    freq_actual = _writeComb(chan, freqs, amps, phi)
+    amps, phis = _genAmpsAndPhis(freqs)
+
+    freq_actual = _writeComb(chan, freqs, amps, phis)
+
     io.save(io.file.freqs_vna, freq_actual)
     io.save(io.file.amps_vna, amps)
-    io.save(io.file.phis_vna, phi)
+    io.save(io.file.phis_vna, phis)
 
 
 # ============================================================================ #
