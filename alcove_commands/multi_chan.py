@@ -1,7 +1,18 @@
 
-#####################
-# Global attributes #
-#####################
+# ============================================================================ #
+# multi_chan.py.py
+# Main Alcove commands.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2023  
+# ============================================================================ #
+
+
+
+# ============================================================================ #
+# IMPORTS & GLOBALS
+# ============================================================================ #
+
+
 try:
     import _cfg_board as cfg
     import alcove_commands.board_io as io
@@ -19,10 +30,14 @@ except Exception as e:
 
 
 
-######################
-# Internal Functions #
-######################
 
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
+
+
+# ============================================================================ #
+# _setNCLO
 def _setNCLO(chan, lofreq):
 
     import xrfdc
@@ -52,6 +67,9 @@ def _setNCLO(chan, lofreq):
         return "Does not compute" # great error message
     return
 
+
+# ============================================================================ #
+# _setNCLO2
 def _setNCLO2(chan, lofreq):
     import numpy as np
     mix = firmware.mix_freq_set_0
@@ -80,6 +98,9 @@ def _setNCLO2(chan, lofreq):
     mix.write(offset, digi_val) # frequency
     return
 
+
+# ============================================================================ #
+# _generateWaveDdr4
 def _generateWaveDdr4(freq_list, amp_list, phi):  
 
     import numpy as np
@@ -110,6 +131,8 @@ def _generateWaveDdr4(freq_list, amp_list, phi):
     return x, dphi, freq_actual
 
 
+# ============================================================================ #
+# _normWave
 def _normWave(wave, max_amp=2**15-1):
 
     import numpy as np
@@ -121,12 +144,17 @@ def _normWave(wave, max_amp=2**15-1):
     wave_imag = ((wave.imag/norm)*max_amp).astype("int16")
     return wave_real, wave_imag
 
+
+# ============================================================================ #
+# _waveAmpTest
 def _waveAmpTest(wave, max_amp=2**15-1):
     import numpy as np
     maximum = np.max(np.abs(wave))
     print(f"max amplitude {maximum:.10f}")
 
 
+# ============================================================================ #
+# _loadBinList
 def _loadBinList(chan, freq_list):
 
     import numpy as np
@@ -161,9 +189,8 @@ def _loadBinList(chan, freq_list):
     sync_in = 2**26
     accum_rst = 2**24  # (active low)
     accum_length = (2**19)-1
-    ################################################
+
     # Load DDC bins
-    ################################################
     offs=0
     
     # only write tones to bin list
@@ -180,6 +207,8 @@ def _loadBinList(chan, freq_list):
     return
 
 
+# ============================================================================ #
+# _resetAccumAndSync
 def _resetAccumAndSync(chan, freqs):
     if chan == 1:
         dsp_regs = firmware.chan1.dsp_regs_0
@@ -214,6 +243,8 @@ def _resetAccumAndSync(chan, freqs):
     return
 
 
+# ============================================================================ #
+# _loadDdr4
 def _loadDdr4(chan, wave_real, wave_imag, dphi):
 
     import numpy as np
@@ -263,6 +294,8 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
     return
 
 
+# ============================================================================ #
+# _getSnapData
 # capture data from ADC
 def _getSnapData(chan, mux_sel):
 
@@ -345,6 +378,9 @@ def _getSnapData(chan, mux_sel):
         I, Q = I[4:], Q[4:]
     return I, Q
 
+
+# ============================================================================ #
+# _getCleanAccum
 def _getCleanAccum(Itemplate, Qtemplate):
     """
     Function to return un-spurious accumuation captures
@@ -372,6 +408,8 @@ def _getCleanAccum(Itemplate, Qtemplate):
     return I, Q
 
 
+# ============================================================================ #
+# _writeComb
 def _writeComb(chan, freqs, amps, phi):
    
     import numpy as np
@@ -390,6 +428,8 @@ def _writeComb(chan, freqs, amps, phi):
     return freq_actual
 
 
+# ============================================================================ #
+# _sweep
 def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     """
     Perform a stepped LO frequency sweep with existing comb centered at f_center.
@@ -444,6 +484,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     return (f, Z)
 
 
+# ============================================================================ #
+# _stitchS21m
 def _stitchS21m(S21m, bw=500, sw=100):
     """Shift S21 mags so the bin ends align.
 
@@ -468,6 +510,8 @@ def _stitchS21m(S21m, bw=500, sw=100):
     return a_n.flatten()                   # reshape to 1D and return
 
 
+# ============================================================================ #
+# _resonatorIndicesInS21
 def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, testing=False):
     """Find the indices of resonator peaks in given S21 signal.
     
@@ -500,6 +544,8 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     return peaks
 
 
+# ============================================================================ #
+# _toneFreqsAndAmpsFromSweepData
 def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     """
     Determine resonator tone frequencies and normalized amplitudes from sweep data.
@@ -534,11 +580,14 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
 
 
 
-#####################
-# Command Functions #
-#####################
+# ============================================================================ #
+# COMMAND FUNCTIONS
 # Arguments are given as strings!
+# ============================================================================ #
 
+
+# ============================================================================ #
+# writeTestTone
 def writeTestTone():
 
     import numpy as np
@@ -550,6 +599,8 @@ def writeTestTone():
     freq_actual = _writeComb(chan, freqs, amps, phi)
 
 
+# ============================================================================ #
+# writeVnaComb
 def writeVnaComb():
 
     import numpy as np
@@ -572,6 +623,8 @@ def writeVnaComb():
     io.save(io.file.phis_vna, phi)
 
 
+# ============================================================================ #
+# writeTargComb
 def writeTargComb(write_cal_tones=True, update=False):
     """Write the target comb with the last vna sweep values.
     write_cal_tones: (bool) Also try to write calibration tones.
@@ -604,17 +657,23 @@ def writeTargComb(write_cal_tones=True, update=False):
     # io.save(io.file._f_res_targ, freq_actual)
 
 
+# ============================================================================ #
+# updateTargComb
 def updateTargComb(write_cal_tones=True):
     """Write the target comb with the last target sweep values."""
 
     return writeTargComb(write_cal_tones=write_cal_tones, update=True)
 
 
+# ============================================================================ #
+# getSnapData
 def getSnapData(mux_sel):
     chan = cfg.drid
     return _getSnapData(chan, int(mux_sel))
 
 
+# ============================================================================ #
+# setNCLO
 def setNCLO(f_lo):
     """
     setNCLO: set the numerically controlled local oscillator
@@ -631,6 +690,8 @@ def setNCLO(f_lo):
     io.save(io.file.f_center_vna, f_lo*1e6)
 
 
+# ============================================================================ #
+# setFineNCLO 
 def setFineNCLO(f_lo):
     """
     setFineNCLO: set the fine frequency numerically controlled local oscillator
@@ -648,6 +709,8 @@ def setFineNCLO(f_lo):
     # io.save(io.file.f_center_vna, f_lo*1e6)
 
 
+# ============================================================================ #
+# vnaSweep
 def vnaSweep(f_center=600):
     """
     vnaSweep: perform a stepped frequency sweep centered at f_center \\
@@ -675,6 +738,8 @@ def vnaSweep(f_center=600):
     return io.returnWrapper(io.file.s21_vna, s21)
 
 
+# ============================================================================ #
+# findResonators
 def findResonators():
     """
     Find the resonator peak frequencies in previously saved s21.npy file.
@@ -698,6 +763,8 @@ def findResonators():
     return io.returnWrapper(io.file.f_res_vna, f_res)
 
 
+# ============================================================================ #
+# findCalTones
 def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
     """Determine the indices of calibration tones.
     
@@ -751,6 +818,8 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
     return io.returnWrapper(io.file.f_cal_tones, f_cal_tones)
     
 
+# ============================================================================ #
+# targetSweep
 def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
@@ -804,6 +873,8 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
         [freqs, A_res, S21])
 
 
+# ============================================================================ #
+# targetSweepLoop
 def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
                     f_tol=0.1, A_tol=0.3, loops_max=20):
     """
@@ -865,6 +936,8 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
         [freqs, amps])
 
 
+# ============================================================================ #
+# fullLoop
 def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
     '''
     Complete resonator calibration.
@@ -907,6 +980,8 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
         break
 
 
+# ============================================================================ #
+# loChop
 def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
     """
     Do a quick sweep using only 2 (symmetric) points per resonator.
