@@ -107,6 +107,15 @@ class file:
                 'dname'         :cfg.drone_dir+'/targ',
                 'use_timestamp' :True}
     a_res_targ = _a_res_targ()
+
+    class _p_res_targ:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'p_res_targ',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/targ',
+                'use_timestamp' :True}
+    p_res_targ = _p_res_targ()
     
     class _s21_targ:
         def __get__(self, obj, cls):

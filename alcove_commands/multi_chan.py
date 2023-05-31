@@ -652,6 +652,49 @@ def writeVnaComb():
 
 # ============================================================================ #
 # writeTargComb
+
+# write the targ comb from files
+# remove calibration
+def writeTargComb(vna_only=False):
+    """Write the comb with the most recent vna or target tones.
+    vna_only: (bool) If True then restricts to vna results only."""
+
+    import numpy as np
+
+    vna_timestamp = io.mostRecentTimestamp(io.file.f_res_vna)
+    targ_timestamp = io.mostRecentTimestamp(io.file.f_res_targ)
+    # the timestamps are str or None
+
+    if vna_timestamp is None: # must have a vna sweep
+        raise Exception("Error: A VNA sweep must be done first.")
+    else: vna_timestamp = float(vna_timestamp)
+
+    if targ_timestamp is None: # no target sweep
+        vna_only = True # so must use vna
+
+    else: 
+        targ_timestamp = float(targ_timestamp)
+        if vna_timestamp > targ_timestamp: # targ older than vna
+            vna_only = True # so use vna
+
+    # load resonator freqs, amps, and phis
+    if vna_only:
+        freqs = io.load(io.file.f_res_vna)
+        amps, phis = _genAmpsAndPhis(freqs)
+    else:
+        freqs = io.load(io.file.f_res_targ)
+        amps = io.load(io.file.a_res_targ)
+        phis = io.load(io.file.p_res_targ)
+
+    f_center   = io.load(io.file.f_center_vna)
+    chan = cfg.drid # drone (chan) id is from config
+    freqs = freqs.real - f_center
+
+    freq_actual = _writeComb(chan, freqs, amps, phis)
+
+    return freq_actual
+
+
 def writeTargComb(write_cal_tones=True, update=False):
     """Write the target comb with the last vna sweep values.
     write_cal_tones: (bool) Also try to write calibration tones.

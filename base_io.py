@@ -66,7 +66,7 @@ def load(file):
     file: (dict) File attributes. See file class.
     """
 
-    return loadVersion(file, _mostRecentTimestamp(file))
+    return loadVersion(file, mostRecentTimestamp(file))
 
 
 def loadVersion(file, timestamp):
@@ -211,6 +211,31 @@ def returnWrapperMultiple(file_list, data_list):
         for file, data in zip(file_list, data_list)]
 
 
+def mostRecentTimestamp(file):
+    """
+    Timestamp of most recent of given file.
+
+    file:      (dict) File attributes. See file class.
+    """
+
+    import os
+    import glob
+    import numpy as np
+
+    # required file attributes
+    fname          = file['fname']
+    dname          = file['dname']
+
+    allversions = sorted(
+        glob.iglob(os.path.join(dname, f'{fname}*')), 
+        reverse=True)
+    path0 = allversions[0]         # first index is highest timestamp
+    
+    _,timestamp,_ = _pathSplit(file, path0)
+
+    return timestamp
+
+
 
 ######################
 # Internal Functions #
@@ -253,28 +278,3 @@ def _pathSplit(file, path):
         timestamp = end0[:-(len(file_type)+1)] # remove extension
 
     return (fname, timestamp, file_type)
-    
-
-def _mostRecentTimestamp(file):
-    """
-    Timestamp of most recent of given file.
-
-    file:      (dict) File attributes. See file class.
-    """
-
-    import os
-    import glob
-    import numpy as np
-
-    # required file attributes
-    fname          = file['fname']
-    dname          = file['dname']
-
-    allversions = sorted(
-        glob.iglob(os.path.join(dname, f'{fname}*')), 
-        reverse=True)
-    path0 = allversions[0]         # first index is highest timestamp
-    
-    _,timestamp,_ = _pathSplit(file, path0)
-
-    return timestamp
