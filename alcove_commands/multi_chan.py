@@ -416,7 +416,7 @@ def _writeComb(chan, freqs, amps, phi):
 
     if np.size(freqs)<1:
         # what do we want to do if freqs empty?
-        raise("freqs must not be empty.")
+        raise Exception("freqs must not be empty.")
 
     wave, dphi, freq_actual = _generateWaveDdr4(freqs, amps, phi)
     #wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
@@ -695,36 +695,36 @@ def writeTargComb(vna_only=False):
     return freq_actual
 
 
-def writeTargComb(write_cal_tones=True, update=False):
-    """Write the target comb with the last vna sweep values.
-    write_cal_tones: (bool) Also try to write calibration tones.
-    update: (bool) Try to use the last target sweep values instead."""
+# def writeTargComb(write_cal_tones=True, update=False):
+#     """Write the target comb with the last vna sweep values.
+#     write_cal_tones: (bool) Also try to write calibration tones.
+#     update: (bool) Try to use the last target sweep values instead."""
 
-    import numpy as np
+#     import numpy as np
 
-    try: # load f_res and center from vna sweep
-        targ_freqs = io.load(io.file.f_res_vna)
-        f_center   = io.load(io.file.f_center_vna)
-    except:
-        raise("Error: Required file[s] missing.")
+#     try: # load f_res and center from vna sweep
+#         targ_freqs = io.load(io.file.f_res_vna)
+#         f_center   = io.load(io.file.f_center_vna)
+#     except:
+#         raise Exception("Error: Required file[s] missing.")
     
-    if update: # override f_res from targ sweep if possible
-        try:
-            targ_freqs = io.load(io.file.f_res_targ)
-        except: pass # fail silently
+#     if update: # override f_res from targ sweep if possible
+#         try:
+#             targ_freqs = io.load(io.file.f_res_targ)
+#         except: pass # fail silently
 
-    chan = cfg.drid # drone (chan) id is from config
-    freqs = targ_freqs.real # complex freqs have 0j
+#     chan = cfg.drid # drone (chan) id is from config
+#     freqs = targ_freqs.real # complex freqs have 0j
 
-    if write_cal_tones:
-        try: # calibration tones may not exist
-            f_cal_tones = io.load(io.file.f_cal_tones)
-            freqs = np.append(freqs, f_cal_tones)
-        except: pass
+#     if write_cal_tones:
+#         try: # calibration tones may not exist
+#             f_cal_tones = io.load(io.file.f_cal_tones)
+#             freqs = np.append(freqs, f_cal_tones)
+#         except: pass
 
-    freqs = freqs - f_center
-    freq_actual = _writeComb(chan, freqs)
-    # io.save(io.file._f_res_targ, freq_actual)
+#     freqs = freqs - f_center
+#     freq_actual = _writeComb(chan, freqs)
+#     # io.save(io.file._f_res_targ, freq_actual)
 
 
 # ============================================================================ #
@@ -912,7 +912,7 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
             f_res = io.load(io.file.f_res_vna) # Hz
             # f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
         except:
-            raise("Required file missing: f_res_vna. Perform a vna sweep first.")
+            raise Exception("Required file missing: f_res_vna. Perform a vna sweep first.")
 
     if amps is None:
         amps = np.ones_like(f_res)
@@ -921,7 +921,7 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
             # load center LO frequency - stored in Hz
             f_center = io.load(io.file.f_center_vna) # Hz
         except:
-            raise("Required file missing: f_center_vna. Write NCLO frequency first.")
+            raise Exception("Required file missing: f_center_vna. Write NCLO frequency first.")
     else:
         f_center = f_center*1e6 # convert param MHz to Hz
     
@@ -961,7 +961,7 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     try:
         freqs = io.load(io.file.f_res_vna)
     except:
-        raise("Required file missing: f_res_vna. Perform a vna sweep first.")
+        raise Exception("Required file missing: f_res_vna. Perform a vna sweep first.")
 
     try: # current channel amplitudes
         # amps = np.load(f'{cfg.drone_dir}/amps.npy')
