@@ -652,11 +652,9 @@ def writeVnaComb():
 
 # ============================================================================ #
 # writeTargComb
-
-# write the targ comb from files
-# remove calibration
-def writeTargComb(vna_only=False):
+def writeTargComb(vna_only=False, cal_tones=False):
     """Write the comb with the most recent vna or target tones.
+    Note that this func is NOT used by targetSweep.
     vna_only: (bool) If True then restricts to vna results only."""
 
     import numpy as np
@@ -686,6 +684,14 @@ def writeTargComb(vna_only=False):
         amps = io.load(io.file.a_res_targ)
         phis = io.load(io.file.p_res_targ)
 
+    # load calibration tones and add to freqs
+    # do they need to be added in a sorted way?
+    if cal_tones:
+        try: # calibration tones may not exist
+            f_cal_tones = io.load(io.file.f_cal_tones)
+            freqs = np.append(freqs, f_cal_tones)
+        except: pass
+
     f_center   = io.load(io.file.f_center_vna)
     chan = cfg.drid # drone (chan) id is from config
     freqs = freqs.real - f_center
@@ -695,36 +701,38 @@ def writeTargComb(vna_only=False):
     return freq_actual
 
 
-# def writeTargComb(write_cal_tones=True, update=False):
-#     """Write the target comb with the last vna sweep values.
-#     write_cal_tones: (bool) Also try to write calibration tones.
-#     update: (bool) Try to use the last target sweep values instead."""
+'''
+def writeTargComb(write_cal_tones=True, update=False):
+    """Write the target comb with the last vna sweep values.
+    write_cal_tones: (bool) Also try to write calibration tones.
+    update: (bool) Try to use the last target sweep values instead."""
 
-#     import numpy as np
+    import numpy as np
 
-#     try: # load f_res and center from vna sweep
-#         targ_freqs = io.load(io.file.f_res_vna)
-#         f_center   = io.load(io.file.f_center_vna)
-#     except:
-#         raise Exception("Error: Required file[s] missing.")
+    try: # load f_res and center from vna sweep
+        targ_freqs = io.load(io.file.f_res_vna)
+        f_center   = io.load(io.file.f_center_vna)
+    except:
+        raise Exception("Error: Required file[s] missing.")
     
-#     if update: # override f_res from targ sweep if possible
-#         try:
-#             targ_freqs = io.load(io.file.f_res_targ)
-#         except: pass # fail silently
+    if update: # override f_res from targ sweep if possible
+        try:
+            targ_freqs = io.load(io.file.f_res_targ)
+        except: pass # fail silently
 
-#     chan = cfg.drid # drone (chan) id is from config
-#     freqs = targ_freqs.real # complex freqs have 0j
+    chan = cfg.drid # drone (chan) id is from config
+    freqs = targ_freqs.real # complex freqs have 0j
 
-#     if write_cal_tones:
-#         try: # calibration tones may not exist
-#             f_cal_tones = io.load(io.file.f_cal_tones)
-#             freqs = np.append(freqs, f_cal_tones)
-#         except: pass
+    if write_cal_tones:
+        try: # calibration tones may not exist
+            f_cal_tones = io.load(io.file.f_cal_tones)
+            freqs = np.append(freqs, f_cal_tones)
+        except: pass
 
-#     freqs = freqs - f_center
-#     freq_actual = _writeComb(chan, freqs)
-#     # io.save(io.file._f_res_targ, freq_actual)
+    freqs = freqs - f_center
+    freq_actual = _writeComb(chan, freqs)
+    # io.save(io.file._f_res_targ, freq_actual)
+'''
 
 
 # ============================================================================ #
@@ -748,7 +756,6 @@ def setNCLO(f_lo):
     """
     setNCLO: set the numerically controlled local oscillator
            
-
     f_lo: center frequency in [MHz]
     """
 
@@ -766,7 +773,6 @@ def setFineNCLO(f_lo):
     """
     setFineNCLO: set the fine frequency numerically controlled local oscillator
            
-
     f_lo: center frequency in [MHz]
     """
 
@@ -783,8 +789,7 @@ def setFineNCLO(f_lo):
 # vnaSweep
 def vnaSweep(f_center=600):
     """
-    vnaSweep: perform a stepped frequency sweep centered at f_center \\
-            save result as s21.npy file
+    vnaSweep: perform a stepped frequency sweep centered at f_center
 
     f_center: center frequency for sweep in [MHz]
     """
@@ -890,7 +895,7 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
 
 # ============================================================================ #
 # targetSweep
-def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
+def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True, cal_tones=5):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
@@ -924,7 +929,7 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
             raise Exception("Required file missing: f_center_vna. Write NCLO frequency first.")
     else:
         f_center = f_center*1e6 # convert param MHz to Hz
-    
+
     # perform target sweep after loading f_center
     writeTargComb(write_cal_tones=True)
     S21 = np.array(_sweep(chan, f_center/1e6, f_res-f_center, N_steps, chan_bandwidth)) 
