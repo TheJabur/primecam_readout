@@ -574,15 +574,16 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     y_grad = np.gradient(y_res, axis=1)         # slope at each point
     a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
     a /= np.max(np.abs(y_grad), axis=1)         # normalize
-    A_res = (1 + a)*amps
+    amps_new = (1 + a)*amps
 
-    return (freqs, A_res)
+    return (freqs, amps_new)
 
 
 # ============================================================================ #
 # _genAmpsAndPhis
 def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
     """Generate lists of amplitudes and phases.
+    freqs: 1D float array of resonator frequencies.
     amp_max: Maximum allowable time stream amplitude.
     """
 
@@ -594,6 +595,24 @@ def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
     # 0.3 yields a reasonable phase solve time in testing
 
     # randomly generate phases until peak amp is lower than required max
+    phis = _genPhis(freqs, amps, amp_max=(2**15-1))
+
+    return amps, phis
+
+
+# ============================================================================ #
+# _genPhis
+def _genPhis(freqs, amps, amp_max=(2**15-1)):
+    """Generate lists of phases for given tone amplitudes.
+    freqs: 1D float array of resonator frequencies.
+    amps: 1D float array of tone amplitudes.
+    amp_max: Maximum allowable time stream amplitude.
+    """
+
+    import numpy as np
+
+    # randomly generate phases until peak amp is lower than required max
+    N = np.size(amps)
     loops_max = 100; loop = 0 # could infinitely loop otherwise
     while True: # conditional at bottom to act like do-while
         loop += 1
@@ -608,7 +627,7 @@ def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
         if (amp_peak < amp_max) or (loop > loops_max):
             break
 
-    return amps, phis
+    return phis
 
 
 
@@ -895,15 +914,16 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
 
 # ============================================================================ #
 # targetSweep
-def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True, cal_tones=5):
+def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, phis=None, save=True):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
-    f_res:           (1D array of floats) Current comb tone frequencies [Hz].
-    f_center:        center frequency in [MHz].
+    freqs:           (1D array of floats) Current comb tone frequencies [Hz].
+    f_center:        center LO frequency in [MHz].
     N_steps:         (int) Number of LO frequencies to divide each channel into.
     chan_bandwidth:  (float) Channel bandwidth [MHz].
-    amps:            (1D array of floats) Current normalized tone amplitudes.
+    amps:            (1D array of floats) Current tone amplitudes.
+    phis:            (1D array of floats) Current tone phases. 
 
     Return:          (2-tuple) Characterized resonator frequencies and normalized tone amplitudes.
     """
@@ -912,40 +932,54 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
 
     chan = cfg.drid
 
-    if f_res is None:
+    # load resonator frequencies from vna sweep if not passed in
+    if freqs is None:
         try:
-            f_res = io.load(io.file.f_res_vna) # Hz
-            # f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
+            freqs = io.load(io.file.f_res_vna) # Hz
+            f_center = io.load(io.file.f_center_vna)/1e6 # MHz
         except:
-            raise Exception("Required file missing: f_res_vna. Perform a vna sweep first.")
+            raise Exception("Error: Perform a VNA sweep first.")
+    freqs = freqs.real # may be complex but imag=0
 
-    if amps is None:
-        amps = np.ones_like(f_res)
+    # calculate amps and phis if amps not passed in
+    if amps is None or phis is None:
+        # amps = np.ones_like(f_res)
+        amps, phis = _genAmpsAndPhis(freqs)
+
+    # calculate phis if not passed in
+    if phis is None:
+        phis = _genPhis(freqs, amps)
+
+    # load f_center from last vna sweep if not passed in
     if f_center is None:
         try:
-            # load center LO frequency - stored in Hz
             f_center = io.load(io.file.f_center_vna) # Hz
         except:
-            raise Exception("Required file missing: f_center_vna. Write NCLO frequency first.")
+            raise Exception("Error: Need a central LO frequency. Perform a VNA sweep first.")
     else:
         f_center = f_center*1e6 # convert param MHz to Hz
+    
+    # write tone comb
+    _writeComb(chan, freqs-f_center, amps, phis) # returns freq_actual
 
-    # perform target sweep after loading f_center
-    writeTargComb(write_cal_tones=True)
-    S21 = np.array(_sweep(chan, f_center/1e6, f_res-f_center, N_steps, chan_bandwidth)) 
+    # perform targeted sweep
+    S21 = np.array(
+        _sweep(chan, f_center/1e6, freqs-f_center, N_steps, chan_bandwidth)) 
   
-    freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    # try to optimise tone power (single iteration)
+    freqs, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    phis = _genPhis(freqs, amps)
 
     if save:
         io.save(io.file.s21_targ, S21)
         io.save(io.file.f_res_targ, freqs)
-        io.save(io.file.a_res_targ, A_res)
+        io.save(io.file.a_res_targ, amps)
         io.save(io.file.f_center_targ, f_center)
 
     # return (freqs, A_res)
     return io.returnWrapperMultiple(
         [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ], 
-        [freqs, A_res, S21])
+        [freqs, amps, S21])
 
 
 # ============================================================================ #
