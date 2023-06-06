@@ -285,7 +285,7 @@ def _pathSplit(file, path):
 
     # check path conforms to expectation from file
     if rpath[:len(fname)] != fname or rpath[-len(file_type):] != file_type:
-        raise("Path does not match that expected from file type.")
+        raise Exception("Path does not match that expected from file type.")
 
     end0 = rpath[len(fname)+1:]         # remove fname and underscore
 
