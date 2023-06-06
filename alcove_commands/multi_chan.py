@@ -18,7 +18,7 @@ try:
     import alcove_commands.board_io as io
     import queen_commands.control_io as cio
 
-    import xrfdc
+    import xrfdc # type: ignore
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
@@ -40,7 +40,7 @@ except Exception as e:
 # _setNCLO
 def _setNCLO(chan, lofreq):
 
-    import xrfdc
+    # import xrfdc
     rf_data_conv = firmware.usp_rf_data_converter_0
     
     if chan == 1:
