@@ -92,6 +92,9 @@ def loadVersion(file, timestamp):
     
     if file_type == 'npy':
         data = np.load(f'{dname}/{fname}.npy')
+
+    else: # if not npy then try general load
+        data = np.loadtxt(f'{dname}/{fname}')
     
     return data
 
@@ -208,7 +211,7 @@ def returnWrapperMultiple(file_list, data_list):
 
     return [
         returnWrapper(file, data)
-        for file, data in zip(file_list, data_list)]
+        for file, data in zip(file_list, data_list)] # type: ignore
 
 
 def unwrapData(wrapped_data):
