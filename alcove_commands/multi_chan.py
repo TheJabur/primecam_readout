@@ -978,12 +978,66 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
 
     # return (freqs, A_res)
     return io.returnWrapperMultiple(
-        [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ], 
-        [freqs, amps, S21])
+        [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ, io.file.p_res_targ], 
+        [freqs, amps, S21, phis])
 
 
 # ============================================================================ #
 # targetSweepLoop
+def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                    f_tol=0.1, A_tol=0.3, loops_max=20):
+    """Perform targetSweep iteratively until results are optimum.
+    chan_bandwidth:  (float) Channel bandwidth [MHz].
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    f_tol:           (float) Frequency change tolerance (MHz).
+    A_tol:           (float) Amplitude max relative change tolerance.
+    loops_max:       (int) Max loops to perform.
+    """
+
+    import numpy as np
+
+    # do initial target sweep
+    freqs, amps, _, phis = io.unwrapData(
+        targetSweep(f_center=f_center, N_steps=N_steps, chan_bandwidth=chan_bandwidth, save=False))
+
+    # should we look at whether chan_bandwidth was large enough / too large?
+
+    # now do iterative sweeps to optimise amps/phis
+    loop_num = 0; sweep = True
+    while sweep:
+        sweep = False # default to not performing another sweep
+        
+        freqs_new, amps_new, _, phis_new = io.unwrapData(
+            targetSweep(freqs=freqs, amps=amps, f_center=f_center, N_steps=N_steps, chan_bandwidth=chan_bandwidth, save=False))
+        # we don't pass phis in because there may be a new optimum
+        # by not passing it forces a re-calculation of them
+
+        # sweep again if any freq changed by more than f_tol
+        # or if any tone amp change is more than A_tol
+        if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
+            or np.any(np.abs(1 - amps_new/amps) > A_tol)):
+            sweep = True
+            
+        freqs, amps, phis = freqs_new, amps_new, phis_new
+
+        # stop re-sweeping after loops_max sweeps
+        # even if not in tolerances
+        if loop_num > loops_max:
+            sweep = False
+        loop_num += 1
+        
+    io.save(io.file.f_res_targ, freqs)
+    io.save(io.file.a_res_targ, amps)
+    io.save(io.file.p_res_targ, phis)
+    io.save(io.file.f_center_targ, f_center*1e6)
+
+    # return np.array([freqs, amps, phis])    
+    return io.returnWrapperMultiple(
+        [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
+        [freqs, amps, phis])
+
+'''
 def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
                     f_tol=0.1, A_tol=0.3, loops_max=20):
     """
@@ -1043,6 +1097,7 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     return io.returnWrapperMultiple(
         [io.file.f_res_targ, io.file.a_res_targ], 
         [freqs, amps])
+'''
 
 
 # ============================================================================ #
