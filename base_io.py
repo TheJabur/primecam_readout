@@ -211,6 +211,19 @@ def returnWrapperMultiple(file_list, data_list):
         for file, data in zip(file_list, data_list)]
 
 
+def unwrapData(wrapped_data):
+    """Return the original data input to the wrapping process.
+    """
+
+    # could be a list of wrapped data
+    if isinstance(wrapped_data, list):
+        return [d['data'] for d in wrapped_data]
+
+    # or single wrapped data
+    else:
+        return wrapped_data['data']
+
+
 def mostRecentTimestamp(file):
     """
     Timestamp of most recent of given file.
