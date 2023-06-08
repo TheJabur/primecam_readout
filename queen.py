@@ -89,7 +89,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
         else: _success("Published command.")
 
         print(f"{num_clients} drones received this command.")
-        return True
+        return num_clients
 
     ## Send to a single board
     elif bid:
@@ -108,7 +108,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
         if num_clients == 0: # no one listening!
             # This may mean the board has crashed
             print(f"No client received this command!")
-            return True
+            return 0
 
         # Listen for a response
         print(f"Listening for a response... ", end="")
@@ -126,7 +126,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
             else: _success("Processed response.")
 
             # stop listening; we only expect a single response
-            return True
+            return num_clients
 
     # not clear who to send command to
     else:
@@ -261,18 +261,18 @@ def getClientList(do_print=True):
 #  print monkeypatch
 _print = print 
 def print(*args, **kw):
-    _print(*args, **kw)            # print to terminal
+    # _print(*args, **kw)            # print to terminal
     logging.info(' '.join(args))   # log to file
 
 
 # ============================================================================ #
 #  _success/_fail
 def _success(msg):
-    _print("Done.")
+    print("Done.")
     if msg is not None: logging.info(msg)
 
 def _fail(e, msg=None):
-    _print("Failed.")
+    print("Failed.")
     if msg is not None: logging.info(msg)
     logging.error(e)
     return e

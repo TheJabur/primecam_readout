@@ -490,20 +490,32 @@ class MainWindow(QMainWindow):
 
 
     def sendAlcoveCommand(self, com_str, com_to, com_args):
+        print(f"Sending alcove command {com_str}", end='')
+        print(f" to {com_to if com_to != '' else 'all boards'}", end='')
+        print(f" with args ({com_args if com_args != '' else 'none'})", end='')
+        print("...")
+
         worker = Worker(_sendAlcoveCommand, com_str, com_to, com_args)
         worker.signals.result.connect(self.onResultAlcoveCommand)
         worker.signals.finished.connect(self.onFinishAlcoveCommand)
         # worker.signals.progress.connect(self.progress_fn)
+        worker.signals.error.connect(self.onErrorAlcoveCommand)
         self.threadpool.start(worker)
         
 
     def onResultAlcoveCommand(self, ret):
-        # ret, com_str, com_to, com_args = ret
-        print(f"Return: {ret}")
+        if ret: # assuming return is number of clients
+            print(f"... {ret} drone[s] received this command.")
+        else:
+            print("... NO DRONES RECEIVED THIS COMMAND!")
 
 
     def onFinishAlcoveCommand(self):
         self.updateAlcoveComsUI(False)
+
+
+    def onErrorAlcoveCommand(self, ret):
+        print(ret)
 
 
     # def sendQueenCommand(self, com_str, com_args):
