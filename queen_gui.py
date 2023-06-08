@@ -16,10 +16,11 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+import traceback
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QGridLayout, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox, QLineEdit, QPlainTextEdit, QMessageBox
 from PyQt5.QtGui import QIcon, QMovie, QPixmap, QTextCursor
-from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal, QRunnable, pyqtSlot, QThreadPool
 
 import base_io as io
 import queen
@@ -40,6 +41,8 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("CCATpHive Readout Development GUI")
         self.setWindowIcon(QIcon(QPixmap('./gui_assets/icon.png')))
+
+        self.threadpool = QThreadPool()
 
         # store 'loading' gif in memory for common use
         self.movie_loading = QMovie('./gui_assets/loading.gif')
@@ -143,7 +146,7 @@ class MainWindow(QMainWindow):
 
     def getClientList(self):
         # QueenCommandThread(self, com_str='getClientList', com_args='')
-        client_list =  _sendQueenCommand(com_str='getClientList', com_args='do_print=False')
+        client_list =  _sendQueenCommand(com_str='getClientList', com_args='do_print=False', progress_callback='')
 
         return client_list
 
@@ -183,12 +186,35 @@ class MainWindow(QMainWindow):
             self.button_queenlisten.setText('START Queen listening')
             self.button_queenlisten.setChecked(False)
 
+    def sendQueenListenCommand(self):
+        com_str = 'listenMode'
+        com_args = ''
+        worker = Worker(_sendQueenCommand, com_str, com_args)
+        worker.signals.result.connect(self.onResultQueenlisten)
+        # worker.signals.finished.connect(self.onFinishQueenlisten)
+        # worker.signals.progress.connect(self.progress_fn)
+        self.threadpool.start(worker)
+        
 
+    def onResultQueenlisten(self, ret):
+        try:
+            thread = ret
+            self.queenlisten_thread = thread
+            running = thread is not None
+        except:
+            print("### EXCEPTION in onFinishQueenlisten")
+            running = False
+        self.updateQueenListenUI(running)
+
+
+    # def onFinishQueenlisten(self):
+    #     pass
+
+    '''
     def sendQueenListenCommand(self):
         self.queenlisten_thread = QueenCommandThread(self, com_str='listenMode', com_args='')
         self.queenlisten_thread.finished.connect(self.onFinishQueenlisten)
         self.queenlisten_thread.start()
-
 
     def onFinishQueenlisten(self, ret):
         try:
@@ -199,6 +225,7 @@ class MainWindow(QMainWindow):
             print("### EXCEPTION in onFinishQueenlisten")
             running = False
         self.updateQueenListenUI(running)
+    '''
     
 
 
@@ -436,11 +463,11 @@ class MainWindow(QMainWindow):
         com_str = self.pulldown_alcovecoms.currentText()
         com_to = self.textbox_alcovecoms_to.text()
         com_args = self.textbox_alcovecoms_args.text()
-        self.updateAlcoveComsUI(True, com_str, com_to, com_args)
+        self.updateAlcoveComsUI(True, com_str)
         self.sendAlcoveCommand(com_str, com_to, com_args)
 
 
-    def updateAlcoveComsUI(self, busy, com_str, com_to, com_args):
+    def updateAlcoveComsUI(self, busy, com_str=''):
         if busy: # waiting for command to finish
             self.button_alcovecoms.setText(com_str)
             self.button_alcovecoms.setEnabled(False)
@@ -463,19 +490,20 @@ class MainWindow(QMainWindow):
 
 
     def sendAlcoveCommand(self, com_str, com_to, com_args):
-        # self.updateAlcoveComsUI(True, com_str, com_to, com_args)
-        alcovecom_thread = AlcoveCommandThread(self, com_str, com_to, com_args)
-        alcovecom_thread.finished.connect(self.onFinishAlcoveCommand)
-        alcovecom_thread.start()
+        worker = Worker(_sendAlcoveCommand, com_str, com_to, com_args)
+        worker.signals.result.connect(self.onResultAlcoveCommand)
+        worker.signals.finished.connect(self.onFinishAlcoveCommand)
+        # worker.signals.progress.connect(self.progress_fn)
+        self.threadpool.start(worker)
+        
+
+    def onResultAlcoveCommand(self, ret):
+        # ret, com_str, com_to, com_args = ret
+        print(f"Return: {ret}")
 
 
-    def onFinishAlcoveCommand(self, ret_tuple):
-        try:
-            ret, com_str, com_to, com_args = ret_tuple
-            print(f"Return: {ret}")
-            self.updateAlcoveComsUI(False, com_str, com_to, com_args)
-        except:
-            print("### EXCEPTION in onFinishAlcoveCommand")
+    def onFinishAlcoveCommand(self):
+        self.updateAlcoveComsUI(False)
 
 
     # def sendQueenCommand(self, com_str, com_args):
@@ -519,10 +547,10 @@ class MainWindow(QMainWindow):
 
 
 # ============================================================================ #
-# Threading Classes
+# Worker Classes
 # ============================================================================ #
 
-
+'''
 class QueenCommandThread(QThread):
     finished = pyqtSignal(object)
 
@@ -534,8 +562,9 @@ class QueenCommandThread(QThread):
     def run(self):
         ret = _sendQueenCommand(self.com_str, self.com_args)
         self.finished.emit((ret, self.com_str, self.com_args))
+'''
 
-
+'''
 class AlcoveCommandThread(QThread):
     finished = pyqtSignal(object)
 
@@ -549,6 +578,67 @@ class AlcoveCommandThread(QThread):
         # time.sleep(3)
         ret = _sendAlcoveCommand(self.com_str, self.com_to, self.com_args)
         self.finished.emit((ret, self.com_str, self.com_to, self.com_args))
+'''
+
+# WorkerSignals and Worker are from:
+# https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
+class WorkerSignals(QObject):
+    '''Defines the signals available from a running worker thread.
+    Supported signals are:
+        finished: No data
+        error: tuple (exctype, value, traceback.format_exc() )
+        result: object data returned from processing, anything
+    progress: int indicating % progress
+
+    '''
+    finished = pyqtSignal()
+    error = pyqtSignal(tuple)
+    result = pyqtSignal(object)
+    progress = pyqtSignal(int)
+
+
+# WorkerSignals and Worker are from:
+# https://www.pythonguis.com/tutorials/multithreading-pyside6-applications-qthreadpool/
+class Worker(QRunnable):
+    '''Worker thread
+    Inherits from QRunnable to handler worker thread setup, signals and wrap-up.
+
+    :param callback: The function callback to run on this worker thread. Supplied args and kwargs will be passed through to the runner.
+    :type callback: function
+    :param args: Arguments to pass to the callback function
+    :param kwargs: Keywords to pass to the callback function
+
+    '''
+
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+        # Add the callback to our kwargs
+        self.kwargs['progress_callback'] = self.signals.progress
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+
+        # Retrieve args/kwargs here; and fire processing using them
+        try:
+            result = self.fn(*self.args, **self.kwargs)
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit((exctype, value, traceback.format_exc()))
+        else:
+            self.signals.result.emit(result)  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
 
 
 
@@ -585,7 +675,7 @@ def _comNumAlcove(com_str):
     return coms[com_str]
 
 
-def _sendAlcoveCommand(com_str, com_to, com_args):
+def _sendAlcoveCommand(com_str, com_to, com_args, progress_callback):
     com_num = _comNumAlcove(com_str)
 
     # specific board/drone command
@@ -603,7 +693,7 @@ def _sendAlcoveCommand(com_str, com_to, com_args):
         return queen.alcoveCommand(com_num, all_boards=True, args=com_args)
     
 
-def _sendQueenCommand(com_str, com_args):
+def _sendQueenCommand(com_str, com_args, progress_callback):
     com_num = _comNumQueen(com_str)
 
     return queen.callCom(com_num, com_args)
