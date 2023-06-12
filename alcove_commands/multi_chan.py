@@ -1181,7 +1181,8 @@ def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
     # with only 2 measurements per KID it's hard to normalize...
     
     if n > dtol:
-        print(f"{n} detectors over tolerance. Running full loop.")
-        fullLoop()
+        print(f"Warning: Too many detectors over tolerance(dtol): {n}...", end='')
+        print(f"... should run a full loop calibration.")
+        # fullLoop()
     else:
-        print(f"{n} detectors over tolerance (<dtol). Done.")
+        print(f"Info: {n} detectors over tolerance, which is allowable. Done.")
