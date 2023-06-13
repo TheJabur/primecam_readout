@@ -22,7 +22,7 @@ try:
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
-    firmware = Overlay("tetra_v5p4.bit",ignore_version=True,download=False)
+    firmware = Overlay("tetra_v5p7.bit",ignore_version=True,download=False)
 
 except Exception as e: 
     firmware = None
