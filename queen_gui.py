@@ -241,13 +241,17 @@ class MainWindow(QMainWindow):
         layout_timestreamui = QHBoxLayout()
         layout.addLayout(layout_timestreamui)
 
-        self.textbox_timestream_bid_drid = QLineEdit()
-        self.textbox_timestream_bid_drid.setPlaceholderText("bid.drid")
-        layout_timestreamui.addWidget(self.textbox_timestream_bid_drid)
+        # self.textbox_timestream_bid_drid = QLineEdit()
+        # self.textbox_timestream_bid_drid.setPlaceholderText("bid.drid")
+        # layout_timestreamui.addWidget(self.textbox_timestream_bid_drid)
 
-        self.textbox_timestream_id = QLineEdit()
-        self.textbox_timestream_id.setPlaceholderText("KID ID")
-        layout_timestreamui.addWidget(self.textbox_timestream_id)
+        # self.textbox_timestream_id = QLineEdit()
+        # self.textbox_timestream_id.setPlaceholderText("KID ID")
+        # layout_timestreamui.addWidget(self.textbox_timestream_id)
+
+        self.textbox_timestream_ip = QLineEdit()
+        self.textbox_timestream_ip.setText("192.168.3.40")
+        layout_timestreamui.addWidget(self.textbox_timestream_ip)
 
         self.textbox_timestream_win = QLineEdit()
         self.textbox_timestream_win.setPlaceholderText("last x points")
@@ -293,7 +297,8 @@ class MainWindow(QMainWindow):
 # -TODO- switch to ip_addr module produced IP
                 # tIP = ip.tIP(ip.cIP(r, bid), drid)
                 # t_port = ip.getDroneTimestreamPort()
-                tIP = '192.168.3.40'
+                # tIP = '192.168.3.40'
+                tIP = self.textbox_timestream_ip.text()
                 t_port = 4096
                 self.timestream = TimeStream(host=tIP, port=t_port)
                 
@@ -318,14 +323,16 @@ class MainWindow(QMainWindow):
             self.button_timestream.setText('Stop Time Stream')
             self.button_timestream.setChecked(True)
             self.button_timestream_save.setEnabled(True)
-            self.textbox_timestream_bid_drid.setEnabled(False)
-            self.textbox_timestream_id.setEnabled(False)
+            # self.textbox_timestream_bid_drid.setEnabled(False)
+            # self.textbox_timestream_id.setEnabled(False)
+            self.textbox_timestream_ip.setEnabled(False)
         else:
             self.button_timestream.setText('Start Time Stream')
             self.button_timestream.setChecked(False)
             self.button_timestream_save.setEnabled(False)
-            self.textbox_timestream_bid_drid.setEnabled(True)
-            self.textbox_timestream_id.setEnabled(True)
+            # self.textbox_timestream_bid_drid.setEnabled(True)
+            # self.textbox_timestream_id.setEnabled(True)
+            self.textbox_timestream_ip.setEnabled(True)
 
 
     def onClickedButtonTimestreamSave(self):
@@ -344,7 +351,7 @@ class MainWindow(QMainWindow):
 
 
     def saveToFileTimestreamSave(self):
-        base_fname = f'timestream_{self.textbox_timestream_id.text()}_'
+        base_fname = f'timestream_{self.textbox_timestream_ip.text()}_'
         fname = io.saveToTmp(self.data_timestream_save, 
                              filename=base_fname, use_timestamp=True)
         print(f"Saving captured timestream to file: {fname}")
@@ -370,22 +377,23 @@ class MainWindow(QMainWindow):
         if self.timestream is None:
             return
 
-        # KID ID
-        try:
-            kid_id = max(int(self.textbox_timestream_id.text()), 0)
-        except:
-            kid_id = 0 # default kid_id
-        self.textbox_timestream_id.setText(str(kid_id)) # update GUI
+        # # KID ID
+        # try:
+        #     kid_id = max(int(self.textbox_timestream_id.text()), 0)
+        # except:
+        #     kid_id = 0 # default kid_id
+        # self.textbox_timestream_id.setText(str(kid_id)) # update GUI
 
-        # bid.drid
-        try:
-            bid_drid = self.textbox_timestream_bid_drid.text().split('.')
-            bid = max(int(bid_drid[0]), 1)
-            drid = max(int(bid_drid[1]), 1)
-        except:
-            bid = 1
-            drid = 1
-        self.textbox_timestream_bid_drid.setText(str(f'{bid}.{drid}')) # update GUI
+        # # bid.drid
+        # try:
+        #     bid_drid = self.textbox_timestream_bid_drid.text().split('.')
+        #     bid = max(int(bid_drid[0]), 1)
+        #     drid = max(int(bid_drid[1]), 1)
+        # except:
+        #     bid = 1
+        #     drid = 1
+        # self.textbox_timestream_bid_drid.setText(str(f'{bid}.{drid}')) # update GUI
+        kid_id = 0
 
         # grab a chunk of timestream, hardcoded 100 packets
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
