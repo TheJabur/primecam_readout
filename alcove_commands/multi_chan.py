@@ -755,14 +755,6 @@ def writeTargComb(write_cal_tones=True, update=False):
 
 
 # ============================================================================ #
-# updateTargComb
-def updateTargComb(write_cal_tones=True):
-    """Write the target comb with the last target sweep values."""
-
-    return writeTargComb(write_cal_tones=write_cal_tones, update=True)
-
-
-# ============================================================================ #
 # getSnapData
 def getSnapData(mux_sel):
     chan = cfg.drid
