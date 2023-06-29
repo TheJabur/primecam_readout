@@ -682,15 +682,17 @@ def writeTargComb(vna_only=False, cal_tones=False):
     targ_timestamp = io.mostRecentTimestamp(io.file.f_res_targ)
     # the timestamps are str or None
 
+    # 20230629T183150Z
+
     if vna_timestamp is None: # must have a vna sweep
         raise Exception("Error: A VNA sweep must be done first.")
-    else: vna_timestamp = float(vna_timestamp)
+    # else: vna_timestamp = float(vna_timestamp)
 
     if targ_timestamp is None: # no target sweep
         vna_only = True # so must use vna
 
     else: 
-        targ_timestamp = float(targ_timestamp)
+        # targ_timestamp = float(targ_timestamp)
         if vna_timestamp > targ_timestamp: # targ older than vna
             vna_only = True # so use vna
 
