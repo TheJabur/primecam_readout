@@ -813,9 +813,12 @@ def vnaSweep(f_center=600):
     f_center = int(f_center)
     _setNCLO(chan, f_center)
     
-    freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
+    #freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
 
     writeVnaComb()
+    
+    freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
+    
     s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
 
     io.save(io.file.s21_vna, s21)
