@@ -22,6 +22,7 @@ try:
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
+    #firmware = Overlay("tetra_v7p1_impl_5.bit",ignore_version=True,download=False)
     firmware = Overlay("tetra_v5p4.bit",ignore_version=True,download=False)
 
 except Exception as e: 
@@ -117,7 +118,11 @@ def _generateWaveDdr4(freq_list, amp_list, phi):
     freq_actual = k*(fs/lut_len)
     X = np.zeros(lut_len,dtype='complex')
     #phi = np.random.uniform(-np.pi, np.pi, np.size(freq_list))
-    X[k] = np.exp(-1j*phi)*amp_list # multiply by amplitude
+    print("pre-amp mult")
+    print(freq_list)
+    for i in range(np.size(k)):
+        X[k[i]] = np.exp(-1j*phi[i])*amp_list[i] # multiply by amplitude
+    print("post-amp mult")
     x = np.fft.ifft(X) * lut_len
     bin_num = np.int64(np.round(freq_actual / (fs / fft_len)))
     f_beat = bin_num*fs/fft_len - freq_actual
@@ -591,11 +596,12 @@ def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
 
     N = np.size(freqs)
 
-    amps = np.ones(N)*(2**15-1)/np.sqrt(N)*0.3 
+    amps = np.ones(N)*amp_max/np.sqrt(N)*0.25  
     # 0.3 yields a reasonable phase solve time in testing
-
+    print("pre-genPhis")
     # randomly generate phases until peak amp is lower than required max
-    phis = _genPhis(freqs, amps, amp_max=(2**15-1))
+    phis = _genPhis(freqs, amps, amp_max=amp_max)
+    print("post-genPhis")
 
     return amps, phis
 
@@ -618,8 +624,9 @@ def _genPhis(freqs, amps, amp_max=(2**15-1)):
         loop += 1
 
         phis = np.random.uniform(-np.pi, np.pi, N) # phases
-
+        print("pre-ddr4")
         x, _, _ = _generateWaveDdr4(freqs, amps, phis)
+        print("post-ddr4")
         x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
 
         amp_peak = np.max(np.abs(x.real + 1j*x.imag))
@@ -667,6 +674,7 @@ def writeVnaComb():
     io.save(io.file.freqs_vna, freq_actual)
     io.save(io.file.amps_vna, amps)
     io.save(io.file.phis_vna, phis)
+    return freq_actual
 
 
 # ============================================================================ #
@@ -687,6 +695,8 @@ def writeTargComb(vna_only=False, cal_tones=False):
     if vna_timestamp is None: # must have a vna sweep
         raise Exception("Error: A VNA sweep must be done first.")
     # else: vna_timestamp = float(vna_timestamp)
+    
+    f_center   = io.load(io.file.f_center_vna)
 
     if targ_timestamp is None: # no target sweep
         vna_only = True # so must use vna
@@ -699,23 +709,23 @@ def writeTargComb(vna_only=False, cal_tones=False):
     # load resonator freqs, amps, and phis
     if vna_only:
         freqs = io.load(io.file.f_res_vna)
+        freqs = freqs.real - f_center
         amps, phis = _genAmpsAndPhis(freqs)
     else:
         freqs = io.load(io.file.f_res_targ)
+        freqs = freqs.real - f_center
         amps = io.load(io.file.a_res_targ)
         phis = io.load(io.file.p_res_targ)
-
     # load calibration tones and add to freqs
     # do they need to be added in a sorted way?
     if cal_tones:
         try: # calibration tones may not exist
             f_cal_tones = io.load(io.file.f_cal_tones)
+            f_cal_tones = f_cal_tones.real - f_center
             freqs = np.append(freqs, f_cal_tones)
         except: pass
 
-    f_center   = io.load(io.file.f_center_vna)
     chan = cfg.drid # drone (chan) id is from config
-    freqs = freqs.real - f_center
 
     freq_actual = _writeComb(chan, freqs, amps, phis)
 
@@ -813,12 +823,7 @@ def vnaSweep(f_center=600):
     f_center = int(f_center)
     _setNCLO(chan, f_center)
     
-    #freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
-
-    writeVnaComb()
-    
-    freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
-    
+    freqs = writeVnaComb()
     s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
 
     io.save(io.file.s21_vna, s21)
@@ -933,10 +938,20 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
     if freqs is None:
         try:
             freqs = io.load(io.file.f_res_vna) # Hz
-            f_center = io.load(io.file.f_center_vna)/1e6 # MHz
         except:
             raise Exception("Error: Perform a VNA sweep first.")
     freqs = freqs.real # may be complex but imag=0
+    
+    # load f_center from last vna sweep if not passed in
+    if f_center is None:
+        try:
+            f_center = io.load(io.file.f_center_vna) # Hz
+        except:
+            raise Exception("Error: Need a central LO frequency. Perform a VNA sweep first.")
+    else:
+        f_center = f_center*1e6 # convert passed param MHz to Hz
+
+    freqs = freqs - f_center
 
     # calculate amps and phis if amps not passed in
     if amps is None or phis is None:
@@ -947,21 +962,12 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
     if phis is None:
         phis = _genPhis(freqs, amps)
 
-    # load f_center from last vna sweep if not passed in
-    if f_center is None:
-        try:
-            f_center = io.load(io.file.f_center_vna) # Hz
-        except:
-            raise Exception("Error: Need a central LO frequency. Perform a VNA sweep first.")
-    else:
-        f_center = f_center*1e6 # convert param MHz to Hz
-    
     # write tone comb
-    _writeComb(chan, freqs-f_center, amps, phis) # returns freq_actual
+    _writeComb(chan, freqs, amps, phis) # returns freq_actual
 
     # perform targeted sweep
     S21 = np.array(
-        _sweep(chan, f_center/1e6, freqs-f_center, N_steps, chan_bandwidth)) 
+        _sweep(chan, f_center/1e6, freqs, N_steps, chan_bandwidth)) 
   
     # try to optimise tone power (single iteration)
     freqs, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
@@ -969,7 +975,7 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
 
     if save:
         io.save(io.file.s21_targ, S21)
-        io.save(io.file.f_res_targ, freqs)
+        io.save(io.file.f_res_targ, freqs + f_center)
         io.save(io.file.a_res_targ, amps)
         io.save(io.file.f_center_targ, f_center)
 
