@@ -1,16 +1,28 @@
 
-#####################
-# Global attributes #
-#####################
+# ============================================================================ #
+# multi_chan.py.py
+# Main Alcove commands.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2023  
+# ============================================================================ #
+
+
+
+# ============================================================================ #
+# IMPORTS & GLOBALS
+# ============================================================================ #
+
+
 try:
     import _cfg_board as cfg
     import alcove_commands.board_io as io
     import queen_commands.control_io as cio
 
-    import xrfdc
+    import xrfdc # type: ignore
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
+    #firmware = Overlay("tetra_v7p1_impl_5.bit",ignore_version=True,download=False)
     firmware = Overlay("tetra_v5p4.bit",ignore_version=True,download=False)
 
 except Exception as e: 
@@ -19,13 +31,17 @@ except Exception as e:
 
 
 
-######################
-# Internal Functions #
-######################
 
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
+
+
+# ============================================================================ #
+# _setNCLO
 def _setNCLO(chan, lofreq):
 
-    import xrfdc
+    # import xrfdc
     rf_data_conv = firmware.usp_rf_data_converter_0
     
     if chan == 1:
@@ -52,6 +68,9 @@ def _setNCLO(chan, lofreq):
         return "Does not compute" # great error message
     return
 
+
+# ============================================================================ #
+# _setNCLO2
 def _setNCLO2(chan, lofreq):
     import numpy as np
     mix = firmware.mix_freq_set_0
@@ -80,12 +99,17 @@ def _setNCLO2(chan, lofreq):
     mix.write(offset, digi_val) # frequency
     return
 
-def _generateWaveDdr4(freq_list):  
+
+# ============================================================================ #
+# _generateWaveDdr4
+def _generateWaveDdr4(freq_list, amp_list, phi):  
 
     import numpy as np
 
     # freq_list may be complex but imag parts should all be zero
     freq_list = np.real(freq_list)
+    amp_list = np.real(amp_list)
+    phi = np.real(phi)
 
     fs = 512e6 
     lut_len = 2**20
@@ -93,9 +117,13 @@ def _generateWaveDdr4(freq_list):
     k = np.int64(np.round(freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
     X = np.zeros(lut_len,dtype='complex')
-    phi = np.random.uniform(-np.pi, np.pi, np.size(freq_list))
-    X[k] = np.exp(-1j*phi)
-    x = np.fft.ifft(X) * lut_len/np.sqrt(2)
+    #phi = np.random.uniform(-np.pi, np.pi, np.size(freq_list))
+    print("pre-amp mult")
+    print(freq_list)
+    for i in range(np.size(k)):
+        X[k[i]] = np.exp(-1j*phi[i])*amp_list[i] # multiply by amplitude
+    print("post-amp mult")
+    x = np.fft.ifft(X) * lut_len
     bin_num = np.int64(np.round(freq_actual / (fs / fft_len)))
     f_beat = bin_num*fs/fft_len - freq_actual
     dphi0 = f_beat/(fs/fft_len)*2**16
@@ -108,6 +136,8 @@ def _generateWaveDdr4(freq_list):
     return x, dphi, freq_actual
 
 
+# ============================================================================ #
+# _normWave
 def _normWave(wave, max_amp=2**15-1):
 
     import numpy as np
@@ -120,6 +150,16 @@ def _normWave(wave, max_amp=2**15-1):
     return wave_real, wave_imag
 
 
+# ============================================================================ #
+# _waveAmpTest
+def _waveAmpTest(wave, max_amp=2**15-1):
+    import numpy as np
+    maximum = np.max(np.abs(wave))
+    print(f"max amplitude {maximum:.10f}")
+
+
+# ============================================================================ #
+# _loadBinList
 def _loadBinList(chan, freq_list):
 
     import numpy as np
@@ -154,9 +194,8 @@ def _loadBinList(chan, freq_list):
     sync_in = 2**26
     accum_rst = 2**24  # (active low)
     accum_length = (2**19)-1
-    ################################################
+
     # Load DDC bins
-    ################################################
     offs=0
     
     # only write tones to bin list
@@ -173,6 +212,8 @@ def _loadBinList(chan, freq_list):
     return
 
 
+# ============================================================================ #
+# _resetAccumAndSync
 def _resetAccumAndSync(chan, freqs):
     if chan == 1:
         dsp_regs = firmware.chan1.dsp_regs_0
@@ -207,6 +248,8 @@ def _resetAccumAndSync(chan, freqs):
     return
 
 
+# ============================================================================ #
+# _loadDdr4
 def _loadDdr4(chan, wave_real, wave_imag, dphi):
 
     import numpy as np
@@ -241,7 +284,6 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
     ddr4mux = firmware.axi_ddr4_mux
     ddr4mux.write(8,0) # set read valid 
     ddr4mux.write(0,0) # mux switch
-    ddr4 = firmware.ddr4_0
     base_addr_ddr4 = 0x4_0000_0000 #0x5_0000_0000
     depth_ddr4 = 2**32
     mmio_ddr4 = MMIO(base_addr_ddr4, depth_ddr4)
@@ -257,6 +299,8 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
     return
 
 
+# ============================================================================ #
+# _getSnapData
 # capture data from ADC
 def _getSnapData(chan, mux_sel):
 
@@ -339,6 +383,9 @@ def _getSnapData(chan, mux_sel):
         I, Q = I[4:], Q[4:]
     return I, Q
 
+
+# ============================================================================ #
+# _getCleanAccum
 def _getCleanAccum(Itemplate, Qtemplate):
     """
     Function to return un-spurious accumuation captures
@@ -366,22 +413,28 @@ def _getCleanAccum(Itemplate, Qtemplate):
     return I, Q
 
 
-def _writeComb(chan, freqs):
+# ============================================================================ #
+# _writeComb
+def _writeComb(chan, freqs, amps, phi):
    
     import numpy as np
 
     if np.size(freqs)<1:
         # what do we want to do if freqs empty?
-        raise("freqs must not be empty.")
+        raise Exception("freqs must not be empty.")
 
-    wave, dphi, freq_actual = _generateWaveDdr4(freqs)
-    wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
+    wave, dphi, freq_actual = _generateWaveDdr4(freqs, amps, phi)
+    #wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
+    wave_real, wave_imag = wave.real.astype("int16"), wave.imag.astype("int16") 
+    _waveAmpTest(wave, max_amp=2**15-1)
     _loadDdr4(chan, wave_real, wave_imag, dphi)
     _loadBinList(chan, freq_actual)
     _resetAccumAndSync(chan, freq_actual)
     return freq_actual
 
 
+# ============================================================================ #
+# _sweep
 def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     """
     Perform a stepped LO frequency sweep with existing comb centered at f_center.
@@ -436,6 +489,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     return (f, Z)
 
 
+# ============================================================================ #
+# _stitchS21m
 def _stitchS21m(S21m, bw=500, sw=100):
     """Shift S21 mags so the bin ends align.
 
@@ -460,6 +515,8 @@ def _stitchS21m(S21m, bw=500, sw=100):
     return a_n.flatten()                   # reshape to 1D and return
 
 
+# ============================================================================ #
+# _resonatorIndicesInS21
 def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, testing=False):
     """Find the indices of resonator peaks in given S21 signal.
     
@@ -492,6 +549,8 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     return peaks
 
 
+# ============================================================================ #
+# _toneFreqsAndAmpsFromSweepData
 def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     """
     Determine resonator tone frequencies and normalized amplitudes from sweep data.
@@ -520,36 +579,160 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     y_grad = np.gradient(y_res, axis=1)         # slope at each point
     a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
     a /= np.max(np.abs(y_grad), axis=1)         # normalize
-    A_res = (1 + a)*amps
+    amps_new = (1 + a)*amps
 
-    return (freqs, A_res)
+    return (freqs, amps_new)
+
+
+# ============================================================================ #
+# _genAmpsAndPhis
+def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
+    """Generate lists of amplitudes and phases.
+    freqs: 1D float array of resonator frequencies.
+    amp_max: Maximum allowable time stream amplitude.
+    """
+
+    import numpy as np
+
+    N = np.size(freqs)
+
+    amps = np.ones(N)*amp_max/np.sqrt(N)*0.25  
+    # 0.3 yields a reasonable phase solve time in testing
+    print("pre-genPhis")
+    # randomly generate phases until peak amp is lower than required max
+    phis = _genPhis(freqs, amps, amp_max=amp_max)
+    print("post-genPhis")
+
+    return amps, phis
+
+
+# ============================================================================ #
+# _genPhis
+def _genPhis(freqs, amps, amp_max=(2**15-1)):
+    """Generate lists of phases for given tone amplitudes.
+    freqs: 1D float array of resonator frequencies.
+    amps: 1D float array of tone amplitudes.
+    amp_max: Maximum allowable time stream amplitude.
+    """
+
+    import numpy as np
+
+    # randomly generate phases until peak amp is lower than required max
+    N = np.size(amps)
+    loops_max = 100; loop = 0 # could infinitely loop otherwise
+    while True: # conditional at bottom to act like do-while
+        loop += 1
+
+        phis = np.random.uniform(-np.pi, np.pi, N) # phases
+        print("pre-ddr4")
+        x, _, _ = _generateWaveDdr4(freqs, amps, phis)
+        print("post-ddr4")
+        x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
+
+        amp_peak = np.max(np.abs(x.real + 1j*x.imag))
+
+        if (amp_peak < amp_max) or (loop > loops_max):
+            break
+
+    return phis
 
 
 
-#####################
-# Command Functions #
-#####################
+# ============================================================================ #
+# COMMAND FUNCTIONS
 # Arguments are given as strings!
+# ============================================================================ #
 
+
+# ============================================================================ #
+# writeTestTone
 def writeTestTone():
 
     import numpy as np
     
     chan = cfg.drid # drone (chan) id is from config
     freqs = np.array(np.linspace(50e6, 255.00e6, 1))
-    freq_actual = _writeComb(chan, freqs)
+    amps = np.ones(1)*(2**15 - 1)
+    phi=np.array((np.pi))
+    freq_actual = _writeComb(chan, freqs, amps, phi)
 
 
+# ============================================================================ #
+# writeVnaComb
 def writeVnaComb():
+    """Write the blind sweep tone comb.
+    """
 
     import numpy as np
     
     chan = cfg.drid # drone (chan) id is from config
     freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    freq_actual = _writeComb(chan, freqs)
+    amps, phis = _genAmpsAndPhis(freqs)
+
+    freq_actual = _writeComb(chan, freqs, amps, phis)
+
     io.save(io.file.freqs_vna, freq_actual)
+    io.save(io.file.amps_vna, amps)
+    io.save(io.file.phis_vna, phis)
+    return freq_actual
 
 
+# ============================================================================ #
+# writeTargComb
+def writeTargComb(vna_only=False, cal_tones=False):
+    """Write the comb with the most recent vna or target tones.
+    Note that this func is NOT used by targetSweep.
+    vna_only: (bool) If True then restricts to vna results only."""
+
+    import numpy as np
+
+    vna_timestamp = io.mostRecentTimestamp(io.file.f_res_vna)
+    targ_timestamp = io.mostRecentTimestamp(io.file.f_res_targ)
+    # the timestamps are str or None
+
+    # 20230629T183150Z
+
+    if vna_timestamp is None: # must have a vna sweep
+        raise Exception("Error: A VNA sweep must be done first.")
+    # else: vna_timestamp = float(vna_timestamp)
+    
+    f_center   = io.load(io.file.f_center_vna)
+
+    if targ_timestamp is None: # no target sweep
+        vna_only = True # so must use vna
+
+    else: 
+        # targ_timestamp = float(targ_timestamp)
+        if vna_timestamp > targ_timestamp: # targ older than vna
+            vna_only = True # so use vna
+
+    # load resonator freqs, amps, and phis
+    if vna_only:
+        freqs = io.load(io.file.f_res_vna)
+        freqs = freqs.real - f_center
+        amps, phis = _genAmpsAndPhis(freqs)
+    else:
+        freqs = io.load(io.file.f_res_targ)
+        freqs = freqs.real - f_center
+        amps = io.load(io.file.a_res_targ)
+        phis = io.load(io.file.p_res_targ)
+    # load calibration tones and add to freqs
+    # do they need to be added in a sorted way?
+    if cal_tones:
+        try: # calibration tones may not exist
+            f_cal_tones = io.load(io.file.f_cal_tones)
+            f_cal_tones = f_cal_tones.real - f_center
+            freqs = np.append(freqs, f_cal_tones)
+        except: pass
+
+    chan = cfg.drid # drone (chan) id is from config
+
+    freq_actual = _writeComb(chan, freqs, amps, phis)
+
+    return freq_actual
+
+
+'''
 def writeTargComb(write_cal_tones=True, update=False):
     """Write the target comb with the last vna sweep values.
     write_cal_tones: (bool) Also try to write calibration tones.
@@ -561,7 +744,7 @@ def writeTargComb(write_cal_tones=True, update=False):
         targ_freqs = io.load(io.file.f_res_vna)
         f_center   = io.load(io.file.f_center_vna)
     except:
-        raise("Error: Required file[s] missing.")
+        raise Exception("Error: Required file[s] missing.")
     
     if update: # override f_res from targ sweep if possible
         try:
@@ -580,24 +763,22 @@ def writeTargComb(write_cal_tones=True, update=False):
     freqs = freqs - f_center
     freq_actual = _writeComb(chan, freqs)
     # io.save(io.file._f_res_targ, freq_actual)
+'''
 
 
-def updateTargComb(write_cal_tones=True):
-    """Write the target comb with the last target sweep values."""
-
-    return writeTargComb(write_cal_tones=write_cal_tones, update=True)
-
-
+# ============================================================================ #
+# getSnapData
 def getSnapData(mux_sel):
     chan = cfg.drid
     return _getSnapData(chan, int(mux_sel))
 
 
+# ============================================================================ #
+# setNCLO
 def setNCLO(f_lo):
     """
     setNCLO: set the numerically controlled local oscillator
            
-
     f_lo: center frequency in [MHz]
     """
 
@@ -609,10 +790,29 @@ def setNCLO(f_lo):
     io.save(io.file.f_center_vna, f_lo*1e6)
 
 
+# ============================================================================ #
+# setFineNCLO 
+def setFineNCLO(f_lo):
+    """
+    setFineNCLO: set the fine frequency numerically controlled local oscillator
+           
+    f_lo: center frequency in [MHz]
+    """
+
+    # import numpy as np
+
+    chan = cfg.drid
+    f_lo = float(f_lo)
+    return _setNCLO2(chan, f_lo)
+    # TODO: modify f_center to reflect this fine adjustment
+    # io.save(io.file.f_center_vna, f_lo*1e6)
+
+
+# ============================================================================ #
+# vnaSweep
 def vnaSweep(f_center=600):
     """
-    vnaSweep: perform a stepped frequency sweep centered at f_center \\
-            save result as s21.npy file
+    vnaSweep: perform a stepped frequency sweep centered at f_center
 
     f_center: center frequency for sweep in [MHz]
     """
@@ -623,9 +823,7 @@ def vnaSweep(f_center=600):
     f_center = int(f_center)
     _setNCLO(chan, f_center)
     
-    freqs = io.load(io.file.freqs_vna) # what if it doesnt exist?
-
-    writeVnaComb()
+    freqs = writeVnaComb()
     s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
 
     io.save(io.file.s21_vna, s21)
@@ -636,6 +834,8 @@ def vnaSweep(f_center=600):
     return io.returnWrapper(io.file.s21_vna, s21)
 
 
+# ============================================================================ #
+# findResonators
 def findResonators():
     """
     Find the resonator peak frequencies in previously saved s21.npy file.
@@ -659,6 +859,8 @@ def findResonators():
     return io.returnWrapper(io.file.f_res_vna, f_res)
 
 
+# ============================================================================ #
+# findCalTones
 def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
     """Determine the indices of calibration tones.
     
@@ -712,15 +914,18 @@ def findCalTones(f_lo=0.1, f_hi=50, tol=2, max_tones=10):
     return io.returnWrapper(io.file.f_cal_tones, f_cal_tones)
     
 
-def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, save=True):
+# ============================================================================ #
+# targetSweep
+def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps=None, phis=None, save=True):
     """
     Perform a sweep around resonator tones and identify resonator frequencies and tone amplitudes.
     
-    f_res:           (1D array of floats) Current comb tone frequencies [Hz].
-    f_center:        center frequency in [MHz].
+    freqs:           (1D array of floats) Current comb tone frequencies [Hz].
+    f_center:        center LO frequency in [MHz].
     N_steps:         (int) Number of LO frequencies to divide each channel into.
     chan_bandwidth:  (float) Channel bandwidth [MHz].
-    amps:            (1D array of floats) Current normalized tone amplitudes.
+    amps:            (1D array of floats) Current tone amplitudes.
+    phis:            (1D array of floats) Current tone phases. 
 
     Return:          (2-tuple) Characterized resonator frequencies and normalized tone amplitudes.
     """
@@ -729,42 +934,114 @@ def targetSweep(f_res=None,f_center=None, N_steps=500, chan_bandwidth=0.2, amps=
 
     chan = cfg.drid
 
-    if f_res is None:
+    # load resonator frequencies from vna sweep if not passed in
+    if freqs is None:
         try:
-            f_res = io.load(io.file.f_res_vna) # Hz
-            # f_res = np.load(f'{cfg.drone_dir}/f_res.npy')
+            freqs = io.load(io.file.f_res_vna) # Hz
         except:
-            raise("Required file missing: f_res_vna. Perform a vna sweep first.")
-
-    if amps is None:
-        amps = np.ones_like(f_res)
+            raise Exception("Error: Perform a VNA sweep first.")
+    freqs = freqs.real # may be complex but imag=0
+    
+    # load f_center from last vna sweep if not passed in
     if f_center is None:
         try:
-            # load center LO frequency - stored in Hz
             f_center = io.load(io.file.f_center_vna) # Hz
         except:
-            raise("Required file missing: f_center_vna. Write NCLO frequency first.")
+            raise Exception("Error: Need a central LO frequency. Perform a VNA sweep first.")
     else:
-        f_center = f_center*1e6 # convert param MHz to Hz
+        f_center = f_center*1e6 # convert passed param MHz to Hz
+
+    freqs = freqs - f_center
+
+    # calculate amps and phis if amps not passed in
+    if amps is None or phis is None:
+        # amps = np.ones_like(f_res)
+        amps, phis = _genAmpsAndPhis(freqs)
+
+    # calculate phis if not passed in
+    if phis is None:
+        phis = _genPhis(freqs, amps)
     
-    # perform target sweep after loading f_center
-    writeTargComb(write_cal_tones=True)
-    S21 = np.array(_sweep(chan, f_center/1e6, f_res-f_center, N_steps, chan_bandwidth)) 
+    # write tone comb
+    freq_actual = _writeComb(chan, freqs, amps, phis) # returns freq_actual
+
+    # perform targeted sweep
+    S21 = np.array(
+        _sweep(chan, f_center/1e6, freqs, N_steps, chan_bandwidth)) 
   
-    freqs, A_res = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    # try to optimise tone power (single iteration)
+    # freqs, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    # need to determine if freqs returned from _ToneFreqs ... are baseband
+    phis = _genPhis(freqs, amps)
 
     if save:
         io.save(io.file.s21_targ, S21)
-        io.save(io.file.f_res_targ, freqs)
-        io.save(io.file.a_res_targ, A_res)
+        io.save(io.file.f_res_targ, freqs + f_center)
+        io.save(io.file.a_res_targ, amps)
         io.save(io.file.f_center_targ, f_center)
 
     # return (freqs, A_res)
     return io.returnWrapperMultiple(
-        [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ], 
-        [freqs, A_res, S21])
+        [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ, io.file.p_res_targ], 
+        [freqs+f_center, amps, S21, phis])
 
 
+# ============================================================================ #
+# targetSweepLoop
+def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
+                    f_tol=0.1, A_tol=0.3, loops_max=20):
+    """Perform targetSweep iteratively until results are optimum.
+    chan_bandwidth:  (float) Channel bandwidth [MHz].
+    f_center:        (float) Center LO frequency for sweep [MHz].
+    N_steps:         (int) Number of LO frequencies to divide each channel into.
+    f_tol:           (float) Frequency change tolerance (MHz).
+    A_tol:           (float) Amplitude max relative change tolerance.
+    loops_max:       (int) Max loops to perform.
+    """
+
+    import numpy as np
+
+    # do initial target sweep
+    freqs, amps, _, phis = io.unwrapData(
+        targetSweep(f_center=f_center, N_steps=N_steps, chan_bandwidth=chan_bandwidth, save=False))
+
+    # should we look at whether chan_bandwidth was large enough / too large?
+
+    # now do iterative sweeps to optimise amps/phis
+    loop_num = 0; sweep = True
+    while sweep:
+        sweep = False # default to not performing another sweep
+        
+        freqs_new, amps_new, _, phis_new = io.unwrapData(
+            targetSweep(freqs=freqs, amps=amps, f_center=f_center, N_steps=N_steps, chan_bandwidth=chan_bandwidth, save=False))
+        # we don't pass phis in because there may be a new optimum
+        # by not passing it forces a re-calculation of them
+
+        # sweep again if any freq changed by more than f_tol
+        # or if any tone amp change is more than A_tol
+        if (np.any(np.abs(freqs - freqs_new) > f_tol*1e6) 
+            or np.any(np.abs(1 - amps_new/amps) > A_tol)):
+            sweep = True
+            
+        freqs, amps, phis = freqs_new, amps_new, phis_new
+
+        # stop re-sweeping after loops_max sweeps
+        # even if not in tolerances
+        if loop_num > loops_max:
+            sweep = False
+        loop_num += 1
+        
+    io.save(io.file.f_res_targ, freqs)
+    io.save(io.file.a_res_targ, amps)
+    io.save(io.file.p_res_targ, phis)
+    io.save(io.file.f_center_targ, f_center*1e6)
+
+    # return np.array([freqs, amps, phis])    
+    return io.returnWrapperMultiple(
+        [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
+        [freqs, amps, phis])
+
+'''
 def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500, 
                     f_tol=0.1, A_tol=0.3, loops_max=20):
     """
@@ -781,7 +1058,7 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     try:
         freqs = io.load(io.file.f_res_vna)
     except:
-        raise("Required file missing: f_res_vna. Perform a vna sweep first.")
+        raise Exception("Required file missing: f_res_vna. Perform a vna sweep first.")
 
     try: # current channel amplitudes
         # amps = np.load(f'{cfg.drone_dir}/amps.npy')
@@ -824,8 +1101,11 @@ def targetSweepLoop(chan_bandwidth=0.2, f_center=600, N_steps=500,
     return io.returnWrapperMultiple(
         [io.file.f_res_targ, io.file.a_res_targ], 
         [freqs, amps])
+'''
 
 
+# ============================================================================ #
+# fullLoop
 def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
     '''
     Complete resonator calibration.
@@ -868,6 +1148,8 @@ def fullLoop(max_loops_full=2, max_loops_funcs=2, verbose=False):
         break
 
 
+# ============================================================================ #
+# loChop
 def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
     """
     Do a quick sweep using only 2 (symmetric) points per resonator.
@@ -903,7 +1185,8 @@ def loChop(f_center=600, freq_offset=0.012, tol=0.01e6, dtol=0):
     # with only 2 measurements per KID it's hard to normalize...
     
     if n > dtol:
-        print(f"{n} detectors over tolerance. Running full loop.")
-        fullLoop()
+        print(f"Warning: Too many detectors over tolerance(dtol): {n}...", end='')
+        print(f"... should run a full loop calibration.")
+        # fullLoop()
     else:
-        print(f"{n} detectors over tolerance (<dtol). Done.")
+        print(f"Info: {n} detectors over tolerance, which is allowable. Done.")

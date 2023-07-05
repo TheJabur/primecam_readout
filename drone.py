@@ -1,16 +1,15 @@
-########################################################
-### Remote-side Redis interface.                     ###
-### Interfaces with redis-client to execute alcove   ###
-### commands from queen.                             ###
-###                                                  ###
-### James Burgoyne jburgoyne@phas.ubc.ca             ###
-### CCAT Prime 2022                                  ###
-########################################################
+# ============================================================================ #
+# drone.py
+# Board side Redis interface script.
+# James Burgoyne jburgoyne@phas.ubc.ca
+# CCAT/FYST 2023 
+# ============================================================================ #
 
 
 
-###############
-### IMPORTS ###
+# ============================================================================ #
+# IMPORTS
+# ============================================================================ #
 
 
 import alcove
@@ -22,13 +21,15 @@ import logging
 import pickle
 import argparse
 
-import _cfg_board as cfg
-# import _cfg_drone done in main()
+import _cfg_board as cfg # import _cfg_drone done in main()
+import redis_channels as rc
 
 
 
-##############
-### CONFIG ###
+# ============================================================================ #
+# CONFIG
+# ============================================================================ #
+
 
 logging.basicConfig(
     filename='logs/board.log', level=logging.DEBUG,
@@ -38,38 +39,34 @@ logging.basicConfig(
 
 
 
-######################
-### MAIN EXECUTION ###
+# ============================================================================ #
+# MAIN
+# ============================================================================ #
 
 
-def main():   
+def main():
+    # CTRL-c to exit out of listen mode
 
-    args = setupArgparse()              # get command line arguments
+    args = setupArgparse() # get command line arguments
 
-    modifyConfig(args)                  # modify execution level configs
+    modifyConfig(args) # modify execution level configs
 
-    bid  = cfg.bid                      # board identifier
-    drid = cfg.drid                     # drone identifier
-    chan_subs = [                       # listening channels
-        f'board_{bid}_*',               # this boards listening channels
-        f'board_{bid}.{drid}_*',        # this drones listening channels
-        'all_boards']                   # an all-boards listening channel
+    r,p = connectRedis()
+    r.client_setname(f'drone_{cfg.bid}.{cfg.drid}')
 
-    print(chan_subs)
-
-    r,p = connectRedis()                # redis and pubsub objects
-
-    # listenMode(r, p, bid, chan_subs)    # listen for redis messages
-    listenMode(r, p, chan_subs)
-    # currently, only way to exit out of listen mode is CTRL-c
+    print(f"Drone {cfg.bid}.{cfg.drid} is running...")
+    sub_chan_list = rc.getThisChanList()
+    listenMode(r, p, sub_chan_list)
             
 
 
-##########################
-### INTERNAL FUNCTIONS ###
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
 
 
-# monkeypatch the print statement
+# ============================================================================ #
+# print monkeypatch
 # the print statement should be further modified
 # to save all statements into a log file
 _print = print 
@@ -79,6 +76,8 @@ def print(*args, **kw):
     _print(*args, **kw)
 
 
+# ============================================================================ #
+# setupArgparse
 def setupArgparse():
     '''Setup the argparse arguments'''
 
@@ -93,6 +92,8 @@ def setupArgparse():
     return parser.parse_args()
 
 
+# ============================================================================ #
+# modifyConfig
 def modifyConfig(args):
     '''modify config level variables'''
 
@@ -110,6 +111,8 @@ def modifyConfig(args):
     cfg.drid = cfg_dr.drid
 
 
+# ============================================================================ #
+# connectRedis
 def connectRedis():
     '''connect to redis server'''
     r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
@@ -117,11 +120,13 @@ def connectRedis():
     return r, p
 
 
-# def listenMode(r, p, bid, chan_subs):
+# ============================================================================ #
+# listenMode
 def listenMode(r, p, chan_subs):
     p.psubscribe(chan_subs)             # channels to listen to
+
     for new_message in p.listen():      # infinite listening loop
-        print(new_message)              # output message to term/log
+        # print(new_message)
 
         if new_message['type'] != 'pmessage': # not a command
             continue                    # skip this message
@@ -133,7 +138,7 @@ def listenMode(r, p, chan_subs):
         payload = new_message['data'].decode('utf-8')
         try:
             com_num, args, kwargs = payloadToCom(payload) # split payload into command
-            print(com_num, args, kwargs)
+            # print(com_num, args, kwargs)
             com_ret = executeCommand(com_num, args, kwargs) # attempt execution
         except Exception as e:
             com_ret = f"Payload error ({payload}): {e}"
@@ -143,6 +148,8 @@ def listenMode(r, p, chan_subs):
         publishResponse(com_ret, r, chan_sub) # send response
 
 
+# ============================================================================ #
+# executeCommand
 def executeCommand(com_num, args, kwargs):
     print(f"Executing command: {com_num}... ")
     try: #####
@@ -162,14 +169,12 @@ def executeCommand(com_num, args, kwargs):
     return ret
 
 
-# def publishResponse(resp, r, bid, cid):
+# ============================================================================ #
+# publishResponse
 def publishResponse(resp, r, chan_sub):
-    # chanid = f'{bid}_{cid}'             # rebuild chanid
-    # chan_pubs = f'board_rets_{chanid}'  # talking channel
 
-    chan_pub = f'rets_{chan_sub}'
-    if chan_sub == 'all_boards': # to know who sent
-        chan_pub += f'_{cfg.bid}.{cfg.drid}'
+    chan_pub = rc.getReturnChan(chan_sub)
+    print(chan_pub)
 
     print(f"Preparing response... ", end="")
     try: #####
@@ -184,7 +189,6 @@ def publishResponse(resp, r, chan_sub):
 
     print(f"Sending response... ", end="")
     try: #####
-        # r.publish(chan_pubs, ret)       # publish with redis
         r.publish(chan_pub, ret)       # publish with redis
     except Exception as e:
         _print("Failed.")
@@ -194,29 +198,36 @@ def publishResponse(resp, r, chan_sub):
         logging.info(f'Publish response successful.')
 
 
-def listToArgsAndKwargs(l):
-    '''Split a list into args and kwargs.
-    l: List to split.
-    Returns args (list) and kwargs (dictionary).'''
-
+# ============================================================================ #
+# listToArgsAndKwargs
+def listToArgsAndKwargs(args_list):
+    """Split an arg list into args and kwargs.
+    l: Args list to split.
+    Returns args (list) and kwargs (dictionary)."""
+    
+    args_str = ' '.join(args_list)
+    args_str = args_str.replace(",", " ")
+    args_str = args_str.replace("=", " = ")
+    args_str = ' '.join(args_str.split()) # remove excess whitespace
+    l = args_str.split()
+    
     args = []
     kwargs = {}
     while len(l)>0:
         v = l.pop(0)
 
-        # if this doesn't have a dash in front
-        # or theres no more items
-        # or the next item has a dash in front
-        if v[0]!='-' or len(l)==0 or l[0][0]=='-':
-            args.append(v)             # then this is an arg
+        if len(l)>0 and l[0]=='=': # kwarg
+            l.pop(0) # get rid of =
+            kwargs[v] = l.pop(0)
 
-        else:
-            v = v.lstrip('-')          # remove dashes in front
-            kwargs[v] = l.pop(0)       # this is a kwarg
+        else: # arg
+            args.append(v)
 
     return args, kwargs
 
 
+# ============================================================================ #
+# payloadToCom
 def payloadToCom(payload):
     """
     Convert payload to com_num, args, kwargs.
@@ -232,16 +243,18 @@ def payloadToCom(payload):
     return com_num, args, kwargs
 
 
+# ============================================================================ #
+# get/setKeyValue
 def getKeyValue(key):
     """
     GET the value of given key.
     """
 
     r,p = connectRedis()
-    ret = r.get(bytes(key, encoding='utf-8')).decode('utf-8')
+    ret = r.get(bytes(key, encoding='utf-8'))
+    ret = None if ret is None else ret.decode('utf-8')
 
     return ret
-
 
 def setKeyValue(key, value):
     """
@@ -251,6 +264,11 @@ def setKeyValue(key, value):
     r,p = connectRedis()
     r.set(bytes(key, encoding='utf-8'), bytes(value, encoding='utf-8'))   
 
+
+
+# ============================================================================ #
+# MAIN
+# ============================================================================ #
 
 
 if __name__ == "__main__":

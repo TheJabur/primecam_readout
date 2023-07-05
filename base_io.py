@@ -66,7 +66,7 @@ def load(file):
     file: (dict) File attributes. See file class.
     """
 
-    return loadVersion(file, _mostRecentTimestamp(file))
+    return loadVersion(file, mostRecentTimestamp(file))
 
 
 def loadVersion(file, timestamp):
@@ -92,15 +92,20 @@ def loadVersion(file, timestamp):
     
     if file_type == 'npy':
         data = np.load(f'{dname}/{fname}.npy')
+
+    else: # if not npy then try general load
+        data = np.loadtxt(f'{dname}/{fname}')
     
     return data
 
 
-def saveToTmp(data):
+def saveToTmp(data, filename=None, use_timestamp=True):
     """
     Save a new file to tmp directory.
     
     data: The data to save to file.
+    filename: (str) The filename to use.
+    use_timestamp: (bool) Append timestamp to filename if True.
     """
 
     # add functionality to clear out old tmp files?
@@ -111,17 +116,33 @@ def saveToTmp(data):
     from pathlib import Path
 
     dname = 'tmp'
+    suffix = ''
+    prefix = ''
 
     # this will make the tmp dir exist if possible
     Path(dname).mkdir(parents=True, exist_ok=True)
 
+    # filename modifiction
+    if filename is not None:
+        prefix += filename
+
+    # timestamp modification
+    if use_timestamp:
+        suffix += f'_{_timestamp()}'  
+
     if isinstance(data, np.ndarray):    # save arrays to tmp .npy file
-        with tempfile.NamedTemporaryFile(dir=dname, suffix='.npy', delete=False) as tf:
+        suffix += '.npy'
+        with tempfile.NamedTemporaryFile(
+            dir=dname, prefix=prefix, suffix=suffix, delete=False) as tf:
             np.save(tf, data)
+            return tf.name
 
     else:                               # write other types to tmp file
-        with tempfile.NamedTemporaryFile(dir=dname, delete=False) as tf:
-            tf.write(pickle.dumps(data))
+        with tempfile.NamedTemporaryFile(
+            dir=dname, prefix=prefix, suffix=suffix, delete=False) as tf:
+            # tf.write(pickle.dumps(data))
+            tf.write(data)
+            return tf.name
 
 
 def saveWrappedToTmp(wrappedData):
@@ -190,7 +211,45 @@ def returnWrapperMultiple(file_list, data_list):
 
     return [
         returnWrapper(file, data)
-        for file, data in zip(file_list, data_list)]
+        for file, data in zip(file_list, data_list)] # type: ignore
+
+
+def unwrapData(wrapped_data):
+    """Return the original data input to the wrapping process.
+    """
+
+    # could be a list of wrapped data
+    if isinstance(wrapped_data, list):
+        return [d['data'] for d in wrapped_data]
+
+    # or single wrapped data
+    else:
+        return wrapped_data['data']
+
+
+def mostRecentTimestamp(file):
+    """
+    Timestamp of most recent of given file.
+
+    file:      (dict) File attributes. See file class.
+    """
+
+    import os
+    import glob
+    import numpy as np
+
+    # required file attributes
+    fname          = file['fname']
+    dname          = file['dname']
+
+    allversions = sorted(
+        glob.iglob(os.path.join(dname, f'{fname}*')), 
+        reverse=True)
+    path0 = allversions[0]         # first index is highest timestamp
+    
+    _,timestamp,_ = _pathSplit(file, path0)
+
+    return timestamp
 
 
 
@@ -226,7 +285,7 @@ def _pathSplit(file, path):
 
     # check path conforms to expectation from file
     if rpath[:len(fname)] != fname or rpath[-len(file_type):] != file_type:
-        raise("Path does not match that expected from file type.")
+        raise Exception("Path does not match that expected from file type.")
 
     end0 = rpath[len(fname)+1:]         # remove fname and underscore
 
@@ -235,28 +294,3 @@ def _pathSplit(file, path):
         timestamp = end0[:-(len(file_type)+1)] # remove extension
 
     return (fname, timestamp, file_type)
-    
-
-def _mostRecentTimestamp(file):
-    """
-    Timestamp of most recent of given file.
-
-    file:      (dict) File attributes. See file class.
-    """
-
-    import os
-    import glob
-    import numpy as np
-
-    # required file attributes
-    fname          = file['fname']
-    dname          = file['dname']
-
-    allversions = sorted(
-        glob.iglob(os.path.join(dname, f'{fname}*')), 
-        reverse=True)
-    path0 = allversions[0]         # first index is highest timestamp
-    
-    _,timestamp,_ = _pathSplit(file, path0)
-
-    return timestamp
