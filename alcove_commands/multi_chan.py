@@ -961,16 +961,17 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
     # calculate phis if not passed in
     if phis is None:
         phis = _genPhis(freqs, amps)
-
+    
     # write tone comb
-    _writeComb(chan, freqs, amps, phis) # returns freq_actual
+    freq_actual = _writeComb(chan, freqs, amps, phis) # returns freq_actual
 
     # perform targeted sweep
     S21 = np.array(
         _sweep(chan, f_center/1e6, freqs, N_steps, chan_bandwidth)) 
   
     # try to optimise tone power (single iteration)
-    freqs, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    # freqs, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    # need to determine if freqs returned from _ToneFreqs ... are baseband
     phis = _genPhis(freqs, amps)
 
     if save:
@@ -982,7 +983,7 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
     # return (freqs, A_res)
     return io.returnWrapperMultiple(
         [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ, io.file.p_res_targ], 
-        [freqs, amps, S21, phis])
+        [freqs+f_center, amps, S21, phis])
 
 
 # ============================================================================ #
