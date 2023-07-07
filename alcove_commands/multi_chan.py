@@ -22,8 +22,7 @@ try:
     from pynq import Overlay
     
     # FIRMWARE UPLOAD
-    #firmware = Overlay("tetra_v7p1_impl_5.bit",ignore_version=True,download=False)
-    firmware = Overlay("tetra_v5p4.bit",ignore_version=True,download=False)
+    firmware = Overlay("tetra_v7p1_impl_5.bit",ignore_version=True,download=False)
 
 except Exception as e: 
     firmware = None
@@ -244,7 +243,7 @@ def _resetAccumAndSync(chan, freqs):
     ########################
     dsp_regs.write(0x08, accum_length | sync_in)
     dsp_regs.write(0x08, accum_length | accum_rst | sync_in)
-    dsp_regs.write(0x0c,260)
+    dsp_regs.write(0x0c, 180) # 260)
     return
 
 

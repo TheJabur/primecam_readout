@@ -4,7 +4,7 @@ import xrfdc
 
 try:
     # FIRMWARE UPLOAD
-    firmware = Overlay("tetra_v5p4.bit",ignore_version=True)
+    firmware = Overlay("tetra_v7p1_impl_5.bit",ignore_version=True)
 
     # PLLs
 
