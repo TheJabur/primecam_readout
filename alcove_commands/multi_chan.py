@@ -977,6 +977,7 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
         io.save(io.file.s21_targ, S21)
         io.save(io.file.f_res_targ, freqs + f_center)
         io.save(io.file.a_res_targ, amps)
+        io.save(io.file.p_res_targ, phis)
         io.save(io.file.f_center_targ, f_center)
 
     # return (freqs, A_res)
