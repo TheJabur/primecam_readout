@@ -14,7 +14,6 @@ from audioop import mul
 import logging
 import alcove_commands.test_functions as test
 import alcove_commands.board_utilities as utils
-import alcove_commands.single_chan as single_chan
 import alcove_commands.multi_chan as multi_chan
 
 
