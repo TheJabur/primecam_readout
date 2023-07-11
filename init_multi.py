@@ -2,7 +2,6 @@ from pynq import Overlay
 import xrfclk
 import xrfdc
 import ip_addr
-import _cfg_board as cfg
 
 try:
     # FIRMWARE UPLOAD
@@ -37,16 +36,42 @@ try:
     rf_data_conv.adc_tiles[1].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
     rf_data_conv.dac_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
     
-    dest_ip_udp = "".join(ip_addr.IPtoHex(cfg.destination_ip, as_list=True))
-    
     # ETHERNET
+    dest_ip = ip_addr.tIP_destination(sep='', asHex=True)
+    dest_mac = ip_addr.mac_destination(sep='')
+    src_ip_1 = ip_addr.tIP(1, sep='', asHex=True)
+    src_ip_2 = ip_addr.tIP(2, sep='', asHex=True)
+    src_ip_3 = ip_addr.tIP(3, sep='', asHex=True)
+    src_ip_4 = ip_addr.tIP(4, sep='', asHex=True)
+    src_mac = ip_addr.mac_origin(sep=':')
+
+    def ethRegsPortWrite(eth_regs,
+                     src_ip_int32   = int(src_ip_1, 16),
+                     dst_ip_int32   = int(dest_ip,16),
+                     src_mac0_int32 = int(src_mac[:-4],16),
+                     src_mac1_int16 = int(src_mac[-4:],16),
+                     dst_mac0_int16 = int(dest_mac[-4:],16),   
+                     dst_mac1_int32 = int(dest_mac[:-4],16)): 
+        eth_regs.write( 0x00, src_mac0_int32)
+        eth_regs.write( 0x04, (dst_mac0_int16<<16) + src_mac1_int16)
+        eth_regs.write( 0x08, dst_mac1_int32)
+        eth_regs.write( 0x0c, src_ip_int32)
+        eth_regs.write( 0x10, dst_ip_int32)
+
+
+    ethRegsPortWrite(firmware.ethWrapPort0.eth_regs_0, src_ip_int32=int(src_ip_1, 16))
+    ethRegsPortWrite(firmware.ethWrapPort1.eth_regs_0, src_ip_int32=int(src_ip_2, 16))
+    ethRegsPortWrite(firmware.ethWrapPort2.eth_regs_0, src_ip_int32=int(src_ip_3, 16))
+    ethRegsPortWrite(firmware.ethWrapPort3.eth_regs_0, src_ip_int32=int(src_ip_4, 16))
+
+
     def ethRegsPortWrite(eth_regs,
                      src_ip_int32   = int("c0a80335",16),
-                     dst_ip_int32   = int(dest_ip_udp,16),
+                     dst_ip_int32   = int(dest_ip,16),
                      src_mac0_int32 = int("eec0ffee",16),
                      src_mac1_int16 = int("c0ff",16),
-                     dst_mac0_int16 = int(cfg.destination_mac[-4:],16),   
-                     dst_mac1_int32 = int(cfg.destination_mac[:-4],16)): 
+                     dst_mac0_int16 = int(dest_mac[-4:],16),   
+                     dst_mac1_int32 = int(dest_mac[:-4],16)): 
         eth_regs.write( 0x00, src_mac0_int32)
         eth_regs.write( 0x04, (dst_mac0_int16<<16) + src_mac1_int16)
         eth_regs.write( 0x08, dst_mac1_int32)

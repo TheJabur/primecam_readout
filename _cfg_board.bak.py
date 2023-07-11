@@ -18,9 +18,22 @@ host = 'localhost'
 port = 6379
 db = 0
 
-# UDP data ethernet port destination
-destination_ip = '192.168.3.40'
-destination_mac = '00e04c680991'
+
+# ============================================================================ #
+# timestream configuration
+# UDP data ethernet destination
+udp_dest_ip = '192.168.3.40'
+udp_dest_mac = '00:e0:4c:68:09:91'
+
+# UDP data ethernet origin, drones 1-4
+udp_ori_ip_1 = 'c0:a8:03:32'
+udp_ori_ip_2 = 'c0:a8:03:33'
+udp_ori_ip_3 = 'c0:a8:03:34'
+udp_ori_ip_4 = 'c0:a8:03:35'
+udp_ori_mac = 'ee:c0:ff:ee:c0:ff'
+
+
+
 
 # ============================================================================ #
 # DO NOT MODIFY BELOW
@@ -28,5 +41,6 @@ destination_mac = '00e04c680991'
 root_dir = ''
 drone_dir = ''
 drid = 0
+board_ip = '0.0.0.0'
 # ============================================================================ #
 # ============================================================================ #

@@ -15,6 +15,7 @@
 import socket
 import psutil
 import redis
+import _cfg_board as cfg
 
 
 
@@ -56,23 +57,45 @@ def cIP(r:redis.Redis, bid:int):
 # Time Stream IP (tIP)
 
 
-def tIP(cIP:str, drid:int):
-    """The UDP timestream network IP address algorithmically generated from the control IP (cIP) and drone ID (drid).
+def tIP(drid:int, sep='.', asHex=False):
+    """The UDP timestream network IP address origin (this drone)
     """
 
-    cIP_octets = cIP.split('.') # type: ignore
-    octets = cIP_octets
-    
-    # 3rd octet
-    octets[2] = '3'
-    
-    # 4th octet
-    # this algorithm makes space for 4 drones for each board
-    octets[3] = str(4*(int(cIP_octets[3]) - 1) + drid)
-    
-    IP = '.'.join(octets)
+    ip = None
+    if drid == 1: ip = cfg.udp_ori_ip_1
+    if drid == 2: ip = cfg.udp_ori_ip_2
+    if drid == 3: ip = cfg.udp_ori_ip_3
+    if drid == 4: ip = cfg.udp_ori_ip_4
 
-    return IP
+    if asHex:
+        return strSep(IPtoHex(ip), ':', sep)
+    
+    return strSep(ip, '.', sep)
+
+# def tIP(cIP:str, drid:int):
+#     """The UDP timestream network IP address algorithmically generated from the control IP (cIP) and drone ID (drid).
+#     """
+
+#     cIP_octets = cIP.split('.') # type: ignore
+#     octets = cIP_octets
+    
+#     # 3rd octet
+#     octets[2] = '3'
+    
+#     # 4th octet
+#     # this algorithm makes space for 4 drones for each board
+#     octets[3] = str(4*(int(cIP_octets[3]) - 1) + drid)
+    
+#     IP = '.'.join(octets)
+
+#     return IP
+
+
+def mac_origin(sep=':'):
+    """The UDP timestream network mac address origin (this board)
+    """
+
+    return strSep(cfg.udp_ori_mac, ':', sep)
 
 
 def getDroneTimestreamPort():
@@ -80,6 +103,23 @@ def getDroneTimestreamPort():
     """
 
     return 4096
+
+
+def tIP_destination(sep='.', asHex=False):
+    """The UDP timestream destination IP address.
+    """
+    
+    if asHex:
+        return strSep(IPtoHex(cfg.destination_ip), ':', sep)
+    
+    return strSep(cfg.destination_ip, '.', sep)
+
+
+def mac_destination(sep=':'):
+    """The UDP timestream destination mac address.
+    """
+    
+    return strSep(cfg.destination_mac, ':', sep)
 
 
 # ============================================================================ #
@@ -103,6 +143,18 @@ def IPtoHex(ip_address:str, as_list:bool=False):
     hex_ip = ':'.join(hex_octets)
 
     return hex_ip
+
+
+# ============================================================================ #
+# strSep
+def strSep(str, sep0, sep):
+    """Replace sep0 separators in str with sep separators
+    """
+
+    elements = str.split(sep0)
+    str_new = sep.join(elements)
+
+    return str_new
 
 
 
