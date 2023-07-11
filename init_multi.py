@@ -45,8 +45,8 @@ try:
                      dst_ip_int32   = int(dest_ip_udp,16),
                      src_mac0_int32 = int("eec0ffee",16),
                      src_mac1_int16 = int("c0ff",16),
-                     dst_mac0_int16 = int(cfg.destination_mac[0:4],16),   
-                     dst_mac1_int32 = int(cfg.destination_mac[4:],16)): 
+                     dst_mac0_int16 = int(cfg.destination_mac[-4:],16),   
+                     dst_mac1_int32 = int(cfg.destination_mac[:-4],16)): 
         eth_regs.write( 0x00, src_mac0_int32)
         eth_regs.write( 0x04, (dst_mac0_int16<<16) + src_mac1_int16)
         eth_regs.write( 0x08, dst_mac1_int32)
