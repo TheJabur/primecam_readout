@@ -1,6 +1,8 @@
 from pynq import Overlay
 import xrfclk
 import xrfdc
+import ip_addr
+import _cfg_board as cfg
 
 try:
     # FIRMWARE UPLOAD
@@ -34,15 +36,17 @@ try:
     rf_data_conv.dac_tiles[1].blocks[0].MixerSettings['Freq']=lofreq
     rf_data_conv.adc_tiles[1].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
     rf_data_conv.dac_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
-
+    
+    dest_ip_udp = "".join(ip_addr.IPtoHex(cfg.destination_ip, as_list=True))
+    
     # ETHERNET
     def ethRegsPortWrite(eth_regs,
                      src_ip_int32   = int("c0a80335",16),
-                     dst_ip_int32   = int("c0a80328",16),
+                     dst_ip_int32   = int(dest_ip_udp,16),
                      src_mac0_int32 = int("eec0ffee",16),
                      src_mac1_int16 = int("c0ff",16),
-                     dst_mac0_int16 = int("0991",16),     #
-                     dst_mac1_int32 = int("00e04c68",16)):
+                     dst_mac0_int16 = int(cfg.destination_mac[0:4],16),   
+                     dst_mac1_int32 = int(cfg.destination_mac[4:],16)): 
         eth_regs.write( 0x00, src_mac0_int32)
         eth_regs.write( 0x04, (dst_mac0_int16<<16) + src_mac1_int16)
         eth_regs.write( 0x08, dst_mac1_int32)

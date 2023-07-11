@@ -18,7 +18,9 @@ host = 'localhost'
 port = 6379
 db = 0
 
-
+# UDP data ethernet port destination
+destination_ip = '192.168.3.40'
+destination_mac = '00e04c680991'
 
 # ============================================================================ #
 # DO NOT MODIFY BELOW
