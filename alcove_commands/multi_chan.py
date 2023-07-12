@@ -550,7 +550,7 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
 
 # ============================================================================ #
 # _toneFreqsAndAmpsFromSweepData
-def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
+def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps, mod_amps=False):
     """
     Determine resonator tone frequencies and normalized amplitudes from sweep data.
     
@@ -571,14 +571,17 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     i_res = np.argmin(y_res, axis=1)
     freqs = f_res[tuple([np.arange(0,len(i_res)), i_res])] # multi-dim. array indexing
 
-    # Power
-    # np.gradient provides the slope at each point.
-    # The asymmetry of the resonator shape in frequency space 
-    # can be characterized by the sum of the max and min slopes.
-    y_grad = np.gradient(y_res, axis=1)         # slope at each point
-    a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
-    a /= np.max(np.abs(y_grad), axis=1)         # normalize
-    amps_new = (1 + a)*amps
+    if mod_amps:
+        # Power
+        # np.gradient provides the slope at each point.
+        # The asymmetry of the resonator shape in frequency space 
+        # can be characterized by the sum of the max and min slopes.
+        y_grad = np.gradient(y_res, axis=1)         # slope at each point
+        a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
+        a /= np.max(np.abs(y_grad), axis=1)         # normalize
+        amps_new = (1 + a)*amps
+    else:
+        amps_new = amps
 
     return (freqs, amps_new)
 
@@ -969,13 +972,14 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
         _sweep(chan, f_center/1e6, freqs, N_steps, chan_bandwidth)) 
   
     # try to optimise tone power (single iteration)
-    # freqs, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    freqs_rf, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps, mod_amps=False)
+    freqs_bb = freqs_rf - f_center 
     # need to determine if freqs returned from _ToneFreqs ... are baseband
-    phis = _genPhis(freqs, amps)
+    phis = _genPhis(freqs_bb, amps)
 
     if save:
         io.save(io.file.s21_targ, S21)
-        io.save(io.file.f_res_targ, freqs + f_center)
+        io.save(io.file.f_res_targ, freq_rf)
         io.save(io.file.a_res_targ, amps)
         io.save(io.file.p_res_targ, phis)
         io.save(io.file.f_center_targ, f_center)
