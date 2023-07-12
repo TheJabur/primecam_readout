@@ -600,10 +600,8 @@ def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
 
     amps = np.ones(N)*amp_max/np.sqrt(N)*0.25  
     # 0.3 yields a reasonable phase solve time in testing
-    print("pre-genPhis")
     # randomly generate phases until peak amp is lower than required max
     phis = _genPhis(freqs, amps, amp_max=amp_max)
-    print("post-genPhis")
 
     return amps, phis
 
@@ -626,9 +624,7 @@ def _genPhis(freqs, amps, amp_max=(2**15-1)):
         loop += 1
 
         phis = np.random.uniform(-np.pi, np.pi, N) # phases
-        print("pre-ddr4")
         x, _, _ = _generateWaveDdr4(freqs, amps, phis)
-        print("post-ddr4")
         x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
 
         amp_peak = np.max(np.abs(x.real + 1j*x.imag))
