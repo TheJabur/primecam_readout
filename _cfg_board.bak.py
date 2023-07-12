@@ -23,7 +23,7 @@ db = 0
 # timestream configuration
 # UDP data ethernet destination
 udp_dest_ip = '192.168.3.40'
-udp_dest_mac = '00:e0:4c:68:09:91'
+udp_dest_mac = '00:00:00:00:00:00' 
 
 # UDP data ethernet origin, drones 1-4
 udp_ori_ip_1 = '192.168.3.50'
