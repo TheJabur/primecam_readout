@@ -241,17 +241,17 @@ class MainWindow(QMainWindow):
         layout_timestreamui = QHBoxLayout()
         layout.addLayout(layout_timestreamui)
 
+        self.textbox_timestream_ip = QLineEdit()
+        self.textbox_timestream_ip.setText("192.168.3.40")
+        layout_timestreamui.addWidget(self.textbox_timestream_ip)
+
         # self.textbox_timestream_bid_drid = QLineEdit()
         # self.textbox_timestream_bid_drid.setPlaceholderText("bid.drid")
         # layout_timestreamui.addWidget(self.textbox_timestream_bid_drid)
 
-        # self.textbox_timestream_id = QLineEdit()
-        # self.textbox_timestream_id.setPlaceholderText("KID ID")
-        # layout_timestreamui.addWidget(self.textbox_timestream_id)
-
-        self.textbox_timestream_ip = QLineEdit()
-        self.textbox_timestream_ip.setText("192.168.3.40")
-        layout_timestreamui.addWidget(self.textbox_timestream_ip)
+        self.textbox_timestream_id = QLineEdit()
+        self.textbox_timestream_id.setPlaceholderText("KID ID")
+        layout_timestreamui.addWidget(self.textbox_timestream_id)
 
         self.textbox_timestream_win = QLineEdit()
         self.textbox_timestream_win.setPlaceholderText("last x points")
@@ -324,14 +324,14 @@ class MainWindow(QMainWindow):
             self.button_timestream.setChecked(True)
             self.button_timestream_save.setEnabled(True)
             # self.textbox_timestream_bid_drid.setEnabled(False)
-            # self.textbox_timestream_id.setEnabled(False)
+            self.textbox_timestream_id.setEnabled(False)
             self.textbox_timestream_ip.setEnabled(False)
         else:
             self.button_timestream.setText('Start Time Stream')
             self.button_timestream.setChecked(False)
             self.button_timestream_save.setEnabled(False)
             # self.textbox_timestream_bid_drid.setEnabled(True)
-            # self.textbox_timestream_id.setEnabled(True)
+            self.textbox_timestream_id.setEnabled(True)
             self.textbox_timestream_ip.setEnabled(True)
 
 
@@ -377,12 +377,13 @@ class MainWindow(QMainWindow):
         if self.timestream is None:
             return
 
-        # # KID ID
-        # try:
-        #     kid_id = max(int(self.textbox_timestream_id.text()), 0)
-        # except:
-        #     kid_id = 0 # default kid_id
-        # self.textbox_timestream_id.setText(str(kid_id)) # update GUI
+        # KID ID
+        # kid_id = 0
+        try:
+            kid_id = max(int(self.textbox_timestream_id.text()), 0)
+        except:
+            kid_id = 0 # default kid_id
+        self.textbox_timestream_id.setText(str(kid_id)) # update GUI
 
         # # bid.drid
         # try:
@@ -393,7 +394,6 @@ class MainWindow(QMainWindow):
         #     bid = 1
         #     drid = 1
         # self.textbox_timestream_bid_drid.setText(str(f'{bid}.{drid}')) # update GUI
-        kid_id = 0
 
         # grab a chunk of timestream, hardcoded 100 packets
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)

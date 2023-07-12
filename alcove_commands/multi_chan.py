@@ -981,7 +981,7 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
     # return (freqs, A_res)
     return io.returnWrapperMultiple(
         [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ, io.file.p_res_targ], 
-        [freqs+f_center, amps, S21, phis])
+        [freqs_rf, amps, S21, phis])
 
 
 # ============================================================================ #
