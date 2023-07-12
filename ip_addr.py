@@ -57,7 +57,7 @@ def cIP(r:redis.Redis, bid:int):
 # Time Stream IP (tIP)
 
 
-def tIP(drid:int, sep='.', asHex=False):
+def tIP_origin(drid:int, sep='.', asHex=False):
     """The UDP timestream network IP address origin (this drone)
     """
 
@@ -68,7 +68,8 @@ def tIP(drid:int, sep='.', asHex=False):
     if drid == 4: ip = cfg.udp_ori_ip_4
 
     if asHex:
-        return strSep(IPtoHex(ip), ':', sep)
+        hexip =  IPtoHex(ip)
+        return strSep(hexip, ':', sep)
     
     return strSep(ip, '.', sep)
 
@@ -110,16 +111,16 @@ def tIP_destination(sep='.', asHex=False):
     """
     
     if asHex:
-        return strSep(IPtoHex(cfg.destination_ip), ':', sep)
+        return strSep(IPtoHex(cfg.udp_dest_ip), ':', sep)
     
-    return strSep(cfg.destination_ip, '.', sep)
+    return strSep(cfg.udp_dest_ip, '.', sep)
 
 
 def mac_destination(sep=':'):
     """The UDP timestream destination mac address.
     """
     
-    return strSep(cfg.destination_mac, ':', sep)
+    return strSep(cfg.udp_dest_mac, ':', sep)
 
 
 # ============================================================================ #

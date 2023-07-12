@@ -39,11 +39,11 @@ try:
     # ETHERNET
     dest_ip = ip_addr.tIP_destination(sep='', asHex=True)
     dest_mac = ip_addr.mac_destination(sep='')
-    src_ip_1 = ip_addr.tIP(1, sep='', asHex=True)
-    src_ip_2 = ip_addr.tIP(2, sep='', asHex=True)
-    src_ip_3 = ip_addr.tIP(3, sep='', asHex=True)
-    src_ip_4 = ip_addr.tIP(4, sep='', asHex=True)
-    src_mac = ip_addr.mac_origin(sep=':')
+    src_ip_1 = ip_addr.tIP_origin(1, sep='', asHex=True)
+    src_ip_2 = ip_addr.tIP_origin(2, sep='', asHex=True)
+    src_ip_3 = ip_addr.tIP_origin(3, sep='', asHex=True)
+    src_ip_4 = ip_addr.tIP_origin(4, sep='', asHex=True)
+    src_mac = ip_addr.mac_origin(sep='')
 
     def ethRegsPortWrite(eth_regs,
                      src_ip_int32   = int(src_ip_1, 16),
