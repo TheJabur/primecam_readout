@@ -30,7 +30,7 @@ udp_ori_ip_1 = '192.168.3.50'
 udp_ori_ip_2 = '192.168.3.51' 
 udp_ori_ip_3 = '192.168.3.52' 
 udp_ori_ip_4 = '192.168.3.53' 
-udp_ori_mac = 'ee:c0:ff:ee:c0:ff'
+udp_ori_mac = 'c0:ff:ee:c0:ff:ee'
 
 
 

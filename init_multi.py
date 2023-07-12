@@ -48,8 +48,8 @@ try:
     def ethRegsPortWrite(eth_regs,
                      src_ip_int32   = int(src_ip_1, 16),
                      dst_ip_int32   = int(dest_ip,16),
-                     src_mac0_int32 = int(src_mac[:-4],16),
-                     src_mac1_int16 = int(src_mac[-4:],16),
+                     src_mac0_int32 = int(src_mac[4:],16),
+                     src_mac1_int16 = int(src_mac[:4],16),
                      dst_mac0_int16 = int(dest_mac[-4:],16),   
                      dst_mac1_int32 = int(dest_mac[:-4],16)): 
         eth_regs.write( 0x00, src_mac0_int32)
