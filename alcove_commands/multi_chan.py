@@ -851,9 +851,18 @@ def vnaSweepFull(f_center, N_steps=500):
 
 # ============================================================================ #
 # findResonators
-def findResonators():
-    """
-    Find the resonator peak frequencies in previously saved s21.npy file.
+def findResonators(stitch_bw=500, stitch_sw=100, 
+                   f_hi=50, f_lo=1, prom_dB=1, 
+                   distance=30, width=(5,100)):
+    """Find the resonator peak frequencies in previously saved s21.npy file.
+
+    stitch_bw: (int) Width of the stitch bins.
+    stitch_sw: (int) Width of slice (at ends) of each stitch bin to take median.
+    f_hi:      (float) Highpass filter cutoff frequency. [data units]
+    f_lo:      (float) lowpass filter cutoff frequency. [data units]
+    prom_dB:   (float) Peak prominence cutoff. [dB]
+    distance:  (float) Min distance between peaks. [bins]
+    width      (tuple of 2 floats) Peak width (min, max). [bins]
     """
     
     import numpy as np
@@ -862,17 +871,12 @@ def findResonators():
     f, Z = io.load(io.file.s21_vna)
 
     i_peaks = _resonatorIndicesInS21(
-        f, Z, 
-        stitch_bw=500, stitch_sw=100, 
-        f_hi=50, f_lo=1, prom_dB=1, 
-        testing=False)
+        f, Z, stitch_bw, stitch_sw, f_hi, f_lo, prom_dB, 
+        distance, width, testing=False)
     f_res = f[i_peaks]
-
-    # _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, distance=30, width=(5,100), testing=False)
 
     io.save(io.file.f_res_vna, f_res)
 
-    # return f_res
     return io.returnWrapper(io.file.f_res_vna, f_res)
 
 
