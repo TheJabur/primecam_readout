@@ -38,7 +38,7 @@ def _com():
         31:multi_chan.writeVnaComb,
         32:multi_chan.writeTargComb,
         40:multi_chan.vnaSweep,
-        # 41:multi_chan.vnaSweepFull,
+        41:multi_chan.vnaSweepFull,
         42:multi_chan.targetSweep,
         # 43:multi_chan.targetSweepFull,
         # 45:multi_chan.loChop,

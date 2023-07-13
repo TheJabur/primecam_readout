@@ -514,7 +514,7 @@ def _stitchS21m(S21m, bw=500, sw=100):
 
 # ============================================================================ #
 # _resonatorIndicesInS21
-def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, testing=False):
+def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, distance=30, width=(5,100), testing=False):
     """Find the indices of resonator peaks in given S21 signal.
     
     f:         (1D array of floats) Frequency bins of signal.
@@ -524,6 +524,8 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     f_hi:      (float) Highpass filter cutoff frequency (data units).
     f_lo:      (float) lowpass filter cutoff frequency (data units).
     prom_dB:   (float) Peak prominence cutoff, in dB.
+    distance:  (float) Min distance between peaks, in bins.
+    width      (tuple of 2 floats) Peak width (min, max), in bins.
     testing:   (bool) Also return intermediate products.
     
     Return:  (1D array of integers) Indices of peaks.
@@ -540,7 +542,8 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     m_f   = sosfiltfilt(filt_bp, m_s)                    # bandpass filtered
     prom_lin = np.amax(m)*(1-10**(-prom_dB/20)) 
     m_f_dB = 20.*np.log10(m_f + abs(np.min(m_f)) + 1)     # in dB
-    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, distance=30, width=(5, 100)) 
+    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, 
+                              distance=distance, width=width) 
     
     if testing: return peaks, (fs, m, m_f, m_f_dB, prom_dB, props)
     return peaks
@@ -662,15 +665,15 @@ def writeVnaComb():
     import numpy as np
     
     chan = cfg.drid # drone (chan) id is from config
-    freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    amps, phis = _genAmpsAndPhis(freqs)
+    freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    amps, phis = _genAmpsAndPhis(freqs_bb)
 
-    freq_actual = _writeComb(chan, freqs, amps, phis)
+    freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
 
-    io.save(io.file.freqs_vna, freq_actual)
+    io.save(io.file.freqs_vna, freqs_bb_actual)
     io.save(io.file.amps_vna, amps)
     io.save(io.file.phis_vna, phis)
-    return freq_actual
+    return freqs_bb_actual
 
 
 # ============================================================================ #
@@ -806,28 +809,44 @@ def setFineNCLO(f_lo):
 
 # ============================================================================ #
 # vnaSweep
-def vnaSweep(f_center=600):
-    """
-    vnaSweep: perform a stepped frequency sweep centered at f_center
+def vnaSweep(f_center, N_steps=500):
+    """Perform a stepped frequency sweep with current comb, save as vna sweep.
 
-    f_center: center frequency for sweep in [MHz]
+    f_center:   (float) Center LO frequency for sweep. [MHz]
+    N_steps:    (int) Number of LO frequencies to divide each channel into.
+    """
+
+    import numpy as np
+
+    chan = cfg.drid
+    freqs_bb = io.load(io.file.freqs_vna)
+
+    S21 = np.array(_sweep(chan, f_center, freqs_bb, N_steps)) # f, Z
+
+    io.save(io.file.s21_vna, S21)
+    io.save(io.file.f_center_vna, f_center*1e6)
+
+    return io.returnWrapper(io.file.s21_vna, S21)
+
+
+# ============================================================================ #
+# vnaSweepFull
+def vnaSweepFull(f_center, N_steps=500):
+    """Write vna comb and perform a stepped frequency sweep.
+
+    f_center:   (float) Center LO frequency for sweep. [MHz]
+    N_steps:    (int) Number of LO frequencies to divide each channel into.
     """
 
     import numpy as np
 
     chan = cfg.drid
     f_center = int(f_center)
+
     _setNCLO(chan, f_center)
-    
-    freqs = writeVnaComb()
-    s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
+    writeVnaComb()
 
-    io.save(io.file.s21_vna, s21)
-    io.save(io.file.f_center_vna, f_center*1e6)
-
-    # return (s21)
-    # do we want to return freqs too?
-    return io.returnWrapper(io.file.s21_vna, s21)
+    return vnaSweep(f_center, N_steps)
 
 
 # ============================================================================ #
@@ -848,6 +867,8 @@ def findResonators():
         f_hi=50, f_lo=1, prom_dB=1, 
         testing=False)
     f_res = f[i_peaks]
+
+    # _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, distance=30, width=(5,100), testing=False)
 
     io.save(io.file.f_res_vna, f_res)
 
