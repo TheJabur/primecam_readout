@@ -1,24 +1,31 @@
-########################################################
-### Main remote-side script.                         ###
-### Allows execution of remote (board) commands.     ###
-###                                                  ###
-### James Burgoyne jburgoyne@phas.ubc.ca             ###
-### CCAT Prime 2022                                  ###
-########################################################
+# ============================================================================ #
+# alcove.py
+# Responsible for board commands.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2023  
+# ============================================================================ #
 
 
-###############
-### IMPORTS ###
 
-from audioop import mul
+# ============================================================================ #
+# IMPORTS
+# ============================================================================ #
+
+
 import logging
 import alcove_commands.test_functions as test
 import alcove_commands.board_utilities as utils
-import alcove_commands.multi_chan as multi_chan
+import alcove_commands.alcove_base as alcove_base
+import alcove_commands.tones as tones
+import alcove_commands.sweeps as sweeps
+import alcove_commands.analysis as analysis
 
 
-##############
-### CONFIG ###
+
+# ============================================================================ #
+# CONFIG
+# ============================================================================ #
+
 
 logging.basicConfig(
     filename='logs/board.log', level=logging.DEBUG,
@@ -31,31 +38,43 @@ logging.basicConfig(
 def _com():
     return { 
         # 10:test.testFunction,
-        20:multi_chan.setNCLO,
-        21:multi_chan.setFineNCLO,
-        25:multi_chan.getSnapData,
-        30:multi_chan.writeTestTone,
-        31:multi_chan.writeVnaComb,
-        32:multi_chan.writeTargComb,
-        40:multi_chan.vnaSweep,
-        41:multi_chan.vnaSweepFull,
-        42:multi_chan.targetSweep,
-        # 43:multi_chan.targetSweepFull,
-        # 45:multi_chan.loChop,
-        50:multi_chan.findResonators,
-        51:multi_chan.findCalTones,
+        20:alcove_base.setNCLO,
+        21:alcove_base.setFineNCLO,
+        25:alcove_base.getSnapData,
+        30:tones.writeTestTone,
+        31:tones.writeNewVnaComb,
+        32:tones.writeTargCombFromVnaSweep,
+        33:tones.writeTargCombFromTargSweep,
+        40:sweeps.vnaSweep,
+        # 41:sweeps.vnaSweepFull,
+        42:sweeps.targetSweep,
+        # 43:sweeps.targetSweepFull,
+        # 45:sweeps.loChopSweep,
+        50:analysis.findVnaResonators,
+        51:analysis.findTargResonators,
+        55:analysis.findCalTones,
     }
 
 
-##########################
-### INTERNAL FUNCTIONS ###
 
-# monkeypatch the print statement
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
+
+
+# ============================================================================ #
+# _print
 _print = print 
 def print(*args, **kw):
+    """Monkeypatch the print statement
+    """
+    
     _print(*args, **kw)            # print to terminal
     logging.info(' '.join(args))   # log to file
 
+
+# ============================================================================ #
+# callCom
 def callCom(key, args, kwargs):
     # dictionary keys are stored as integers
     # but redis may convert to string
@@ -79,7 +98,10 @@ def callCom(key, args, kwargs):
     return ret
 
 
-############
-### INIT ###
+
+# ============================================================================ #
+# INIT
+# ============================================================================ #
+
 
 com = _com()
