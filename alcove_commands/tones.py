@@ -349,8 +349,7 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
         phis = None
         
     freqs_rf_actual, amps, phis = _writeTargComb(
-        f_center, freqs_rf, amps, phis, cal_tones=cal_tones, 
-        new_amps_and_phis=new_amps_and_phis)
+        f_center, freqs_rf, amps, phis, cal_tones=cal_tones)
     
     io.save(io.file.f_res_targ, freqs_rf_actual)
     io.save(io.file.a_res_targ, amps)
