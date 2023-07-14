@@ -115,6 +115,7 @@ def vnaSweep(f_center, N_steps=500):
 
     import numpy as np
 
+    f_center = float(f_center)
     chan = cfg.drid
     freqs_bb = io.load(io.file.freqs_vna)
 
