@@ -311,7 +311,7 @@ def writeTargCombFromVnaSweep(cal_tones=False):
     freqs_rf = io.load(io.file.f_res_vna).real
 
     freqs_rf_actual, amps, phis = _writeTargComb(
-        f_center, freqs_rf, cal_tones=cal_tones, new_amps_and_phis=True)
+        f_center, freqs_rf, cal_tones=cal_tones)
     
     io.save(io.file.f_res_targ, freqs_rf_actual)
     io.save(io.file.a_res_targ, amps)
