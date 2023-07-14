@@ -288,7 +288,8 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
     if amps is None or phis is None:
         amps, phis = genAmpsAndPhis(freqs_bb)
 
-    freqs_rf_actual = _writeComb(chan, freqs_bb, amps, phis)
+    freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
+    freqs_rf_actual = freqs_bb_actual + f_center 
 
     return freqs_rf_actual, amps, phis
 

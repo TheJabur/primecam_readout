@@ -161,7 +161,7 @@ def targetSweep(N_steps=500, chan_bandwidth=0.2):
 
     chan = cfg.drid
     
-    f_center = io.load(io.file.f_center_targ) # Hz
+    f_center = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_res_targ)
     freqs_bb = freqs_rf - f_center
 
@@ -170,7 +170,7 @@ def targetSweep(N_steps=500, chan_bandwidth=0.2):
 
     io.save(io.file.s21_targ, S21)
 
-    return io.returnWrapper(io.file.s21_vna, S21)
+    return io.returnWrapper(io.file.s21_targ, S21)
 
 
 # ============================================================================ #
