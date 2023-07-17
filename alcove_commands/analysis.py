@@ -86,11 +86,20 @@ def _findResonators(f, Z,
     f_hi:      (float) Highpass filter cutoff frequency. [data units]
     f_lo:      (float) lowpass filter cutoff frequency. [data units]
     prom_dB:   (float) Peak prominence cutoff. [dB]
-    distance:  (float) Min distance between peaks. [bins]
+    distance:  (int) Min distance between peaks. [bins]
     width      (tuple of 2 floats) Peak width (min, max). [bins]
     """
     
     import numpy as np
+
+    # All params are str from Redis so need to cast
+    stitch_bw   = int(stitch_bw)
+    stitch_sw   = int(stitch_sw)
+    f_hi        = float(f_hi)
+    f_lo        = float(f_lo)
+    prom_dB     = float(prom_dB)
+    distance    = int(distance)
+    width = (float(width[0]), float(width[1]))
 
     i_peaks = _resonatorIndicesInS21(
         f, Z, stitch_bw, stitch_sw, f_hi, f_lo, prom_dB, 
