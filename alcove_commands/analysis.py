@@ -128,6 +128,7 @@ def findVnaResonators(**kwargs):
 
 # ============================================================================ #
 # findTargResonators
+'''
 def findTargResonators(**kwargs):
     """Find the resonator peak frequencies from targSweep S21.
     See findResonators() for possible arguments.
@@ -136,6 +137,31 @@ def findTargResonators(**kwargs):
 
     f, Z = io.load(io.file.s21_targ)
     f_res = _findResonators(f, Z, **kwargs)
+
+    io.save(io.file.f_res_targ, f_res)
+
+    return io.returnWrapper(io.file.f_res_targ, f_res)
+'''
+
+# ============================================================================ #
+# findTargResonators
+def findTargResonators(**kwargs):
+    """Find the resonator peak frequencies from targSweep S21.
+    See findResonators() for possible arguments.
+    Note that targSweep must be run first.
+    """
+    f, Z = io.load(io.file.s21_targ)
+    
+    def findTargMins(f, Z,
+                   stitch_bw=500, stitch_sw=100,
+                   f_hi=50, f_lo=1, prom_dB=1,
+                   distance=30, width=(5,100)):
+        # magic here
+        a = Z.reshape(-1, bw)               # reshape into targ bins
+        f_reshaped = f.reshape(-1, bw)               # reshape into targ bins
+        min_index = np.argmin(a, axis=1)
+        return f_reshaped[min_index].flatten()
+    f_res = findTargMins(f, Z, **kwargs)
 
     io.save(io.file.f_res_targ, f_res)
 
