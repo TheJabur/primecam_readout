@@ -67,7 +67,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     from time import sleep
 
     if chan_bandwidth:         # LO bandwidth given
-        bw = chan_bandwidth    # MHz
+        bw = float(chan_bandwidth)    # MHz
     else:                      # LO bandwidth is tone difference
         bw = np.diff(freqs)[0]/1e6 # MHz
     flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
@@ -160,6 +160,8 @@ def targetSweep(N_steps=500, chan_bandwidth=0.2):
     import numpy as np
 
     chan = cfg.drid
+    N_steps = int(N_steps)
+    chan_bandwidth = float(chan_bandwidth)
     
     f_center = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_res_targ)
