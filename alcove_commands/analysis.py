@@ -160,9 +160,15 @@ def findTargResonators(**kwargs):
         import numpy as np
 
         a = Z.reshape(-1, stitch_bw)               # reshape into targ bins
-        f_reshaped = f.reshape(-1, stitch_bw)          # reshape into targ bins
-        min_index = np.argmin(a, axis=1)
-        return f_reshaped[min_index].flatten()
+        f_reshaped = f.reshape(-1, stitch_bw)      # reshape into targ bins
+        num_res = f_reshaped.shape[0]
+
+        f_res = [
+            f_reshaped[r][np.argmin(a, axis=1)[r]]
+            for r in range(num_res)]
+
+        return f_res
+
     f_res = findTargMins(f, Z, **kwargs)
 
     io.save(io.file.f_res_targ, f_res)
