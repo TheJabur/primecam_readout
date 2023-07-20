@@ -157,6 +157,8 @@ def findTargResonators(**kwargs):
                    f_hi=50, f_lo=1, prom_dB=1,
                    distance=30, width_min=5, width_max=100):
         
+        import numpy as np
+
         a = Z.reshape(-1, stitch_bw)               # reshape into targ bins
         f_reshaped = f.reshape(-1, stitch_bw)          # reshape into targ bins
         min_index = np.argmin(a, axis=1)
