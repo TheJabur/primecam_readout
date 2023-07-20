@@ -76,7 +76,7 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
 def _findResonators(f, Z,
                    stitch_bw=500, stitch_sw=100, 
                    f_hi=50, f_lo=1, prom_dB=1, 
-                   distance=30, width=(5,100)):
+                   distance=30, width_min=5, width_max=100):
     """Find the resonator peak frequencies in previously saved s21.npy file.
 
     f:         (1D array of floats) Frequency bins of signal.
@@ -87,7 +87,8 @@ def _findResonators(f, Z,
     f_lo:      (float) lowpass filter cutoff frequency. [data units]
     prom_dB:   (float) Peak prominence cutoff. [dB]
     distance:  (int) Min distance between peaks. [bins]
-    width      (tuple of 2 floats) Peak width (min, max). [bins]
+    width_min  (int) Peak width minimum. [bins]
+    width_max  (int) Peak width maximum. [bins]
     """
     
     import numpy as np
@@ -99,7 +100,7 @@ def _findResonators(f, Z,
     f_lo        = float(f_lo)
     prom_dB     = float(prom_dB)
     distance    = int(distance)
-    width = (float(width[0]), float(width[1]))
+    width       = (int(width_min), int(width_max))
 
     i_peaks = _resonatorIndicesInS21(
         f, Z, stitch_bw, stitch_sw, f_hi, f_lo, prom_dB, 
