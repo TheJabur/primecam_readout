@@ -193,6 +193,31 @@ def _setNCLO(chan, lofreq):
     return
 
 
+def _getNCLO(chan):
+
+    rf_data_conv = firmware.usp_rf_data_converter_0
+
+    # adc tiles; adc blocks; dac tiles; dac blocks
+    if chan == 1: 
+        i = [0,0,1,3]
+    elif chan == 2:
+        i = [0,1,1,2]
+    elif chan == 3:
+        i = [1,0,1,1]
+    elif chan == 4:
+        i = [1,1,1,0]
+    else:
+        print("_getNCLO: Invalid chan!")
+        return
+
+    adc = rf_data_conv.adc_tiles[i[0]].blocks[i[1]]
+    dac = rf_data_conv.dac_tiles[i[2]].blocks[i[3]]
+
+    f_lo = adc.MixerSettings['Freq']
+
+    return f_lo
+
+
 # ============================================================================ #
 # setNCLO
 def setNCLO(f_lo):
@@ -208,6 +233,22 @@ def setNCLO(f_lo):
     f_lo = int(f_lo)
     _setNCLO(chan, f_lo)
     io.save(io.file.f_center_vna, f_lo*1e6)
+
+
+# ============================================================================ #
+# getNCLO
+def getNCLO(chan=None):
+    """Get the numerically controlled local oscillator value from register.
+    """
+
+    import numpy as np
+
+    if chan is None:
+        chan = cfg.drid
+
+    f_lo = float(_getNCLO(chan))
+
+    return f_lo
 
 
 # ============================================================================ #
