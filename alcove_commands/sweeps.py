@@ -66,6 +66,9 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     import numpy as np
     from time import sleep
 
+    N_steps = int(N_steps)
+    f_center = float(f_center)
+
     if chan_bandwidth:         # LO bandwidth given
         bw = float(chan_bandwidth)    # MHz
     else:                      # LO bandwidth is tone difference
