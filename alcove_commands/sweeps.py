@@ -109,17 +109,17 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
 
 # ============================================================================ #
 # vnaSweep
-def vnaSweep(f_center, N_steps=500):
+def vnaSweep(N_steps=500):
     """Perform a stepped frequency sweep with current comb, save as vna sweep.
 
-    f_center:   (float) Center LO frequency for sweep. [MHz]
     N_steps:    (int) Number of LO frequencies to divide each channel into.
     """
 
     import numpy as np
 
-    f_center = float(f_center)
     chan = cfg.drid
+
+    f_center = io.load(io.file.f_center_vna)
     freqs_bb = io.load(io.file.freqs_vna)
 
     S21 = np.array(_sweep(chan, f_center, freqs_bb, N_steps)) # f, Z
