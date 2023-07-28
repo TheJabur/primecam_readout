@@ -26,9 +26,9 @@ try:
     tb_indices = {
         1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
     
-    for chan, i in tb_indices.items():
-        adc = rf_data_conv.adc_tiles[i[0]].blocks[i[1]]
-        dac = rf_data_conv.dac_tiles[i[2]].blocks[i[3]]
+    for chan, ii in tb_indices.items():
+        adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
+        dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
 
         adc.MixerSettings['Freq'] = lofreq
         dac.MixerSettings['Freq'] = lofreq
