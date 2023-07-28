@@ -1,7 +1,9 @@
 from pynq import Overlay
 import xrfclk
 import xrfdc
+
 import ip_addr
+import _cfg_board as cfg
 
 try:
 
@@ -9,7 +11,7 @@ try:
 # ============================================================================ #
 # Firmware & clocks
 
-    firmware = Overlay("tetra_v7p1_impl_5.bit",ignore_version=True)
+    firmware = Overlay(cfg.firmware_file, ignore_version=True)
 
     clksrc = 409.6 # MHz
     xrfclk.set_all_ref_clks(clksrc)
