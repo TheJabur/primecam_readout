@@ -1,25 +1,31 @@
-########################################################
-### Main remote-side script.                         ###
-### Allows execution of remote (board) commands.     ###
-###                                                  ###
-### James Burgoyne jburgoyne@phas.ubc.ca             ###
-### CCAT Prime 2022                                  ###
-########################################################
+# ============================================================================ #
+# alcove.py
+# Responsible for board commands.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2023  
+# ============================================================================ #
 
 
-###############
-### IMPORTS ###
 
-from audioop import mul
+# ============================================================================ #
+# IMPORTS
+# ============================================================================ #
+
+
 import logging
 import alcove_commands.test_functions as test
 import alcove_commands.board_utilities as utils
-import alcove_commands.single_chan as single_chan
-import alcove_commands.multi_chan as multi_chan
+import alcove_commands.alcove_base as alcove_base
+import alcove_commands.tones as tones
+import alcove_commands.sweeps as sweeps
+import alcove_commands.analysis as analysis
 
 
-##############
-### CONFIG ###
+
+# ============================================================================ #
+# CONFIG
+# ============================================================================ #
+
 
 logging.basicConfig(
     filename='logs/board.log', level=logging.DEBUG,
@@ -31,42 +37,44 @@ logging.basicConfig(
 # alcove command keys start at 10
 def _com():
     return { 
-        # 10:utils.boardTemps, 
-        # 12:single_chan.writeVnaComb,
-        # 13:single_chan.writeTestTone,
-        # 14:single_chan.getAdcData,
-        15:test.testFunction,
-        # 16:single_chan.getSnapData,
-        # 17:single_chan.vnaSweep,
-        # 18:single_chan.findResonators,
-        # 20:single_chan.writeTargComb,
-        # 21:single_chan.targetSweep,
-        # 22:single_chan.fullLoop,
-        40:multi_chan.setNCLO,
-        41:multi_chan.writeTestTone,
-        42:multi_chan.writeVnaComb,
-        43:multi_chan.writeTargComb,
-        44:multi_chan.getSnapData,
-        45:multi_chan.vnaSweep,
-        46:multi_chan.findResonators,
-        47:multi_chan.targetSweep,
-        48:multi_chan.fullLoop,
-        49:multi_chan.loChop,
-        50:multi_chan.findCalTones,
-        # 51:multi_chan.updateTargComb,
-        52:multi_chan.setFineNCLO
+        # 10:test.testFunction,
+        20:alcove_base.setNCLO,
+        21:alcove_base.setFineNCLO,
+        25:alcove_base.getSnapData,
+        30:tones.writeTestTone,
+        31:tones.writeNewVnaComb,
+        32:tones.writeTargCombFromVnaSweep,
+        33:tones.writeTargCombFromTargSweep,
+        40:sweeps.vnaSweep,
+        # 41:sweeps.vnaSweepFull,
+        42:sweeps.targetSweep,
+        # 43:sweeps.targetSweepFull,
+        # 45:sweeps.loChopSweep,
+        50:analysis.findVnaResonators,
+        51:analysis.findTargResonators,
+        55:analysis.findCalTones,
     }
 
 
-##########################
-### INTERNAL FUNCTIONS ###
 
-# monkeypatch the print statement
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
+
+
+# ============================================================================ #
+# _print
 _print = print 
 def print(*args, **kw):
+    """Monkeypatch the print statement
+    """
+    
     _print(*args, **kw)            # print to terminal
     logging.info(' '.join(args))   # log to file
 
+
+# ============================================================================ #
+# callCom
 def callCom(key, args, kwargs):
     # dictionary keys are stored as integers
     # but redis may convert to string
@@ -90,7 +98,10 @@ def callCom(key, args, kwargs):
     return ret
 
 
-############
-### INIT ###
+
+# ============================================================================ #
+# INIT
+# ============================================================================ #
+
 
 com = _com()

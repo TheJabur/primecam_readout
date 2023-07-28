@@ -79,16 +79,6 @@ class file:
                 'dname'         :cfg.drone_dir+'/vna',
                 'use_timestamp' :True}
     amps_vna = _amps_vna()
-    
-
-    class _f_center_targ:
-        def __get__(self, obj, cls):
-            return {
-                'fname'         :'f_center_targ',
-                'file_type'     :'npy', 
-                'dname'         :cfg.drone_dir+'/targ',
-                'use_timestamp' :True}
-    f_center_targ = _f_center_targ()
 
     class _f_res_targ:
         def __get__(self, obj, cls):

@@ -117,11 +117,9 @@ def _generateWaveDdr4(freq_list, amp_list, phi):
     freq_actual = k*(fs/lut_len)
     X = np.zeros(lut_len,dtype='complex')
     #phi = np.random.uniform(-np.pi, np.pi, np.size(freq_list))
-    print("pre-amp mult")
     print(freq_list)
     for i in range(np.size(k)):
         X[k[i]] = np.exp(-1j*phi[i])*amp_list[i] # multiply by amplitude
-    print("post-amp mult")
     x = np.fft.ifft(X) * lut_len
     bin_num = np.int64(np.round(freq_actual / (fs / fft_len)))
     f_beat = bin_num*fs/fft_len - freq_actual
@@ -516,7 +514,7 @@ def _stitchS21m(S21m, bw=500, sw=100):
 
 # ============================================================================ #
 # _resonatorIndicesInS21
-def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, testing=False):
+def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, distance=30, width=(5,100), testing=False):
     """Find the indices of resonator peaks in given S21 signal.
     
     f:         (1D array of floats) Frequency bins of signal.
@@ -526,6 +524,8 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     f_hi:      (float) Highpass filter cutoff frequency (data units).
     f_lo:      (float) lowpass filter cutoff frequency (data units).
     prom_dB:   (float) Peak prominence cutoff, in dB.
+    distance:  (float) Min distance between peaks, in bins.
+    width      (tuple of 2 floats) Peak width (min, max), in bins.
     testing:   (bool) Also return intermediate products.
     
     Return:  (1D array of integers) Indices of peaks.
@@ -542,7 +542,8 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
     m_f   = sosfiltfilt(filt_bp, m_s)                    # bandpass filtered
     prom_lin = np.amax(m)*(1-10**(-prom_dB/20)) 
     m_f_dB = 20.*np.log10(m_f + abs(np.min(m_f)) + 1)     # in dB
-    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, distance=30, width=(5, 100)) 
+    peaks, props = find_peaks(x=-m_f, prominence=prom_lin, 
+                              distance=distance, width=width) 
     
     if testing: return peaks, (fs, m, m_f, m_f_dB, prom_dB, props)
     return peaks
@@ -550,7 +551,7 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
 
 # ============================================================================ #
 # _toneFreqsAndAmpsFromSweepData
-def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
+def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps, mod_amps=False):
     """
     Determine resonator tone frequencies and normalized amplitudes from sweep data.
     
@@ -571,14 +572,17 @@ def _toneFreqsAndAmpsFromSweepData(f, Z, amps, N_steps):
     i_res = np.argmin(y_res, axis=1)
     freqs = f_res[tuple([np.arange(0,len(i_res)), i_res])] # multi-dim. array indexing
 
-    # Power
-    # np.gradient provides the slope at each point.
-    # The asymmetry of the resonator shape in frequency space 
-    # can be characterized by the sum of the max and min slopes.
-    y_grad = np.gradient(y_res, axis=1)         # slope at each point
-    a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
-    a /= np.max(np.abs(y_grad), axis=1)         # normalize
-    amps_new = (1 + a)*amps
+    if mod_amps:
+        # Power
+        # np.gradient provides the slope at each point.
+        # The asymmetry of the resonator shape in frequency space 
+        # can be characterized by the sum of the max and min slopes.
+        y_grad = np.gradient(y_res, axis=1)         # slope at each point
+        a = np.max(y_grad, axis=1) + np.min(y_grad, axis=1)  # sum max and min slopes
+        a /= np.max(np.abs(y_grad), axis=1)         # normalize
+        amps_new = (1 + a)*amps
+    else:
+        amps_new = amps
 
     return (freqs, amps_new)
 
@@ -597,10 +601,8 @@ def _genAmpsAndPhis(freqs, amp_max=(2**15-1)):
 
     amps = np.ones(N)*amp_max/np.sqrt(N)*0.25  
     # 0.3 yields a reasonable phase solve time in testing
-    print("pre-genPhis")
     # randomly generate phases until peak amp is lower than required max
     phis = _genPhis(freqs, amps, amp_max=amp_max)
-    print("post-genPhis")
 
     return amps, phis
 
@@ -623,9 +625,7 @@ def _genPhis(freqs, amps, amp_max=(2**15-1)):
         loop += 1
 
         phis = np.random.uniform(-np.pi, np.pi, N) # phases
-        print("pre-ddr4")
         x, _, _ = _generateWaveDdr4(freqs, amps, phis)
-        print("post-ddr4")
         x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
 
         amp_peak = np.max(np.abs(x.real + 1j*x.imag))
@@ -665,15 +665,15 @@ def writeVnaComb():
     import numpy as np
     
     chan = cfg.drid # drone (chan) id is from config
-    freqs = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    amps, phis = _genAmpsAndPhis(freqs)
+    freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    amps, phis = _genAmpsAndPhis(freqs_bb)
 
-    freq_actual = _writeComb(chan, freqs, amps, phis)
+    freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
 
-    io.save(io.file.freqs_vna, freq_actual)
+    io.save(io.file.freqs_vna, freqs_bb_actual)
     io.save(io.file.amps_vna, amps)
     io.save(io.file.phis_vna, phis)
-    return freq_actual
+    return freqs_bb_actual
 
 
 # ============================================================================ #
@@ -809,35 +809,60 @@ def setFineNCLO(f_lo):
 
 # ============================================================================ #
 # vnaSweep
-def vnaSweep(f_center=600):
-    """
-    vnaSweep: perform a stepped frequency sweep centered at f_center
+def vnaSweep(f_center, N_steps=500):
+    """Perform a stepped frequency sweep with current comb, save as vna sweep.
 
-    f_center: center frequency for sweep in [MHz]
+    f_center:   (float) Center LO frequency for sweep. [MHz]
+    N_steps:    (int) Number of LO frequencies to divide each channel into.
+    """
+
+    import numpy as np
+
+    chan = cfg.drid
+    freqs_bb = io.load(io.file.freqs_vna)
+
+    S21 = np.array(_sweep(chan, f_center, freqs_bb, N_steps)) # f, Z
+
+    io.save(io.file.s21_vna, S21)
+    io.save(io.file.f_center_vna, f_center*1e6)
+
+    return io.returnWrapper(io.file.s21_vna, S21)
+
+
+# ============================================================================ #
+# vnaSweepFull
+def vnaSweepFull(f_center, N_steps=500):
+    """Write vna comb and perform a stepped frequency sweep.
+
+    f_center:   (float) Center LO frequency for sweep. [MHz]
+    N_steps:    (int) Number of LO frequencies to divide each channel into.
     """
 
     import numpy as np
 
     chan = cfg.drid
     f_center = int(f_center)
+
     _setNCLO(chan, f_center)
-    
-    freqs = writeVnaComb()
-    s21 = np.array(_sweep(chan, f_center, freqs, N_steps=500)) # f, Z
+    writeVnaComb()
 
-    io.save(io.file.s21_vna, s21)
-    io.save(io.file.f_center_vna, f_center*1e6)
-
-    # return (s21)
-    # do we want to return freqs too?
-    return io.returnWrapper(io.file.s21_vna, s21)
+    return vnaSweep(f_center, N_steps)
 
 
 # ============================================================================ #
 # findResonators
-def findResonators():
-    """
-    Find the resonator peak frequencies in previously saved s21.npy file.
+def findResonators(stitch_bw=500, stitch_sw=100, 
+                   f_hi=50, f_lo=1, prom_dB=1, 
+                   distance=30, width=(5,100)):
+    """Find the resonator peak frequencies in previously saved s21.npy file.
+
+    stitch_bw: (int) Width of the stitch bins.
+    stitch_sw: (int) Width of slice (at ends) of each stitch bin to take median.
+    f_hi:      (float) Highpass filter cutoff frequency. [data units]
+    f_lo:      (float) lowpass filter cutoff frequency. [data units]
+    prom_dB:   (float) Peak prominence cutoff. [dB]
+    distance:  (float) Min distance between peaks. [bins]
+    width      (tuple of 2 floats) Peak width (min, max). [bins]
     """
     
     import numpy as np
@@ -846,15 +871,12 @@ def findResonators():
     f, Z = io.load(io.file.s21_vna)
 
     i_peaks = _resonatorIndicesInS21(
-        f, Z, 
-        stitch_bw=500, stitch_sw=100, 
-        f_hi=50, f_lo=1, prom_dB=1, 
-        testing=False)
+        f, Z, stitch_bw, stitch_sw, f_hi, f_lo, prom_dB, 
+        distance, width, testing=False)
     f_res = f[i_peaks]
 
     io.save(io.file.f_res_vna, f_res)
 
-    # return f_res
     return io.returnWrapper(io.file.f_res_vna, f_res)
 
 
@@ -969,20 +991,22 @@ def targetSweep(freqs=None, f_center=None, N_steps=500, chan_bandwidth=0.2, amps
         _sweep(chan, f_center/1e6, freqs, N_steps, chan_bandwidth)) 
   
     # try to optimise tone power (single iteration)
-    # freqs, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps)
+    freqs_rf, amps = _toneFreqsAndAmpsFromSweepData( *S21, amps, N_steps, mod_amps=False)
+    freqs_bb = freqs_rf - f_center 
     # need to determine if freqs returned from _ToneFreqs ... are baseband
-    phis = _genPhis(freqs, amps)
+    phis = _genPhis(freqs_bb, amps)
 
     if save:
         io.save(io.file.s21_targ, S21)
-        io.save(io.file.f_res_targ, freqs + f_center)
+        io.save(io.file.f_res_targ, freqs_rf)
         io.save(io.file.a_res_targ, amps)
+        io.save(io.file.p_res_targ, phis)
         io.save(io.file.f_center_targ, f_center)
 
     # return (freqs, A_res)
     return io.returnWrapperMultiple(
         [io.file.f_res_targ, io.file.a_res_targ, io.file.s21_targ, io.file.p_res_targ], 
-        [freqs+f_center, amps, S21, phis])
+        [freqs_rf, amps, S21, phis])
 
 
 # ============================================================================ #

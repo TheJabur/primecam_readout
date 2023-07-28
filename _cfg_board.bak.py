@@ -13,10 +13,25 @@ bid = 1    # should match physical id on board
 
 # ============================================================================ #
 # redis server configuration
-host = 'localhost'
-# host = '192.168.2.80'
+#host = 'localhost'
+host = '192.168.2.80'
 port = 6379
 db = 0
+
+
+# ============================================================================ #
+# timestream configuration
+# UDP data ethernet destination
+udp_dest_ip = '192.168.3.40'
+udp_dest_mac = '00:00:00:00:00:00' 
+
+# UDP data ethernet origin, drones 1-4
+udp_ori_ip_1 = '192.168.3.50'
+udp_ori_ip_2 = '192.168.3.51' 
+udp_ori_ip_3 = '192.168.3.52' 
+udp_ori_ip_4 = '192.168.3.53' 
+udp_ori_mac = 'c0:ff:ee:c0:ff:ee'
+
 
 
 
@@ -26,5 +41,6 @@ db = 0
 root_dir = ''
 drone_dir = ''
 drid = 0
+board_ip = '0.0.0.0'
 # ============================================================================ #
 # ============================================================================ #

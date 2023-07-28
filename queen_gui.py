@@ -13,6 +13,7 @@
 
 
 import sys
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -50,20 +51,23 @@ class MainWindow(QMainWindow):
 
         widget = QWidget(self) # main widget
         self.setCentralWidget(widget)
-        suplayout = QHBoxLayout(widget)
-        layout = QVBoxLayout()
-        suplayout.addLayout(layout)
-        layout2 = QVBoxLayout()
-        suplayout.addLayout(layout2)
+        suplayout = QHBoxLayout(widget) # 1st level: side-by-side
+        layout = QVBoxLayout()          # left side: vertical layout
+        suplayout.addLayout(layout)     
+        layout2 = QVBoxLayout()         # right side: vertical layout
+        suplayout.addLayout(layout2)    
 
-        # setup drone monitoring elements
+        # setup left side (drone monitoring) elements
         self.uisetupDroneMonitor(layout2)
 
-        # setup UI elements
+        # setup right side elements
         self.uisetupQueenListen(layout) # Queen listen button
-        self.uisetupTimestream(layout) # Time stream figure
+        self.uisetupTimestream(layout)  # Time stream figure
         self.uisetupAlcoveCommand(layout) # Alcove command
-        self.uisetupConsole(layout) # Console
+        layout3 = QHBoxLayout()         # console and plot
+        layout.addLayout(layout3)       
+        self.uisetupConsole(layout3)    # Console
+        self.uisetupPlot(layout3)       # Plot
     
 
     def closeEvent(self, event):
@@ -241,17 +245,17 @@ class MainWindow(QMainWindow):
         layout_timestreamui = QHBoxLayout()
         layout.addLayout(layout_timestreamui)
 
+        self.textbox_timestream_ip = QLineEdit()
+        self.textbox_timestream_ip.setText("192.168.3.40")
+        layout_timestreamui.addWidget(self.textbox_timestream_ip)
+
         # self.textbox_timestream_bid_drid = QLineEdit()
         # self.textbox_timestream_bid_drid.setPlaceholderText("bid.drid")
         # layout_timestreamui.addWidget(self.textbox_timestream_bid_drid)
 
-        # self.textbox_timestream_id = QLineEdit()
-        # self.textbox_timestream_id.setPlaceholderText("KID ID")
-        # layout_timestreamui.addWidget(self.textbox_timestream_id)
-
-        self.textbox_timestream_ip = QLineEdit()
-        self.textbox_timestream_ip.setText("192.168.3.40")
-        layout_timestreamui.addWidget(self.textbox_timestream_ip)
+        self.textbox_timestream_id = QLineEdit()
+        self.textbox_timestream_id.setPlaceholderText("KID ID")
+        layout_timestreamui.addWidget(self.textbox_timestream_id)
 
         self.textbox_timestream_win = QLineEdit()
         self.textbox_timestream_win.setPlaceholderText("last x points")
@@ -324,14 +328,14 @@ class MainWindow(QMainWindow):
             self.button_timestream.setChecked(True)
             self.button_timestream_save.setEnabled(True)
             # self.textbox_timestream_bid_drid.setEnabled(False)
-            # self.textbox_timestream_id.setEnabled(False)
+            self.textbox_timestream_id.setEnabled(False)
             self.textbox_timestream_ip.setEnabled(False)
         else:
             self.button_timestream.setText('Start Time Stream')
             self.button_timestream.setChecked(False)
             self.button_timestream_save.setEnabled(False)
             # self.textbox_timestream_bid_drid.setEnabled(True)
-            # self.textbox_timestream_id.setEnabled(True)
+            self.textbox_timestream_id.setEnabled(True)
             self.textbox_timestream_ip.setEnabled(True)
 
 
@@ -377,12 +381,13 @@ class MainWindow(QMainWindow):
         if self.timestream is None:
             return
 
-        # # KID ID
-        # try:
-        #     kid_id = max(int(self.textbox_timestream_id.text()), 0)
-        # except:
-        #     kid_id = 0 # default kid_id
-        # self.textbox_timestream_id.setText(str(kid_id)) # update GUI
+        # KID ID
+        # kid_id = 0
+        try:
+            kid_id = max(int(self.textbox_timestream_id.text()), 0)
+        except:
+            kid_id = 0 # default kid_id
+        self.textbox_timestream_id.setText(str(kid_id)) # update GUI
 
         # # bid.drid
         # try:
@@ -393,7 +398,6 @@ class MainWindow(QMainWindow):
         #     bid = 1
         #     drid = 1
         # self.textbox_timestream_bid_drid.setText(str(f'{bid}.{drid}')) # update GUI
-        kid_id = 0
 
         # grab a chunk of timestream, hardcoded 100 packets
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
@@ -543,7 +547,7 @@ class MainWindow(QMainWindow):
         """
 
         self.console = QPlainTextEdit()
-        layout.addWidget(self.console)
+        layout.addWidget(self.console, stretch=1)
         self.emitter_console = ConsoleEmitter()
         self.emitter_console.text_written.connect(self.console.insertPlainText)
         sys.stdout.write = self.addConsoleMessage
@@ -561,9 +565,42 @@ class MainWindow(QMainWindow):
         self.console.moveCursor(QTextCursor.End) # snap console to bottom
         self.console.ensureCursorVisible()
 
-        
 
     
+# ============================================================================ #
+# Interface: Plot 
+
+
+    def uisetupPlot(self, layout):
+        """Plot interface.
+        """
+
+        self.figure_plot = plt.figure(figsize=(4, 2.5))#, dpi=100)
+        self.canvas_plot = FigureCanvas(self.figure_plot)
+        layout.addWidget(self.canvas_plot, stretch=1)
+
+        # filename, filedata = _getLatestFile('tmp')
+        # print(filename)
+        # print(filedata)
+
+        # self.plotS21()
+
+
+    def plotS21(self):
+        f = np.linspace(1e8, 5e8, 100)
+        S21 = np.random.rand(100)
+
+        self.figure_plot.clear()
+        ax = self.figure_plot.add_subplot(111)
+        ax.plot(f, S21)
+        ax.set_xlabel("Frequency")
+        ax.set_ylabel("S21")
+        plt.tight_layout()
+        ax.set_title("title", y=0.85)
+        self.canvas_plot.draw()
+
+
+
 
 
 # ============================================================================ #
@@ -737,6 +774,30 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
     # Q = np.random.rand(X, N)
 
     return I, Q
+
+
+# ============================================================================ #
+# _getLatestFile
+def _getLatestFile(directory):
+    """Get the latest file contents and filename in given directory.
+    """
+
+    file_list = [os.path.join(directory, file) for file in os.listdir(directory)]
+    file_list = [file for file in file_list if os.path.isfile(file)] # only files
+    file_list.sort(key=lambda x: os.path.getmtime(x), reverse=True) # sort by mod time
+
+    if file_list:
+        data = _getFileContents(file_list[0])
+        return (file_list[0], data)
+    else:
+        return None # no files
+    
+
+def _getFileContents(file_path):
+        with open(file_path, 'r') as file:
+            return np.load(file_path, allow_pickle=True)
+            # return file.read()
+
 
 
 
