@@ -579,25 +579,50 @@ class MainWindow(QMainWindow):
         self.canvas_plot = FigureCanvas(self.figure_plot)
         layout.addWidget(self.canvas_plot, stretch=1)
 
-        # filename, filedata = _getLatestFile('tmp')
-        # print(filename)
-        # print(filedata)
-
-        # self.plotS21()
+        self.plotS21(*self.getLatestS21())
 
 
-    def plotS21(self):
-        f = np.linspace(1e8, 5e8, 100)
-        S21 = np.random.rand(100)
+    def getLatestS21(self):
+        dname = 'tmp'
+
+        files = _getFiles(dname)
+
+        for fname in files:
+            if fname.startswith('s21_'):
+                s21 = _getFileContents(f"{dname}/{fname}")
+                return (s21, fname)
+        return (None, 'no matching files')
+
+
+    def plotS21(self, s21, fname):
+        """
+        """
+        # TODO: CURRENTLY LOOKS LIKE JUNK
+        # CAN WE PLOT IN INTERACTIVE MODE?
 
         self.figure_plot.clear()
         ax = self.figure_plot.add_subplot(111)
-        ax.plot(f, S21)
         ax.set_xlabel("Frequency")
         ax.set_ylabel("S21")
+
+        if s21 is not None:
+            f, Z = s21
+            ax.set_title(fname, y=0.85, size=8)
+            ax.plot(f, np.abs(Z))
+
         plt.tight_layout()
-        ax.set_title("title", y=0.85)
         self.canvas_plot.draw()
+
+
+    # s21_targ_1_1_20230714T181021Z.npy
+    # s21_vna_1_1_20230613T211111Z.npy
+    # phis_vna_1_1_20230714T163936Z.npy
+    # p_res_targ_1_1_20230714T185519Z.npy
+    # f_res_targ_1_1_20230714T185519Z.npy
+    # f_res_vna_1_1_20230714T180013Z.npy
+    # f_cal_tones_1_1_20230714T190539Z.npy
+    # amps_vna_1_1_20230714T163936Z.npy
+    # a_res_targ_1_1_20230714T185519Z.npy
 
 
 
@@ -758,6 +783,7 @@ def _sendQueenCommand(com_str, com_args, progress_callback):
 
 # ============================================================================ #
 # Time Stream
+
 def _getTimestreamData(timestream, packets=100, kid_id=None):
     """Get a chunk of time stream data.
     timestream: (TimeStream) the timestream object.
@@ -777,21 +803,19 @@ def _getTimestreamData(timestream, packets=100, kid_id=None):
 
 
 # ============================================================================ #
-# _getLatestFile
-def _getLatestFile(directory):
-    """Get the latest file contents and filename in given directory.
+# File System
+
+def _getFiles(dname):
+    """
     """
 
-    file_list = [os.path.join(directory, file) for file in os.listdir(directory)]
-    file_list = [file for file in file_list if os.path.isfile(file)] # only files
-    file_list.sort(key=lambda x: os.path.getmtime(x), reverse=True) # sort by mod time
+    files = [os.path.join(dname, f) for f in os.listdir(dname)]
+    files = [f for f in files if os.path.isfile(f)] # only files
+    files.sort(reverse=True)
+    # file_list.sort(key=lambda x: os.path.getmtime(x), reverse=True) # sort by mod time
+    fnames = [os.path.basename(f) for f in files]
 
-    if file_list:
-        data = _getFileContents(file_list[0])
-        return (file_list[0], data)
-    else:
-        return None # no files
-    
+    return fnames
 
 def _getFileContents(file_path):
         with open(file_path, 'r') as file:
