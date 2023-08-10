@@ -45,6 +45,7 @@ def _com():
         31:tones.writeNewVnaComb,
         32:tones.writeTargCombFromVnaSweep,
         33:tones.writeTargCombFromTargSweep,
+        34:tones.writeTargCombFromCustomList,
         40:sweeps.vnaSweep,
         # 41:sweeps.vnaSweepFull,
         42:sweeps.targetSweep,
