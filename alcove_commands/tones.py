@@ -358,3 +358,38 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
     return io.returnWrapperMultiple(
         [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
         [freqs_rf_actual, amps, phis])
+
+def writeTargCombFromCustomList(cal_tones=False, new_amps_and_phis=False):
+    """Write the target comb from a custom list of resonator frequencies.
+    cal_tones:  (bool) Include calibration tones (True).
+        Note that this will change the amplitudes and phases of 
+        Note that findCalTones must be run first.
+    new_amps_and_phis: (bool) Generate new amplitudes and phases (True).
+    """
+
+    import numpy as np
+
+    chan = cfg.drid
+
+    f_center   = io.load(io.file.f_center_vna)
+    freqs_rf = np.load("custom_freqs.npy")
+    amps = np.load("custom_amps.npy")
+    phis = np.load("custom_phis.npy")
+    #freqs_rf = io.load(io.file.f_res_targ).real
+    #amps = io.load(io.file.a_res_targ)
+    #phis = io.load(io.file.p_res_targ)
+
+    if new_amps_and_phis:   
+        amps = None
+        phis = None
+        
+    freqs_rf_actual, amps, phis = _writeTargComb(
+        f_center, freqs_rf, amps, phis, cal_tones=cal_tones)
+    
+    io.save(io.file.f_res_targ, freqs_rf_actual)
+    io.save(io.file.a_res_targ, amps)
+    io.save(io.file.p_res_targ, phis)
+
+    return io.returnWrapperMultiple(
+        [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
+        [freqs_rf_actual, amps, phis])

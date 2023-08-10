@@ -125,10 +125,10 @@ def vnaSweep(N_steps=500):
     f_center = io.load(io.file.f_center_vna)
     freqs_bb = io.load(io.file.freqs_vna)
 
-    S21 = np.array(_sweep(chan, f_center, freqs_bb, N_steps)) # f, Z
+    S21 = np.array(_sweep(chan, f_center/1e6, freqs_bb, N_steps)) # f, Z
 
     io.save(io.file.s21_vna, S21)
-    io.save(io.file.f_center_vna, f_center*1e6)
+    io.save(io.file.f_center_vna, f_center)
 
     return io.returnWrapper(io.file.s21_vna, S21)
 
