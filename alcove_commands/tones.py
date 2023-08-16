@@ -372,9 +372,9 @@ def writeTargCombFromCustomList(cal_tones=False, new_amps_and_phis=False):
     chan = cfg.drid
 
     f_center   = io.load(io.file.f_center_vna)
-    freqs_rf = np.load("custom_freqs.npy")
-    amps = np.load("custom_amps.npy")
-    phis = np.load("custom_phis.npy")
+    freqs_rf = np.load("alcove_commands/custom_freqs.npy")
+    amps = np.load("alcove_commands/custom_amps.npy")
+    phis = np.load("alcove_commands/custom_phis.npy")
     #freqs_rf = io.load(io.file.f_res_targ).real
     #amps = io.load(io.file.a_res_targ)
     #phis = io.load(io.file.p_res_targ)
