@@ -150,7 +150,7 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
 
 
 # ============================================================================ #
-# _genPhis
+# genPhis
 def genPhis(freqs, amps, amp_max=(2**15-1)):
     """Generate lists of phases for given tone amplitudes.
     freqs: 1D float array of resonator frequencies.
@@ -179,7 +179,7 @@ def genPhis(freqs, amps, amp_max=(2**15-1)):
 
 
 # ============================================================================ #
-# _genAmpsAndPhis
+# genAmpsAndPhis
 def genAmpsAndPhis(freqs, amp_max=(2**15-1)):
     """Generate lists of amplitudes and phases.
     freqs: 1D float array of resonator frequencies.
@@ -286,6 +286,7 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         freqs_bb = freqs_rf - f_center
 
     if amps is None or phis is None:
+        # should we just be finding phis if we have amps?
         amps, phis = genAmpsAndPhis(freqs_bb)
 
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
@@ -359,8 +360,15 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
         [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
         [freqs_rf_actual, amps, phis])
 
+
+# ============================================================================ #
+# writeTargCombFromCustomList
 def writeTargCombFromCustomList(cal_tones=False, new_amps_and_phis=False):
-    """Write the target comb from a custom list of resonator frequencies.
+    """Write the target comb from a custom list of resonator frequencies from files:
+    alcove_commands/custom_freqs.npy
+    alcove_commands/custom_amps.npy
+    alcove_commands/custom_phis.npy
+
     cal_tones:  (bool) Include calibration tones (True).
         Note that this will change the amplitudes and phases of 
         Note that findCalTones must be run first.
@@ -375,9 +383,6 @@ def writeTargCombFromCustomList(cal_tones=False, new_amps_and_phis=False):
     freqs_rf = np.load("alcove_commands/custom_freqs.npy")
     amps = np.load("alcove_commands/custom_amps.npy")
     phis = np.load("alcove_commands/custom_phis.npy")
-    #freqs_rf = io.load(io.file.f_res_targ).real
-    #amps = io.load(io.file.a_res_targ)
-    #phis = io.load(io.file.p_res_targ)
 
     if new_amps_and_phis:   
         amps = None
