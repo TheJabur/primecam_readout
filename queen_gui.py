@@ -607,8 +607,12 @@ class MainWindow(QMainWindow):
 
         if s21 is not None:
             f, Z = s21
-            ax.set_title(fname, y=0.85, size=8)
+            # ax.set_title(fname, y=0.85, size=8)
+            ax.set_title(fname, y=1.01, size=8)
             ax.plot(f, np.abs(Z))
+            ax.ticklabel_format(axis='both', style='sci', scilimits=(0,0))
+            # ax.ticklabel_format(axis='both', style='sci', scilimits=None, useOffset=None, useLocale=None, useMathText=None)
+            
 
         plt.tight_layout()
         self.canvas_plot.draw()
