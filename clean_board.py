@@ -143,11 +143,7 @@ def cleanDroneDirs(**kwargs):
     See cleanDir(...) for argument descriptions.
     """
 
-    print("cleanDroneDirs functionality not added yet.")
-    # cleanDir("tmp/", **kwargs)
-    # each drone dir has subdirs which need cleaning
-    # but don't touch the files in the base drone dir:
-    # drones/drone[1-4]/
+    cleanDir("drones/", ftype=".npy", **kwargs)
 
 
 
