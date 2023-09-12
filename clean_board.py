@@ -14,9 +14,6 @@ import argparse
 import os
 import datetime
 
-# import queen
-# import alcove
-
 
 
 # ============================================================================ #
@@ -39,8 +36,17 @@ def main():
 
 # ============================================================================ #
 # cleanDir
-# TODO: need ability to add (or exclude) file types/exts
 def cleanDir(dname, ftype=None, olderThanDate=None, olderThanDaysAgo=None, largerThanMB=None, confirm=True, testing=True):
+    """Delete files in given dir which matches filters.
+
+    ftype: (str) File extension to match.
+    olderThanDate: (str) Match files older than YYYY-mm-dd date.
+    olderThanDaysAgo: (int) Match files older than this number days ago.
+    largerThanMB: (int) Match files larger than this in MB.
+    confirm: (bool) Whether to prompt with a confirm dialogue.
+    testing: (bool) Whether to actually delete files or not.
+    """
+
     if olderThanDate is None and olderThanDaysAgo is None and largerThanMB is None:
         print("At least one of the filter options is required.")
         return
@@ -110,31 +116,38 @@ def cleanDir(dname, ftype=None, olderThanDate=None, olderThanDaysAgo=None, large
 # ============================================================================ #
 # cleanTmpDir
 def cleanTmpDir(**kwargs):
+    """Delete files in tmp dir.
+
+    See cleanDir(...) for argument descriptions.
+    """
+
     cleanDir("tmp/", **kwargs)
 
 
 # ============================================================================ #
 # cleanLogDir
 def cleanLogDir(**kwargs):
+    """Delete files in log dir.
+    
+    See cleanDir(...) for argument descriptions.
+    """
+
     cleanDir("logs/", ftype=".log", **kwargs)
 
 
 # ============================================================================ #
 # cleanDroneDirs
 def cleanDroneDirs(**kwargs):
+    """Delete files in drones dir.
+    
+    See cleanDir(...) for argument descriptions.
+    """
+
     print("cleanDroneDirs functionality not added yet.")
     # cleanDir("tmp/", **kwargs)
     # each drone dir has subdirs which need cleaning
     # but don't touch the files in the base drone dir:
     # drones/drone[1-4]/
-
-
-# ============================================================================ #
-# cleanAll
-def cleanAll(**kwargs):
-    cleanTmpDir(**kwargs)
-    cleanLogDir(**kwargs)
-    cleanDroneDirs(**kwargs)
 
 
 
@@ -146,6 +159,11 @@ def cleanAll(**kwargs):
 # ============================================================================ #
 # _promptConfirm
 def _promptConfirm(msg):
+    """CLI confirm (y/n) prompt with message.
+
+    msg: (str) The message to display.
+    """
+
     yes = {'yes','ye', 'y'}
     choice = input(f"{msg} [y/n] ").strip().lower()
     if choice in yes:
@@ -156,8 +174,7 @@ def _promptConfirm(msg):
 # ============================================================================ #
 # _setupArgparse
 def _setupArgparse():
-    """
-    Setup command line arguments.
+    """Setup command line arguments.
     """
 
     parser = argparse.ArgumentParser(
@@ -166,12 +183,10 @@ def _setupArgparse():
         epilog = "")
 
     # type of cleaning
-    # choices=['all', 'tmp', 'logs', 'drones']
     choices=['tmp', 'logs', 'drones']
     parser.add_argument("type", choices=choices, 
         help="Type of cleaning.")
     
-    # TODO: make one of these required
     # limiting options
     parser.add_argument("-d", "--keep_from_date", 
         help="Limit to files older than [YYYY-mm-dd].")
@@ -191,31 +206,21 @@ def _processCli(args):
     """
 
     def select(type, **kwargs):
-        if type == 'all': cleanAll(**kwargs)
         if type == 'tmp': cleanTmpDir(**kwargs)
         if type == 'logs': cleanLogDir(**kwargs)
         if type == 'drones': cleanDroneDirs(**kwargs)
 
     select(args.type, olderThanDate=args.keep_from_date, olderThanDaysAgo=args.keep_last_days, largerThanMB=args.keep_smaller_than_MB, confirm=True)
 
-    # if args.type == 'all':
-    #     cleanAll(olderThanDate=args.keep_from_date, olderThanDaysAgo=args.keep_last_days, largerThanMB=args.keep_smaller_than_MB, confirm=True)
-
-    # if args.type == 'tmp':
-    #     cleanTmpDir(olderThanDate=args.keep_from_date, olderThanDaysAgo=args.keep_last_days, largerThanMB=args.keep_smaller_than_MB, confirm=True)
-
-    # if args.type == 'logs':
-    #     cleanLogDir(olderThanDate=args.keep_from_date, olderThanDaysAgo=args.keep_last_days, largerThanMB=args.keep_smaller_than_MB, confirm=True)
-
-    # if args.type == 'drones':
-    #     cleanDroneDirs(olderThanDate=args.keep_from_date, olderThanDaysAgo=args.keep_last_days, largerThanMB=args.keep_smaller_than_MB, confirm=True)
-
 
 # ============================================================================ #
 # _isFileOlderThanDate
 def _isFileOlderThanDate(file_path, olderThanDate):
-    """
-    olderThanDate: (str) YYYY-mm-dd. Note this will use last modified time.
+    """Check if file has a ctime older than given date.
+    Note that ctime may mean creation time but probably means modified time.
+
+    file_path: (str) File path.
+    olderThanDate: (str) YYYY-mm-dd.
     """
 
     # Parse the date string into a datetime object
@@ -233,7 +238,11 @@ def _isFileOlderThanDate(file_path, olderThanDate):
 # ============================================================================ #
 # _isFileOlderThanDaysAgo
 def _isFileOlderThanDaysAgo(file_path, olderThanDaysAgo):
-    """
+    """Check if file ctime is older than some number of days ago.
+    Note that ctime may mean creation time but probably means modified time.
+
+    file_path: (str) File path.
+    olderThanDaysAgo: (int) Number of days.
     """
 
     delta = datetime.timedelta(days=int(olderThanDaysAgo))
@@ -254,7 +263,10 @@ def _isFileOlderThanDaysAgo(file_path, olderThanDaysAgo):
 # ============================================================================ #
 # _isFilelargerThanMB
 def _isFilelargerThanMB(file_path, largerThanMB):
-    """
+    """Check if file size is larger than some given size.
+
+    file_path: (str) File path.
+    largerThanMB: (int) The file size in MB.
     """
 
     file_size_bytes = os.path.getsize(file_path)
