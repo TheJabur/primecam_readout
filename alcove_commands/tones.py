@@ -181,7 +181,29 @@ def genPhis(freqs, amps, amp_max=(2**15-1)):
 # ============================================================================ #
 # genAmpsAndPhis
 def genAmpsAndPhis(freqs, amp_max=(2**15-1)):
-    """Generate lists of amplitudes and phases.
+    """Generate lists of (constant) amplitudes and phases.
+    freqs: 1D float array of resonator frequencies.
+    amp_max: Maximum allowable time stream amplitude.
+    """
+
+    import numpy as np
+
+    N = np.size(freqs)
+
+    amps = np.ones(N)*amp_max/np.sqrt(N)*0.25  
+    # 0.3 yields a reasonable phase solve time in testing
+    # randomly generate phases until peak amp is lower than required max
+    phis = genPhis(freqs, amps, amp_max=amp_max)
+
+    return amps, phis
+
+
+# ============================================================================ #
+# genVariedAmpsAndPhis
+def genVariedAmpsAndPhis(freqs, amp_max=(2**15-1)):
+    """Generate lists of (varied) amplitudes and phases.
+    Varied means that each tone has a unique amplitude.
+
     freqs: 1D float array of resonator frequencies.
     amp_max: Maximum allowable time stream amplitude.
     """
@@ -287,7 +309,7 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
 
     if amps is None or phis is None:
         # should we just be finding phis if we have amps?
-        amps, phis = genAmpsAndPhis(freqs_bb)
+        amps, phis = genVariedAmpsAndPhis(freqs_bb)
 
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_actual = freqs_bb_actual + f_center 
