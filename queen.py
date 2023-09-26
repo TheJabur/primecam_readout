@@ -59,6 +59,24 @@ def _com():
 
 
 # ============================================================================ #
+# comList
+def comList():
+    """A list of all Queen command names (strings)."""
+
+    return [com[key].__name__ for key in com.keys()]
+
+
+# ============================================================================ #
+# comNumFromStr
+def comNumFromStr(com_str):
+    """Command number (int) from command name (str)."""
+
+    coms = {com[key].__name__:key for key in com.keys()}
+    return int(coms[com_str])
+
+
+
+# ============================================================================ #
 #  alcoveCommand
 def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, args=None):
     '''Send an alcove command to given board.
