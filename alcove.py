@@ -59,6 +59,29 @@ def _com():
 
 
 # ============================================================================ #
+# EXTERNAL FUNCTIONS
+# ============================================================================ #
+
+
+# ============================================================================ #
+# comList
+def comList():
+    """A list of all Alcove command names (strings)."""
+
+    return [com[key].__name__ for key in com.keys()]
+
+
+# ============================================================================ #
+# comNumFromStr
+def comNumFromStr(com_str):
+    """Alcove command number (int) from command name (str)."""
+
+    coms = {com[key].__name__:key for key in com.keys()}
+    return int(coms[com_str])
+
+
+
+# ============================================================================ #
 # INTERNAL FUNCTIONS
 # ============================================================================ #
 
