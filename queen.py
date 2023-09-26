@@ -48,7 +48,8 @@ def _com():
         3:getKeyValue,
         4:setKeyValue,
         5:getClientList,
-        9:test.testFunc1
+        9:test.testFunc1,
+        10:test.tonePowerTest
     }
 
 
