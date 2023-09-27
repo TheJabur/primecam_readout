@@ -298,3 +298,33 @@ def setFineNCLO(f_lo):
     return _setNCLO2(chan, f_lo)
     # TODO: modify f_center to reflect this fine adjustment
     # io.save(io.file.f_center_vna, f_lo*1e6)
+
+
+# ============================================================================ #
+# createCustomCombFiles
+def createCustomCombFiles(freqs_rf=None, amps=None, phis=None):
+    """Create custom comb files from arrays.
+    Used in tones.writeTargCombFromCustomList().
+    """
+
+    import numpy as np
+
+    if freqs_rf:    np.save("alcove_commands/custom_freqs.npy", freqs_rf)
+    if amps:        np.save("alcove_commands/custom_amps.npy", amps)
+    if phis:        np.save("alcove_commands/custom_phis.npy", phis)
+
+
+# ============================================================================ #
+# loadCustomCombFiles
+def loadCustomCombFiles():
+    """Load custom comb files into arrays.
+    Used in tones.writeTargCombFromCustomList().
+    """
+    
+    import numpy as np
+
+    freqs_rf =  np.load("alcove_commands/custom_freqs.npy")
+    amps =      np.load("alcove_commands/custom_amps.npy")
+    phis =      np.load("alcove_commands/custom_phis.npy")
+
+    return freqs_rf, amps, phis
