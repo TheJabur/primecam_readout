@@ -151,7 +151,7 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
 
 # ============================================================================ #
 # genPhis
-def genPhis(freqs, amps, amp_max=(2**15-1)):
+def genPhis(freqs, amps, amp_max=(2**15-1), loop_max=100):
     """Generate lists of phases for given tone amplitudes.
     freqs: 1D float array of resonator frequencies.
     amps: 1D float array of tone amplitudes.
@@ -162,7 +162,7 @@ def genPhis(freqs, amps, amp_max=(2**15-1)):
 
     # randomly generate phases until peak amp is lower than required max
     N = np.size(amps)
-    loops_max = 100; loop = 0 # could infinitely loop otherwise
+    loop = 0 # could infinitely loop otherwise
     while True: # conditional at bottom to act like do-while
         loop += 1
 
@@ -172,7 +172,7 @@ def genPhis(freqs, amps, amp_max=(2**15-1)):
 
         amp_peak = np.max(np.abs(x.real + 1j*x.imag))
 
-        if (amp_peak < amp_max) or (loop > loops_max):
+        if (amp_peak < amp_max) or (loop > loop_max):
             break
 
     return phis
@@ -190,12 +190,17 @@ def genAmpsAndPhis(freqs, amp_max=(2**15-1)):
 
     N = np.size(freqs)
 
-    amps = np.ones(N)*amp_max/np.sqrt(N)*0.25  
-    # 0.3 yields a reasonable phase solve time in testing
-    # randomly generate phases until peak amp is lower than required max
-    phis = genPhis(freqs, amps, amp_max=amp_max)
+    # The factor here reduces the amps so they don't clip 
+    # at max peaks from constructive interference
+    # However I don't have a good theory for predicting 
+    factors = np.arange(0.40, 0.15, -0.02) # 13 steps
+    for factor in factors:
+        amps = np.ones(N)*amp_max/np.sqrt(N)*factor  
+        # randomly generate phases until peak amp is lower than required max
+        # maximum 13 steps at 10 loops each before giving up
+        phis = genPhis(freqs, amps, amp_max=amp_max, loop_max=10) # loops
 
-    return amps, phis
+        return amps, phis # return and stop looping
 
 
 # ============================================================================ #
@@ -208,16 +213,7 @@ def genVariedAmpsAndPhis(freqs, amp_max=(2**15-1)):
     amp_max: Maximum allowable time stream amplitude.
     """
 
-    import numpy as np
-
-    N = np.size(freqs)
-
-    amps = np.ones(N)*amp_max/np.sqrt(N)*0.25  
-    # 0.3 yields a reasonable phase solve time in testing
-    # randomly generate phases until peak amp is lower than required max
-    phis = genPhis(freqs, amps, amp_max=amp_max)
-
-    return amps, phis
+    return genAmpsAndPhis(freqs, amp_max=amp_max)
 
 
 # ============================================================================ #
@@ -292,8 +288,8 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
     f_center:   (float) Center LO frequency for sweep [Hz].
     freqs_rf:   (1D array of floats) Comb frequencies [Hz].
     cal_tones:  (bool) Include calibration tones (True).
-        Note that this will change the amplitudes and phases of 
         Note that findCalTones must be run first.
+        Note that this will force new_amps_and_phis=True.
     """
 
     import numpy as np
@@ -353,8 +349,8 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
     Note that targSweep and findTargResonators must be run first.
 
     cal_tones:  (bool) Include calibration tones (True).
-        Note that this will change the amplitudes and phases of 
         Note that findCalTones must be run first.
+        Note that this will force new_amps_and_phis=True.
     new_amps_and_phis: (bool) Generate new amplitudes and phases (True).
     """
 
@@ -367,6 +363,9 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
     amps = io.load(io.file.a_res_targ)
     phis = io.load(io.file.p_res_targ)
 
+    if cal_tones:
+        new_amps_and_phis = True # need to recalculate for additional tones
+
     if new_amps_and_phis:   
         amps = None
         phis = None
@@ -374,6 +373,8 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
     freqs_rf_actual, amps, phis = _writeTargComb(
         f_center, freqs_rf, amps, phis, cal_tones=cal_tones)
     
+    # These will include cal tones (if cal_tones=True)
+    # not just resonator tones.
     io.save(io.file.f_res_targ, freqs_rf_actual)
     io.save(io.file.a_res_targ, amps)
     io.save(io.file.p_res_targ, phis)
@@ -385,16 +386,11 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
 
 # ============================================================================ #
 # writeTargCombFromCustomList
-def writeTargCombFromCustomList(cal_tones=False, new_amps_and_phis=False):
+def writeTargCombFromCustomList():
     """Write the target comb from a custom list of resonator frequencies from files:
     alcove_commands/custom_freqs.npy
     alcove_commands/custom_amps.npy
     alcove_commands/custom_phis.npy
-
-    cal_tones:  (bool) Include calibration tones (True).
-        Note that this will change the amplitudes and phases of 
-        Note that findCalTones must be run first.
-    new_amps_and_phis: (bool) Generate new amplitudes and phases (True).
     """
 
     import numpy as np
@@ -405,13 +401,9 @@ def writeTargCombFromCustomList(cal_tones=False, new_amps_and_phis=False):
     freqs_rf = np.load("alcove_commands/custom_freqs.npy")
     amps = np.load("alcove_commands/custom_amps.npy")
     phis = np.load("alcove_commands/custom_phis.npy")
-
-    if new_amps_and_phis:   
-        amps = None
-        phis = None
         
     freqs_rf_actual, amps, phis = _writeTargComb(
-        f_center, freqs_rf, amps, phis, cal_tones=cal_tones)
+        f_center, freqs_rf, amps, phis)
     
     io.save(io.file.f_res_targ, freqs_rf_actual)
     io.save(io.file.a_res_targ, amps)
