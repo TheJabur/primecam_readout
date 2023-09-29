@@ -125,14 +125,14 @@ class file:
                 'use_timestamp' :True}
     f_cal_tones = _f_cal_tones()
 
-    class _f_tones_comb:
+    class _f_rf_tones_comb:
         def __get__(self, obj, cls):
             return {
-                'fname'         :'f_tones_comb',
+                'fname'         :'f_rf_tones_comb',
                 'file_type'     :'npy', 
                 'dname'         :cfg.drone_dir+'/comb',
                 'use_timestamp' :True}
-    f_tones_comb = _f_tones_comb()
+    f_rf_tones_comb = _f_rf_tones_comb()
 
     class _a_tones_comb:
         def __get__(self, obj, cls):
