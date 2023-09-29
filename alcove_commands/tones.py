@@ -241,6 +241,12 @@ def _writeComb(chan, freqs, amps, phi):
     _loadDdr4(chan, wave_real, wave_imag, dphi)
     _loadBinList(chan, freq_actual)
     _resetAccumAndSync(chan, freq_actual)
+
+    # save the current comb
+    io.save(io.file.f_rf_tones_comb, freq_actual)
+    io.save(io.file.a_tones_comb, amps)
+    io.save(io.file.p_tones_comb, phi)
+
     return freq_actual
 
 
