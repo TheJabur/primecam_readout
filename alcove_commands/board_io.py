@@ -124,3 +124,30 @@ class file:
                 'dname'         :cfg.drone_dir+'/cal_tones',
                 'use_timestamp' :True}
     f_cal_tones = _f_cal_tones()
+
+    class _f_tones_comb:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'f_tones_comb',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/comb',
+                'use_timestamp' :True}
+    f_tones_comb = _f_tones_comb()
+
+    class _a_tones_comb:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'a_tones_comb',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/comb',
+                'use_timestamp' :True}
+    a_tones_comb = _a_tones_comb()
+
+    class _p_tones_comb:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'p_tones_comb',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/comb',
+                'use_timestamp' :True}
+    p_tones_comb = _p_tones_comb()
