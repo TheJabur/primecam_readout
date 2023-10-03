@@ -14,6 +14,22 @@
 #############################################################
 
 
+def testFunction(par1, par2, par3=None):
+    import alcove_commands.board_io as io
+    import numpy as np
+
+    print(par1, par2, par3)
+
+    # a = io.load(io.file.f_res_targ)
+    # a = io.loadVersion(io.file.f_res_targ, timestamp='20221006T222045Z')
+    # a = io.loadVersion(io.file.s21_vna, timestamp='20221013T110535Z')
+    # b = io.loadVersion(io.file.s21_vna, timestamp='20221013T093202Z')
+
+    # return a, b
+    # return io.returnWrapper(io.file.s21_vna, a)
+    # return io.returnWrapperMultiple([io.file.s21_vna, io.file.s21_vna], [a, b])
+    
+
 # def testFunction1():
 
     # import alcove_commands.board_io as io
@@ -23,14 +39,14 @@
 
     # io.save(io.file.f_res_targ, a)
 
-def testFunction():
-    import alcove_commands.board_io as io
-    import numpy as np
+# def testFunction():
+#     import alcove_commands.board_io as io
+#     import numpy as np
 
-    a = io.load(io.file.f_res_targ)
-    # a = io.loadVersion(io.file.f_res_targ, timestamp='20221006T222045Z')
+#     a = io.load(io.file.f_res_targ)
+#     # a = io.loadVersion(io.file.f_res_targ, timestamp='20221006T222045Z')
 
-    print(a)
+#     print(a)
 
 
 # def testFunction1(arg1=None, arg2=None):
