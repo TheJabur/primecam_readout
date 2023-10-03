@@ -301,6 +301,21 @@ def setFineNCLO(f_lo):
 
 
 # ============================================================================ #
+# _customCombFilename
+def _customCombFilename(type):
+    """Relative filename string for custom comb file.
+
+    Type: The file ("freqs_rf", "amps", "phis")
+    """
+
+    fnames = {
+        "freqs_rf":"alcove_commands/custom_freqs.npy",
+        "amps":"alcove_commands/custom_amps.npy",
+        "phis":"alcove_commands/custom_phis.npy"
+    }
+    return fnames[type]
+
+# ============================================================================ #
 # createCustomCombFiles
 def createCustomCombFiles(freqs_rf=None, amps=None, phis=None):
     """Create custom comb files from arrays.
@@ -309,9 +324,9 @@ def createCustomCombFiles(freqs_rf=None, amps=None, phis=None):
 
     import numpy as np
 
-    if freqs_rf:    np.save("alcove_commands/custom_freqs.npy", freqs_rf)
-    if amps:        np.save("alcove_commands/custom_amps.npy", amps)
-    if phis:        np.save("alcove_commands/custom_phis.npy", phis)
+    if freqs_rf:    np.save(_customCombFilename("freqs_rf"), freqs_rf)
+    if amps:        np.save(_customCombFilename("amps"), amps)
+    if phis:        np.save(_customCombFilename("phis"), phis)
 
 
 # ============================================================================ #
@@ -351,8 +366,19 @@ def loadCustomCombFiles():
     
     import numpy as np
 
-    freqs_rf =  np.load("alcove_commands/custom_freqs.npy")
-    amps =      np.load("alcove_commands/custom_amps.npy")
-    phis =      np.load("alcove_commands/custom_phis.npy")
+    freqs_rf =  np.load(_customCombFilename("freqs_rf"))
+    amps =      np.load(_customCombFilename("amps"))
+    phis =      np.load(_customCombFilename("phis"))
 
     return freqs_rf, amps, phis
+
+
+def modifyCustomCombAmps(factor=1):
+    """Modify custom tone amps file by multiplying by given factor.
+    """
+    
+    import numpy as np
+
+    amps = np.load(_customCombFilename("amps"))
+    amps *= float(factor)
+    np.save(_customCombFilename("amps"), amps)
