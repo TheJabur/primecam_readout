@@ -292,13 +292,16 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
     """Write the target comb from the given frequencies.
 
     f_center:   (float) Center LO frequency for sweep [Hz].
-    freqs_rf:   (1D array of floats) Comb frequencies [Hz].
+    freqs_rf:   (1D array of floats) Resonator frequencies [Hz].
     cal_tones:  (bool) Include calibration tones (True).
         Note that findCalTones must be run first.
         Note that this will force new_amps_and_phis=True.
     """
 
     import numpy as np
+
+    if not isinstance(cal_tones, bool):
+        cal_tones = cal_tones == "True" # force to bool; Redis args are strings
 
     chan = cfg.drid
 
@@ -308,9 +311,10 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         f_cal_tones_rf = io.load(io.file.f_cal_tones).real
         freqs_rf = np.append(freqs_rf, f_cal_tones_rf)
         freqs_bb = freqs_rf - f_center
+        amps = None # force recalculation of amps and phis with cal tones
+        phis = None
 
     if amps is None or phis is None:
-        # should we just be finding phis if we have amps?
         amps, phis = genVariedAmpsAndPhis(freqs_bb)
 
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
@@ -335,17 +339,21 @@ def writeTargCombFromVnaSweep(cal_tones=False):
 
     f_center   = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_res_vna).real
+    freqs_bb = freqs_rf - f_center
 
-    freqs_rf_actual, amps, phis = _writeTargComb(
-        f_center, freqs_rf, cal_tones=cal_tones)
-    
-    io.save(io.file.f_res_targ, freqs_rf_actual)
+    amps, phis = genVariedAmpsAndPhis(freqs_bb)
+
+    io.save(io.file.f_res_targ, freqs_rf)
     io.save(io.file.a_res_targ, amps)
     io.save(io.file.p_res_targ, phis)
 
+    freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(
+        f_center, freqs_rf, cal_tones=cal_tones)
+    # these may have cal_tones added in (not just resonators)
+
     return io.returnWrapperMultiple(
-        [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
-        [freqs_rf_actual, amps, phis])
+        [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
+        [freqs_rf_comb, amps_comb, phis_comb])
 
 
 # ============================================================================ #
@@ -369,31 +377,24 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
     amps = io.load(io.file.a_res_targ)
     phis = io.load(io.file.p_res_targ)
 
-    if cal_tones:
-        new_amps_and_phis = True # need to recalculate for additional tones
-
     if new_amps_and_phis:   
         amps = None
         phis = None
-        
-    freqs_rf_actual, amps, phis = _writeTargComb(
+
+    freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(
         f_center, freqs_rf, amps, phis, cal_tones=cal_tones)
-    
     # These will include cal tones (if cal_tones=True)
     # not just resonator tones.
-    io.save(io.file.f_res_targ, freqs_rf_actual)
-    io.save(io.file.a_res_targ, amps)
-    io.save(io.file.p_res_targ, phis)
 
     return io.returnWrapperMultiple(
-        [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
-        [freqs_rf_actual, amps, phis])
+        [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
+        [freqs_rf_comb, amps_comb, phis_comb])
 
 
 # ============================================================================ #
-# writeTargCombFromCustomList
-def writeTargCombFromCustomList():
-    """Write the target comb from a custom list of resonator frequencies from files:
+# writeCombFromCustomList
+def writeCombFromCustomList():
+    """Write the comb from custom tone files:
     alcove_commands/custom_freqs.npy
     alcove_commands/custom_amps.npy
     alcove_commands/custom_phis.npy
@@ -405,16 +406,13 @@ def writeTargCombFromCustomList():
 
     f_center   = io.load(io.file.f_center_vna)
     freqs_rf = np.load("alcove_commands/custom_freqs.npy")
+    freqs_bb = freqs_rf - f_center
     amps = np.load("alcove_commands/custom_amps.npy")
     phis = np.load("alcove_commands/custom_phis.npy")
         
-    freqs_rf_actual, amps, phis = _writeTargComb(
-        f_center, freqs_rf, amps, phis)
-    
-    io.save(io.file.f_res_targ, freqs_rf_actual)
-    io.save(io.file.a_res_targ, amps)
-    io.save(io.file.p_res_targ, phis)
+    freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
+    freqs_rf_comb = freqs_bb_comb + f_center
 
     return io.returnWrapperMultiple(
-        [io.file.f_res_targ, io.file.a_res_targ, io.file.p_res_targ], 
-        [freqs_rf_actual, amps, phis])
+        [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
+        [freqs_rf_comb, amps, phis])
