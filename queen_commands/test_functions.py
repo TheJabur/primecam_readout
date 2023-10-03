@@ -1,13 +1,100 @@
-############################
-### QUEEN test functions ###
-############################
+# ============================================================================ #
+# queen_commands/test_functions.py
+# Testing functions which run on the control computer.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2023  
+# ============================================================================ #
 
+import numpy as np
+
+import queen
+# import alcove
+import alcove_commands.alcove_base as alcove_base
 import queen_commands.control_io as io
+from timestream import TimeStream
 
-def testFunc1(arg1=None):
-    '''test function 1'''
 
-    print("Saving to tmp file...")
-    io.saveToTmp('some junk 1')
 
-    # print(f"arg1={arg1}") 
+# ============================================================================ #
+# TESTING FUNCTIONS
+# ============================================================================ #
+
+
+# ============================================================================ #
+# captureTimestream
+def captureTimestream(packets, ip, port=4096):
+    """Capture I and Q of timestream.
+
+    packets: Number of packets to capture.
+    ip: IP address to capture from.
+    port: IP port.
+    """
+
+    timestream = TimeStream(host=ip, port=port)
+    I, Q = timestream.getTimeStreamChunk(packets)
+
+    return I,Q
+
+
+# ============================================================================ #
+# tonePowerTest
+def tonePowerTest():
+    """Run a number of varied tone power sweeps and record output.
+
+    Queen listen mode must be running to intercept all the files.
+    """
+
+    bid = 1
+    drid = 1
+    nclo = 500
+
+    def sendCom(com_str, args_str=None):
+        queen.alcoveCommand(queen.comNumFromStr(com_str), 
+                        bid=None, drid=None, all_boards=False, args=args_str)
+
+    sendCom("alcove_base.setNCLO", nclo)
+
+    # vna sweep
+    sendCom("tones.writeNewVnaComb")
+    sendCom("sweeps.vnaSweep")
+    sendCom("analysis.findVnaResonators")
+
+    # target sweep
+    sendCom("tones.writeTargCombFromVnaSweep")
+    sendCom("sweeps.targetSweep")
+    sendCom("analysis.findTargResonators")
+
+    # add calibration tones
+    sendCom("analysis.findCalTones")
+    sendCom("tones.writeTargCombFromTargSweep", "cal_tones=True")
+
+    # create custom comb files
+    sendCom("tones.createCustomCombFilesFromCurrentComb")
+
+    # loop with varying tone power
+    # assume unmodified tone power (1.0) is overdriven
+    f_step = 0.1 # start here and step by this size
+    f_parts = np.arange(2, 1/f_step + 1)
+    factors = f_parts/(f_parts - 1) # build factors
+    factors = np.insert(factors, 0, f_step) # add first factor
+    for f in factors:
+        sendCom("tones.modifyCustomCombAmps", f)
+        sendCom("tones.writeCombFromCustomList")
+        
+        # we have a comb with reduced amps running
+        # how do we get a target sweep with reduced amps?
+        # if we do that then we can find resonators
+        # and the timestreams will be on resonance at each tone power
+        # The alternative is leave the time streams where they are
+        # which actually would be good info too
+        
+        # save timestream
+        ip = "192.168.3.40"
+        port = 4096
+        packets = 500*10 # 10 seconds?
+        I,Q = captureTimestream(packets, ip, port)
+        # power: I[kid_id]**2 + Q[kid_id]**2
+        # phase: np.arctan2(Q[kid_id], I[kid_id])
+        fname = io.saveToTmp(np.array([I, Q]), filename=f'timestream_{f}', use_timestamp=True)
+        
+ 
