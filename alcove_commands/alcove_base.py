@@ -315,6 +315,34 @@ def createCustomCombFiles(freqs_rf=None, amps=None, phis=None):
 
 
 # ============================================================================ #
+# createCustomCombFilesFromCurrentComb
+def createCustomCombFilesFromCurrentComb():
+    """Create custom comb files from the current comb.
+    """
+
+    f_comb = io.load(io.file.f_res_targ)
+    a_comb = io.load(io.file.a_res_targ)
+    p_comb = io.load(io.file.p_res_targ)
+
+    createCustomCombFiles(freqs_rf=f_comb, amps=a_comb, phis=p_comb)
+
+
+'''
+# ============================================================================ #
+# createCustomCombFilesFromTarget
+def createCustomCombFilesFromTarget():
+    """Create the custom comb files from the most recent target files.
+    """
+
+    f_res_targ = io.load(io.file.f_res_targ)
+    a_res_targ = io.load(io.file.a_res_targ)
+    p_res_targ = io.load(io.file.p_res_targ)
+
+    createCustomCombFiles(freqs_rf=f_res_targ, amps=a_res_targ, phis=p_res_targ)
+'''
+
+
+# ============================================================================ #
 # loadCustomCombFiles
 def loadCustomCombFiles():
     """Load custom comb files into arrays.
