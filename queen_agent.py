@@ -7,7 +7,7 @@
 # ============================================================================ #
 
 from ocs import ocs_agent, site_config
-from twisted.internet.defer import Deferred, inlineCallbacks
+# from twisted.internet.defer import Deferred, inlineCallbacks
 
 import queen
 
