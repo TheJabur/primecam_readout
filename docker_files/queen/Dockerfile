@@ -7,4 +7,8 @@ COPY requirements.txt .
 COPY ./primecam_readout ./primecam_readout
 
 RUN pip install -r requirements.txt
-CMD ["python", "./primecam_readout/queen_agent.py"]
+
+# CMD ["python", "./primecam_readout/queen_agent.py"]
+
+ENTRYPOINT ["dumb-init", "ocs-agent-cli"]
+CMD ["--agent", "queen_agent.py", "--entrypoint", "main"]
