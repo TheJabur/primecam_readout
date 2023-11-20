@@ -121,7 +121,7 @@ def cleanTmpDir(**kwargs):
     See cleanDir(...) for argument descriptions.
     """
 
-    cleanDir("tmp/", **kwargs)
+    cleanDir("../src/tmp/", **kwargs)
 
 
 # ============================================================================ #
@@ -132,7 +132,7 @@ def cleanLogDir(**kwargs):
     See cleanDir(...) for argument descriptions.
     """
 
-    cleanDir("logs/", ftype=".log", **kwargs)
+    cleanDir("../src/logs/", ftype=".log", **kwargs)
 
 
 # ============================================================================ #
@@ -143,7 +143,7 @@ def cleanDroneDirs(**kwargs):
     See cleanDir(...) for argument descriptions.
     """
 
-    cleanDir("drones/", ftype=".npy", **kwargs)
+    cleanDir("../src/drones/", ftype=".npy", **kwargs)
 
 
 

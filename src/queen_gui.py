@@ -41,12 +41,12 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("CCATpHive Readout Development GUI")
-        self.setWindowIcon(QIcon(QPixmap('./gui_assets/icon.png')))
+        self.setWindowIcon(QIcon(QPixmap('../assets/icon.png')))
 
         self.threadpool = QThreadPool()
 
         # store 'loading' gif in memory for common use
-        self.movie_loading = QMovie('./gui_assets/loading.gif')
+        self.movie_loading = QMovie('../assets/loading.gif')
         self.movie_loading.setScaledSize(QSize(10, 10))
 
         widget = QWidget(self) # main widget
