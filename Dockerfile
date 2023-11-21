@@ -5,6 +5,7 @@ WORKDIR /primecam_readout
 
 COPY requirements.txt .
 COPY ./src .
+COPY ./cfg .
 
 RUN pip install -r requirements.txt
 
