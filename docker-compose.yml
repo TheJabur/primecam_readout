@@ -22,8 +22,8 @@ services:
     hostname: gamow-docker
     environment:
       - INSTANCE_ID=queenagent
-    # volumes:
-    #   - ${OCS_CONFIG_DIR}:/config:ro
+    volumes:
+      - ~/primecam_readout/cfg:/cfg #outside:inside
 
   # grafana:
   #   image: queen_agent
