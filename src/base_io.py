@@ -15,7 +15,7 @@
 #####################
 
 try:
-    import _cfg_board as cfg
+    from ..cfg import _cfg_board as cfg
 except Exception as e: 
     print(f"board_io.py global attribute issue.")
 

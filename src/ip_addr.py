@@ -15,7 +15,7 @@
 import socket
 import psutil
 import redis
-import _cfg_board as cfg
+from ..cfg import _cfg_board as cfg
 
 
 

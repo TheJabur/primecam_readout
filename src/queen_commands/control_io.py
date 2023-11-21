@@ -8,7 +8,7 @@
 from base_io import *
 
 try:
-    import _cfg_queen as cfg
+    from ...cfg import _cfg_queen as cfg
 except Exception as e: 
     print(f"control_io.py global attribute issue.")
 

@@ -21,7 +21,7 @@ import logging
 import pickle
 import argparse
 
-import _cfg_board as cfg # import _cfg_drone done in main()
+from ..cfg import _cfg_board as cfg
 import redis_channels as rc
 
 

@@ -19,7 +19,7 @@ import pickle
 from datetime import datetime
 # import tempfile
 
-import _cfg_queen as cfg
+from ..cfg import _cfg_queen as cfg
 
 import queen_commands.control_io as io
 import redis_channels as rc
