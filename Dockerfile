@@ -4,7 +4,7 @@ FROM simonsobs/ocs:v0.10.3
 WORKDIR /primecam_readout
 
 COPY requirements.txt .
-COPY ./src ./src
+COPY ./src .
 
 RUN pip install -r requirements.txt
 
