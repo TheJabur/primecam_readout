@@ -23,7 +23,7 @@ services:
     environment:
       - INSTANCE_ID=queenagent
     volumes:
-      - ~/primecam_readout/cfg:/cfg #outside:inside
+      - /home/player1/primecam_readout/cfg:/cfg #outside:inside
 
   # grafana:
   #   image: queen_agent
