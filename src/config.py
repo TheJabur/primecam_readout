@@ -8,12 +8,11 @@
 # import os
 # print(os.listdir('../cfg'))
 
-# from ..cfg import _cfg_queen as queen
-# from ..cfg import _cfg_board as board
+from ..cfg import _cfg_queen as queen
+from ..cfg import _cfg_board as board
 
-import sys
-sys.path.append('/')
+# import sys
+# sys.path.append('/')
 
-from cfg import bleh as queen
-from cfg import _cfg_queen as queen
-from cfg import _cfg_board as board
+# from cfg import _cfg_queen as queen
+# from cfg import _cfg_board as board
