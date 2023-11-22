@@ -6,7 +6,7 @@
 # ============================================================================ #
 
 import os
-print(os.listdir('../'))
+print(os.listdir('../cfg'))
 
 from ..cfg import _cfg_queen as queen
 from ..cfg import _cfg_board as board
