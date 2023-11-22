@@ -11,7 +11,7 @@ from ocs.ocs_client import OCSClient
 
 # Setting up the queen agent
 print("Connecting to queenagent...", end="")
-queen = OCSClient('queenagent', args=[])
+queen = OCSClient('queen_agent', args=[])
 print(" Done.")
 
 print("Getting queen client list...", end="")
