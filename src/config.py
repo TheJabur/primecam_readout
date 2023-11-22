@@ -5,8 +5,14 @@
 # CCAT Prime 2023   
 # ============================================================================ #
 
-import os
-print(os.listdir('../cfg'))
+# import os
+# print(os.listdir('../cfg'))
 
-from ..cfg import _cfg_queen as queen
-from ..cfg import _cfg_board as board
+# from ..cfg import _cfg_queen as queen
+# from ..cfg import _cfg_board as board
+
+import sys
+sys.path.append('/home/player1/cfg/')
+
+from cfg import _cfg_queen as queen
+from cfg import _cfg_board as board
