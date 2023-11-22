@@ -12,7 +12,7 @@
 # from ..cfg import _cfg_board as board
 
 import sys
-sys.path.append('/home/player1/cfg/')
+sys.path.append('/home/player1/')
 
 from cfg import _cfg_queen as queen
 from cfg import _cfg_board as board
