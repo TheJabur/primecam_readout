@@ -14,5 +14,6 @@
 import sys
 sys.path.append('/')
 
+from cfg import bleh as queen
 from cfg import _cfg_queen as queen
 from cfg import _cfg_board as board
