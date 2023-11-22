@@ -14,7 +14,7 @@
 
 
 try:
-    from ...cfg import _cfg_board as cfg
+    from config import board as cfg
     import alcove_commands.board_io as io
     import queen_commands.control_io as cio
 

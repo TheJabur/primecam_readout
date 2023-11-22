@@ -3,7 +3,7 @@ import xrfclk
 import xrfdc
 
 import ip_addr
-import _cfg_board as cfg
+from config import board as cfg
 
 try:
 

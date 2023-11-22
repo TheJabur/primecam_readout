@@ -7,7 +7,7 @@
 from base_io import *
 
 try:
-    from ...cfg import _cfg_board as cfg
+    from config import board as cfg
 except Exception as e: 
     print(f"board_io.py global attribute issue.")
 

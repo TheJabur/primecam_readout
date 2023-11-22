@@ -21,7 +21,7 @@ import logging
 import pickle
 import argparse
 
-from ..cfg import _cfg_board as cfg
+from config import board as cfg
 import redis_channels as rc
 
 

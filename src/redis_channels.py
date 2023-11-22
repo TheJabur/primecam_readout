@@ -15,7 +15,7 @@
 import uuid
 # from dataclasses import dataclass, field
 
-from ..cfg import _cfg_board as cfg_b
+from config import board as cfg_b
 
 
 
