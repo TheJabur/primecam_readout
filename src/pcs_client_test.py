@@ -11,11 +11,11 @@ from ocs.ocs_client import OCSClient
 
 # Setting up the queen agent
 print("Connecting to queenagent...", end="")
-queen = OCSClient('queen_agent', args=[])
+queen = OCSClient('queenagent', args=[])
 print(" Done.")
 
 print("Getting queen client list...", end="")
-clients = queen.getClientList()
+clients = queen.ReadoutAgent.getClientList()
 print(" Done.")
 print("Clients: ", clients)
 
