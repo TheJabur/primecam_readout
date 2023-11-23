@@ -1,11 +1,12 @@
 version: '3.7'
-# volumes:
-#   grafana-storage:
 
 networks:
   default:
     external:
       name: ocs-net
+  host-network:
+    name: host
+    external: true
 
 x-log-options:
   &log-options
@@ -20,8 +21,9 @@ services:
     image: queen_agent
     <<: *log-options
     hostname: gamow-docker
-    expose:
-      - "6379"
+    networks:
+      - default
+      - host-network
     # ports:
     #   - 6379:6379
     environment:
