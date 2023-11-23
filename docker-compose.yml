@@ -2,11 +2,13 @@ version: '3.7'
 
 networks:
   default:
-    external:
-      name: ocs-net
+    external: true
+    name: ocs-net
+    #external:
+    # name: ocs-net
   host-network:
     name: host
-    external: true
+    driver: bridge
 
 x-log-options:
   &log-options
