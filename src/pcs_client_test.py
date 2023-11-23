@@ -15,7 +15,7 @@ queen = OCSClient('queenagent', args=[])
 print(" Done.")
 
 print("Getting queen client list...", end="")
-clients = queen.ReadoutAgent.getClientList()
+clients = queen.getClientList()
 print(" Done.")
 print("Clients: ", clients)
 
