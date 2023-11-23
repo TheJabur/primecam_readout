@@ -7,7 +7,7 @@ networks:
     #external:
     # name: ocs-net
   host-network:
-    name: host
+    name: host-network
     driver: bridge
 
 x-log-options:
