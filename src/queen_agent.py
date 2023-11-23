@@ -50,7 +50,10 @@ class ReadoutAgent:
 def main(args=None):
     args = site_config.parse_args(agent_class='ReadoutAgent', args=args)
     agent, runner = ocs_agent.init_site_agent(args)
-    barebone = ReadoutAgent(agent)
+    readout = ReadoutAgent(agent)
+
+    agent.register_task('getClientList', readout.getClientList, blocking=True)
+
     runner.run(agent, auto_reconnect=True)
 
 
