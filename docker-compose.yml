@@ -20,6 +20,8 @@ services:
     image: queen_agent
     <<: *log-options
     hostname: gamow-docker
+    ports:
+      - 6379:6379
     environment:
       - INSTANCE_ID=queenagent
     volumes: #outside:inside
