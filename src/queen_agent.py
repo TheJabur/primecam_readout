@@ -40,7 +40,8 @@ class ReadoutAgent:
         **Task** -
         """
 
-        return True, queen.getClientList()
+        # return True, queen.getClientList()
+        return True, "hello world"
 
 
 
