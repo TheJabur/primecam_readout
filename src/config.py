@@ -11,8 +11,9 @@
 # from ..cfg import _cfg_queen as queen
 # from ..cfg import _cfg_board as board
 
-import sys
-sys.path.append('/')
+import sys, os
+# sys.path.append('/')
+sys.path.insert(1, os.path.realpath(os.path.pardir))
 
 from cfg import _cfg_queen as queen
 from cfg import _cfg_board as board
