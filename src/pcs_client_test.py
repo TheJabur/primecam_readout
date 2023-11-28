@@ -18,6 +18,8 @@ print("Getting queen client list...", end="")
 clients = queen.getClientList()
 print(" Done.")
 print("Clients: ", clients)
+print("\n")
+print("\n")
 
 
 
