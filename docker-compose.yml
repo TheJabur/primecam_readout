@@ -1,14 +1,14 @@
 version: '3.7'
 
-networks:
-  default:
-    external: true
-    name: ocs-net
-    #external:
-    # name: ocs-net
-  host-network:
-    name: host-network
-    driver: bridge
+# networks:
+#   default:
+#     external: true
+#     name: ocs-net
+#     #external:
+#     # name: ocs-net
+#   host-network:
+#     name: host-network
+#     driver: bridge
 
 x-log-options:
   &log-options
@@ -23,16 +23,20 @@ services:
     image: queen_agent
     <<: *log-options
     hostname: gamow-docker
-    networks:
-      - default
-      - host-network
+    network_mode: "host"
+    # networks:
+    #   - default
+    #   - host-network
     # ports:
     #   - 6379:6379
     environment:
       - INSTANCE_ID=queenagent
+      - SITE_HUB=ws://127.0.0.1:8001/ws
+      - SITE_HTTP=http://127.0.0.1:8001/call
     volumes: #outside:inside
       - /home/player1/primecam_readout/cfg:/cfg 
       - /home/player1/ocs-site-configs/:/config
+
 
   # grafana:
   #   image: queen_agent
