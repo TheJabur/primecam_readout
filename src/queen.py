@@ -258,6 +258,8 @@ def getClientList(do_print=True):
 
     client_list = r.client_list()
 
+    print(f"client list: {client_list}")
+
     if do_print:
         for client in client_list:
             # client_address = f"{client['addr']}:{client['port']}"
