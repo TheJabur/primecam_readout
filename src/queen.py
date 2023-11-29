@@ -267,8 +267,7 @@ def getClientList(do_print=True):
             print(f"Client: {client_address} {client_name}")
         print("END CLIENT LIST", "="*22)
 
-    else:
-        return client_list
+    return client_list
 
 
 
