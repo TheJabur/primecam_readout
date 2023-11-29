@@ -32,7 +32,7 @@ import redis_channels as rc
 
 
 logging.basicConfig(
-    filename='logs/board.log', level=logging.DEBUG,
+    filename='../logs/board.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
     format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )

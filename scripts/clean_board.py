@@ -132,7 +132,7 @@ def cleanLogDir(**kwargs):
     See cleanDir(...) for argument descriptions.
     """
 
-    cleanDir("../src/logs/", ftype=".log", **kwargs)
+    cleanDir("../logs/", ftype=".log", **kwargs)
 
 
 # ============================================================================ #

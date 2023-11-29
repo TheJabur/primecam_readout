@@ -279,10 +279,10 @@ def getClientList(do_print=True):
 
 # ============================================================================ #
 #  print monkeypatch
-# _print = print 
-# def print(*args, **kw):
-#     # _print(*args, **kw)            # print to terminal
-#     logging.info(' '.join(args))   # log to file
+_print = print 
+def print(*args, **kw):
+    # _print(*args, **kw)            # print to terminal
+    logging.info(' '.join(args))   # log to file
 
 
 # ============================================================================ #
