@@ -259,13 +259,13 @@ def getClientList(do_print=True):
     client_list = r.client_list()
 
     if do_print:
-        print("START CLIENT LIST ", "="*10)
+        print("START CLIENT LIST", "="*20)
         for client in client_list:
             # client_address = f"{client['addr']}:{client['port']}"
             client_address = f"{client['addr']}"
             client_name = client.get('name', 'N/A')
             print(f"Client: {client_address} {client_name}")
-        print("END CLIENT LIST", "="*12)
+        print("END CLIENT LIST", "="*22)
 
     else:
         return client_list
