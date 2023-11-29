@@ -33,7 +33,7 @@ import queen_commands.test_functions as test
 
 
 logging.basicConfig(
-    filename='logs/queen.log', level=logging.DEBUG,
+    filename='../logs/queen.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
     format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
