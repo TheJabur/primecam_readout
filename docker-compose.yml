@@ -36,6 +36,7 @@ services:
     volumes: #outside:inside
       - /home/player1/primecam_readout/cfg:/cfg 
       - /home/player1/ocs-site-configs/:/config
+      - /home/player1/primecam_readout/logs:/logs
 
 
   # grafana:
