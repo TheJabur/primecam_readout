@@ -11,16 +11,18 @@ from ocs.ocs_client import OCSClient
 
 # Setting up the queen agent
 print("Connecting to queenagent...", end="")
-queen = OCSClient('queenagent', args=[])
+queen_agent = OCSClient('queenagent', args=[])
 print(" Done.")
 
 print("Getting queen client list...", end="")
-clients = queen.getClientList()
+clients = queen_agent.getClientList()
 print(" Done.")
 print("Clients: ", clients)
-print("\n")
-print("\n")
 
+print("Sending setNCLO command...", end="")
+setNCLO_msg = queen_agent.setNCLO()
+print(" Done.")
+print(f"setNCLO message: {setNCLO_msg}")
 
 
 
