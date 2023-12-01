@@ -46,9 +46,6 @@ class ReadoutAgent:
         # return True, "Printed client list."
 
 
-
-
-
     # ======================================================================== #
     # .setNCLO
     @ocs_agent.param('f_lo', type=float)
@@ -87,7 +84,7 @@ def _comNumAlcove(com_str):
 
 # ============================================================================ #
 # _sendAlcoveCommand
-def _sendAlcoveCommand(com_str, com_to, com_args) -> Exception | int | None:
+def _sendAlcoveCommand(com_str, com_to, com_args):
     """Send Alcove command.
 
     com_str:    (str)   String name of command. 
