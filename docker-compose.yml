@@ -21,7 +21,7 @@ services:
 
   ocs-queen:
     image: queen_agent
-    <<: *log-options
+    #<<: *log-options
     hostname: gamow-docker
     network_mode: "host"
     # networks:
