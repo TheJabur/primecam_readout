@@ -98,6 +98,8 @@ def _sendAlcoveCommand(com_str, com_to, com_args):
 
     com_num = _comNumAlcove(com_str)
 
+    print(com_str, com_to, com_args, com_num)
+
     # specific board/drone command
     if com_to:
         ids = com_to.split('.')
