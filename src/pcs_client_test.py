@@ -20,7 +20,7 @@ print(" Done.")
 print("Clients: ", clients)
 
 print("Sending setNCLO command...", end="")
-setNCLO_msg = queen_agent.setNCLO(500)
+setNCLO_msg = queen_agent.setNCLO(f_lo=500)
 print(" Done.")
 print(f"setNCLO message: {setNCLO_msg}")
 
