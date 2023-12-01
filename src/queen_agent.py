@@ -80,10 +80,11 @@ class ReadoutAgent:
 def _comNumAlcove(com_str):
 
     print(f"_comNumAlcove... com_str={com_str}, keys:")
-    print(alcove.com.keys())
+    print(alcove.comList())
 
-    coms = {alcove.com[key].__name__:key for key in alcove.com.keys()}
-    return coms[com_str]
+    return alcove.comNumFromStr(com_str)
+    # coms = {alcove.com[key].__name__:key for key in alcove.com.keys()}
+    # return coms[com_str]
 
 
 # ============================================================================ #
