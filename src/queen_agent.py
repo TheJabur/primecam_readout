@@ -62,7 +62,7 @@ class ReadoutAgent:
 
         # return is a fail message str or number of clients int
         rtn = _sendAlcoveCommand(
-            com_str  ='alcove_base.setNCLO', 
+            com_str  ='setNCLO', 
             com_to   ='1.1', 
             com_args ='f_lo=500')
         
