@@ -1,0 +1,1 @@
+The logs/ directory contains log output from all the scripts. These log files are not currently trimmed or managed by the scripts, and will become larger with time.
