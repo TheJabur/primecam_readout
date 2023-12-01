@@ -78,6 +78,10 @@ class ReadoutAgent:
 # ============================================================================ #
 # _comNumAlcove
 def _comNumAlcove(com_str):
+
+    print(f"_comNumAlcove... com_str={com_str}, keys:")
+    print(alcove.com.keys())
+
     coms = {alcove.com[key].__name__:key for key in alcove.com.keys()}
     return coms[com_str]
 
@@ -96,9 +100,11 @@ def _sendAlcoveCommand(com_str, com_to, com_args):
                         E.g. 'f_lo=500'
     """
 
+    print(com_str, com_to, com_args)
+
     com_num = _comNumAlcove(com_str)
 
-    print(com_str, com_to, com_args, com_num)
+    print(com_num)
 
     # specific board/drone command
     if com_to:
