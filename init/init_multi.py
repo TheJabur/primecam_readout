@@ -2,6 +2,9 @@ from pynq import Overlay
 import xrfclk
 import xrfdc
 
+import sys
+sys.path.append('/home/xilinx/primecam_readout/src')
+
 import ip_addr
 from config import board as cfg
 
