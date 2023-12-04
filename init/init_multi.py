@@ -6,7 +6,7 @@ import sys
 import os
 # sys.path.append('/home/xilinx/primecam_readout/src')
 # sys.path.insert(1, os.path.realpath(os.path.pardir))
-sys.path.insert(os.path.realpath(os.path.pardir) + '/src')
+sys.path.insert(1, os.path.realpath(os.path.pardir) + '/src')
 
 import ip_addr
 from config import board as cfg
