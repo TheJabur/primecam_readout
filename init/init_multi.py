@@ -1,6 +1,6 @@
 from pynq import Overlay
 import xrfclk
-import xrfdc
+import xrfdc # 'Library loaded!' print statement in here
 
 import sys
 import os
