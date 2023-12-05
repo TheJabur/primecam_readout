@@ -259,7 +259,7 @@ def writeTestTone():
     chan = cfg.drid # drone (chan) id is from config
     freqs = np.array(np.linspace(50e6, 255.00e6, 1))
     amps = np.ones(1)*(2**15 - 1)
-    phi=np.array((np.pi))
+    phi=np.array([np.pi])
     freq_actual = _writeComb(chan, freqs, amps, phi)
 
 
