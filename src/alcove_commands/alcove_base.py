@@ -54,8 +54,10 @@ def generateWaveDdr4(freq_list, amp_list, phi):
     X = np.zeros(lut_len,dtype='complex')
     #phi = np.random.uniform(-np.pi, np.pi, np.size(freq_list))
     print(freq_list)
+    print(k[0], phi[0], amp_list[0], X[k[0]])
     for i in range(np.size(k)):
         X[k[i]] = np.exp(-1j*phi[i])*amp_list[i] # multiply by amplitude
+    print("below")
     x = np.fft.ifft(X) * lut_len
     bin_num = np.int64(np.round(freq_actual / (fs / fft_len)))
     f_beat = bin_num*fs/fft_len - freq_actual
