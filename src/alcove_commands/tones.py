@@ -234,13 +234,20 @@ def _writeComb(chan, freqs, amps, phi):
         # what do we want to do if freqs empty?
         raise Exception("freqs must not be empty.")
 
+    j = 0
+    print(j); j += 1
     wave, dphi, freq_actual = generateWaveDdr4(freqs, amps, phi)
     #wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
     wave_real, wave_imag = wave.real.astype("int16"), wave.imag.astype("int16") 
+    print(j); j += 1
     _waveAmpTest(wave, max_amp=2**15-1)
+    print(j); j += 1
     _loadDdr4(chan, wave_real, wave_imag, dphi)
+    print(j); j += 1
     _loadBinList(chan, freq_actual)
+    print(j); j += 1
     _resetAccumAndSync(chan, freq_actual)
+    print(j); j += 1
 
     # save the current comb
     io.save(io.file.f_rf_tones_comb, freq_actual)
