@@ -307,6 +307,12 @@ def _connectRedis():
 
     r.client_setname(f'queen')
 
+    # check for connection
+    try:
+        r.ping()
+    except redis.exceptions.ConnectionError as e:
+        print(f"Redis connection error: {e}")
+
     return r, p
 
 

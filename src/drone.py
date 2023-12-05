@@ -117,6 +117,13 @@ def connectRedis():
     '''connect to redis server'''
     r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
     p = r.pubsub()
+
+    # check for connection
+    try:
+        r.ping()
+    except redis.exceptions.ConnectionError as e:
+        print(f"Redis connection error: {e}")
+
     return r, p
 
 
