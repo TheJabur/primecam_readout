@@ -70,7 +70,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
     f_center = float(f_center)
 
     if getNCLO(chan) != f_center:
-        print("CURRENT SET NCLO DOES NOT EQUAL f_center!")
+        print(f"CURRENT SET NCLO (={getNCLO(chan)}) DOES NOT EQUAL f_center (={f_center})!")
 
     if chan_bandwidth:         # LO bandwidth given
         bw = float(chan_bandwidth)    # MHz
