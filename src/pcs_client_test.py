@@ -14,15 +14,20 @@ print("Connecting to queenagent...", end="")
 queen_agent = OCSClient('queenagent', args=[])
 print(" Done.")
 
-print("Getting queen client list...", end="")
-clients = queen_agent.getClientList()
-print(" Done.")
-print("Clients: ", clients)
+# print("Getting queen client list...", end="")
+# clients = queen_agent.getClientList()
+# print(" Done.")
+# print("Clients: ", clients)
 
-print("Sending setNCLO command...", end="")
-setNCLO_msg = queen_agent.setNCLO(com_to='1.1', f_lo=500)
+# print("Sending setNCLO command...", end="")
+# setNCLO_msg = queen_agent.setNCLO(com_to='1.1', f_lo=500)
+# print(" Done.")
+# print(f"setNCLO message: {setNCLO_msg}")
+
+print("Sending setFineNCLO command...", end="")
+msg = queen_agent.setFineNCLO(com_to='1.1', df_lo=1)
 print(" Done.")
-print(f"setNCLO message: {setNCLO_msg}")
+print(f"setFineNCLO message: {msg}")
 
 
 

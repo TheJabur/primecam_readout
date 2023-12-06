@@ -77,8 +77,32 @@ class ReadoutAgent:
         return True, f"setNCLO: {rtn}"
     
 
+    # ======================================================================== #
+    # .setFineNCLO
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('df_lo', type=float)
+    def setFineNCLO(self, session, params):
+        """setFineNCLO()
 
-# 21 : setFineNCLO
+        **Task** - Set the fine frequency shift in the local oscillator.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        df_lo: float
+            Center frequency shift, in [MHz].
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'setFineNCLO', 
+            com_to   = params['com_to'], 
+            com_args = f'f_lo={params["df_lo"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"setFineNCLO: {rtn}"
 
 
 
@@ -161,6 +185,7 @@ def main(args=None):
 
     agent.register_task('getClientList', readout.getClientList, blocking=True)
     agent.register_task('setNCLO', readout.setNCLO, blocking=True)
+    agent.register_task('setFineNCLO', readout.setFineNCLO, blocking=True)
 
     runner.run(agent, auto_reconnect=True)
 
