@@ -52,7 +52,7 @@ class ReadoutAgent:
     # ======================================================================== #
     # .setNCLO
     @ocs_agent.param('com_to', default=None, type=str)
-    @ocs_agent.param('f_lo', type=float)
+    @ocs_agent.param('f_lo', type=int)
     def setNCLO(self, session, params):
         """setNCLO()
 
@@ -64,7 +64,7 @@ class ReadoutAgent:
             Drone to send command to in format bid.drid.
             If None, will send to all drones.
             Default is None.
-        f_lo: float
+        f_lo: int
             Center frequency in [MHz].
         """
   
