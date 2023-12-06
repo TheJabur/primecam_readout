@@ -372,6 +372,8 @@ def loadCustomCombFiles():
     return freqs_rf, amps, phis
 
 
+# ============================================================================ #
+# modifyCustomCombAmps
 def modifyCustomCombAmps(factor=1):
     """Modify custom tone amps file by multiplying by given factor.
     """
