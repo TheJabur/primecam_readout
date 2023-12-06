@@ -294,7 +294,34 @@ class ReadoutAgent:
         return True, f"createCustomCombFilesFromCurrentComb: {rtn}"
 
 
-# 36 : modifyCustomCombAmps
+    # ======================================================================== #
+    # .modifyCustomCombAmps
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('factor', default=1, type=float)
+    def modifyCustomCombAmps(self, session, params):
+        """modifyCustomCombAmps()
+
+        **Task** - Modify custom tone amps file by multiplying by given factor.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        factor: float
+            Factor to multiply tone amps by.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'modifyCustomCombAmps', 
+            com_to   = params['com_to'],
+            com_args = f'factor={params["factor"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"modifyCustomCombAmps: {rtn}"
+
+
 # 40 : vnaSweep
 # 42 : targetSweep
 # 50 : findVnaResonators
@@ -373,6 +400,7 @@ def main(args=None):
     agent.register_task('writeTargCombFromTargSweep', readout.writeTargCombFromTargSweep, blocking=True)
     agent.register_task('writeCombFromCustomList', readout.writeCombFromCustomList, blocking=True)
     agent.register_task('createCustomCombFilesFromCurrentComb', readout.createCustomCombFilesFromCurrentComb, blocking=True)
+    agent.register_task('modifyCustomCombAmps', readout.modifyCustomCombAmps, blocking=True)
     
 
     runner.run(agent, auto_reconnect=True)
