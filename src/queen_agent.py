@@ -214,7 +214,7 @@ def _comNumAlcove(com_str):
 
 # ============================================================================ #
 # _sendAlcoveCommand
-def _sendAlcoveCommand(com_str, com_to, com_args):
+def _sendAlcoveCommand(com_str, com_to, com_args=None):
     """Send Alcove command.
 
     com_str:    (str)   String name of command. 
