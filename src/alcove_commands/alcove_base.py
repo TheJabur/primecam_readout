@@ -283,18 +283,18 @@ def _setNCLO2(chan, lofreq):
 
 # ============================================================================ #
 # setFineNCLO 
-def setFineNCLO(f_lo):
+def setFineNCLO(df_lo):
     """
     setFineNCLO: set the fine frequency numerically controlled local oscillator
            
-    f_lo: center frequency in [MHz]
+    df_lo: Center frequency shift, in [MHz].
     """
 
     # import numpy as np
 
     chan = cfg.drid
-    f_lo = float(f_lo)
-    return _setNCLO2(chan, f_lo)
+    df_lo = float(df_lo)
+    return _setNCLO2(chan, df_lo)
     # TODO: modify f_center to reflect this fine adjustment
     # io.save(io.file.f_center_vna, f_lo*1e6)
 
