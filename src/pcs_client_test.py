@@ -39,10 +39,16 @@ print(" Done.")
 # print(" Done.")
 # print(f"writeNewVnaComb message: {msg}")
 
-print("Sending writeTargCombFromVnaSweep command...", end="")
-msg = queen_agent.writeTargCombFromVnaSweep(com_to='1.1', cal_tones=False)
+# print("Sending writeTargCombFromVnaSweep command...", end="")
+# msg = queen_agent.writeTargCombFromVnaSweep(com_to='1.1', cal_tones=False)
+# print(" Done.")
+# print(f"writeTargCombFromVnaSweep message: {msg}")
+
+print("Sending writeTargCombFromTargSweep command...", end="")
+msg = queen_agent.writeTargCombFromTargSweep(
+    com_to='1.1', cal_tones=False, new_amps_and_phis=False)
 print(" Done.")
-print(f"writeTargCombFromVnaSweep message: {msg}")
+print(f"writeTargCombFromTargSweep message: {msg}")
 
 
 

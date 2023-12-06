@@ -208,6 +208,39 @@ class ReadoutAgent:
         
         # return is a fail message str or number of clients int
         return True, f"writeTargCombFromVnaSweep: {rtn}"
+    
+
+# ======================================================================== #
+    # .writeTargCombFromTargSweep
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('cal_tones', default=False, type=bool)
+    @ocs_agent.param('new_amps_and_phis', default=False, type=bool)
+    def writeTargCombFromTargSweep(self, session, params):
+        """writeTargCombFromTargSweep()
+
+        **Task** - Write the target comb from the target sweep resonator frequencies.
+    Note that targSweep and findTargResonators must be run first.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        cal_tones: bool
+            Include calibration tones (True) or not (False).
+            Note that findCalTones must be run first.
+        new_amps_and_phis: bool 
+            Generate new amplitudes and phases if True.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'writeTargCombFromTargSweep', 
+            com_to   = params['com_to'],
+            com_args = f'cal_tones={params["cal_tones"]}, new_amps_and_phis={params["cal_tones"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"writeTargCombFromTargSweep: {rtn}"
 
 
 
@@ -290,6 +323,8 @@ def main(args=None):
     agent.register_task('getSnapData', readout.getSnapData, blocking=True)
     agent.register_task('writeNewVnaComb', readout.writeNewVnaComb, blocking=True)
     agent.register_task('writeTargCombFromVnaSweep', readout.writeTargCombFromVnaSweep, blocking=True)
+    agent.register_task('writeTargCombFromTargSweep', readout.writeTargCombFromTargSweep, blocking=True)
+    
 
 
     runner.run(agent, auto_reconnect=True)
