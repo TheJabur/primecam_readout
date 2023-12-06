@@ -210,7 +210,7 @@ class ReadoutAgent:
         return True, f"writeTargCombFromVnaSweep: {rtn}"
     
 
-# ======================================================================== #
+    # ======================================================================== #
     # .writeTargCombFromTargSweep
     @ocs_agent.param('com_to', default=None, type=str)
     @ocs_agent.param('cal_tones', default=False, type=bool)
@@ -243,7 +243,7 @@ class ReadoutAgent:
         return True, f"writeTargCombFromTargSweep: {rtn}"
 
 
-# ======================================================================== #
+    # ======================================================================== #
     # .writeCombFromCustomList
     @ocs_agent.param('com_to', default=None, type=str)
     def writeCombFromCustomList(self, session, params):
@@ -269,9 +269,31 @@ class ReadoutAgent:
         # return is a fail message str or number of clients int
         return True, f"writeCombFromCustomList: {rtn}"
 
-# 34 : writeCombFromCustomList
 
-# 35 : createCustomCombFilesFromCurrentComb
+    # ======================================================================== #
+    # .createCustomCombFilesFromCurrentComb
+    @ocs_agent.param('com_to', default=None, type=str)
+    def createCustomCombFilesFromCurrentComb(self, session, params):
+        """createCustomCombFilesFromCurrentComb()
+
+        **Task** - Create custom comb files from the current comb.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'createCustomCombFilesFromCurrentComb', 
+            com_to   = params['com_to'])
+        
+        # return is a fail message str or number of clients int
+        return True, f"createCustomCombFilesFromCurrentComb: {rtn}"
+
+
 # 36 : modifyCustomCombAmps
 # 40 : vnaSweep
 # 42 : targetSweep
@@ -350,6 +372,7 @@ def main(args=None):
     agent.register_task('writeTargCombFromVnaSweep', readout.writeTargCombFromVnaSweep, blocking=True)
     agent.register_task('writeTargCombFromTargSweep', readout.writeTargCombFromTargSweep, blocking=True)
     agent.register_task('writeCombFromCustomList', readout.writeCombFromCustomList, blocking=True)
+    agent.register_task('createCustomCombFilesFromCurrentComb', readout.createCustomCombFilesFromCurrentComb, blocking=True)
     
 
     runner.run(agent, auto_reconnect=True)

@@ -50,12 +50,15 @@ print(" Done.")
 # print(" Done.")
 # print(f"writeTargCombFromTargSweep message: {msg}")
 
-print("Sending writeCombFromCustomList command...", end="")
-msg = queen_agent.writeCombFromCustomList(com_to='1.1')
+# print("Sending writeCombFromCustomList command...", end="")
+# msg = queen_agent.writeCombFromCustomList(com_to='1.1')
+# print(" Done.")
+# print(f"writeCombFromCustomList message: {msg}")
+
+print("Sending createCustomCombFilesFromCurrentComb command...", end="")
+msg = queen_agent.createCustomCombFilesFromCurrentComb(com_to='1.1')
 print(" Done.")
-print(f"writeCombFromCustomList message: {msg}")
-
-
+print(f"createCustomCombFilesFromCurrentComb message: {msg}")
 
 
 # Parser for collecting the necessary arguments
