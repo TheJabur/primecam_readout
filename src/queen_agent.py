@@ -210,7 +210,6 @@ class ReadoutAgent:
         return True, f"writeTargCombFromVnaSweep: {rtn}"
 
 
-# 32 : writeTargCombFromVnaSweep
 
 # 33 : writeTargCombFromTargSweep
 # 34 : writeCombFromCustomList
