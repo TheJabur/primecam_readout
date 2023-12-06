@@ -24,12 +24,20 @@ print(" Done.")
 # print(" Done.")
 # print(f"setNCLO message: {setNCLO_msg}")
 
-print("Sending setFineNCLO command...", end="")
-msg = queen_agent.setFineNCLO(com_to='1.1', df_lo=1)
+# print("Sending setFineNCLO command...", end="")
+# msg = queen_agent.setFineNCLO(com_to='1.1', df_lo=1)
+# print(" Done.")
+# print(f"setFineNCLO message: {msg}")
+
+# print("Sending getSnapData command...", end="")
+# msg = queen_agent.getSnapData(com_to='1.1', mux_sel=0)
+# print(" Done.")
+# print(f"getSnapData message: {msg}")
+
+print("Sending writeNewVnaComb command...", end="")
+msg = queen_agent.writeNewVnaComb(com_to='1.1')
 print(" Done.")
-print(f"setFineNCLO message: {msg}")
-
-
+print(f"writeNewVnaComb message: {msg}")
 
 
 # Parser for collecting the necessary arguments

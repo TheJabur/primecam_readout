@@ -105,10 +105,83 @@ class ReadoutAgent:
         return True, f"setFineNCLO: {rtn}"
 
 
+    # ======================================================================== #
+    # .getSnapData
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('mux_sel', type=int)
+    def getSnapData(self, session, params):
+        """getSnapData()
 
-# 25 : getSnapData
-# 30 : writeTestTone
-# 31 : writeNewVnaComb
+        **Task** - ?
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        mux_sel: float
+            ?
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'getSnapData', 
+            com_to   = params['com_to'], 
+            com_args = f'mux_sel={params["mux_sel"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"getSnapData: {rtn}"
+    
+
+   # ======================================================================== #
+    # .writeTestTone
+    @ocs_agent.param('com_to', default=None, type=str)
+    def writeTestTone(self, session, params):
+        """writeTestTone()
+
+        **Task** - Write a single test tone at 50 MHz.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'writeTestTone', 
+            com_to   = params['com_to'])
+        
+        # return is a fail message str or number of clients int
+        return True, f"writeTestTone: {rtn}"
+
+
+# ======================================================================== #
+    # .writeNewVnaComb
+    @ocs_agent.param('com_to', default=None, type=str)
+    def writeNewVnaComb(self, session, params):
+        """writeNewVnaComb()
+
+        **Task** - Create and write the vna sweep tone comb.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'writeNewVnaComb', 
+            com_to   = params['com_to'])
+        
+        # return is a fail message str or number of clients int
+        return True, f"writeNewVnaComb: {rtn}"
+
+
+
 # 32 : writeTargCombFromVnaSweep
 # 33 : writeTargCombFromTargSweep
 # 34 : writeCombFromCustomList
@@ -186,6 +259,8 @@ def main(args=None):
     agent.register_task('getClientList', readout.getClientList, blocking=True)
     agent.register_task('setNCLO', readout.setNCLO, blocking=True)
     agent.register_task('setFineNCLO', readout.setFineNCLO, blocking=True)
+    agent.register_task('getSnapData', readout.getSnapData, blocking=True)
+    agent.register_task('writeNewVnaComb', readout.writeNewVnaComb, blocking=True)
 
     runner.run(agent, auto_reconnect=True)
 
