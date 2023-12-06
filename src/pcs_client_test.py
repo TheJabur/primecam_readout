@@ -60,10 +60,20 @@ print(" Done.")
 # print(" Done.")
 # print(f"createCustomCombFilesFromCurrentComb message: {msg}")
 
-print("Sending modifyCustomCombAmps command...", end="")
-msg = queen_agent.modifyCustomCombAmps(com_to='1.1', factor=1)
+# print("Sending modifyCustomCombAmps command...", end="")
+# msg = queen_agent.modifyCustomCombAmps(com_to='1.1', factor=1)
+# print(" Done.")
+# print(f"modifyCustomCombAmps message: {msg}")
+
+print("Sending vnaSweep command...", end="")
+msg = queen_agent.vnaSweep(com_to='1.1', N_steps=500)
 print(" Done.")
-print(f"modifyCustomCombAmps message: {msg}")
+print(f"vnaSweep message: {msg}")
+
+print("Sending targetSweep command...", end="")
+msg = queen_agent.targetSweep(com_to='1.1', N_steps=500, chan_bandwidth=0.2)
+print(" Done.")
+print(f"targetSweep message: {msg}")
 
 
 # Parser for collecting the necessary arguments

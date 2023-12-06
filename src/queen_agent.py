@@ -322,8 +322,64 @@ class ReadoutAgent:
         return True, f"modifyCustomCombAmps: {rtn}"
 
 
-# 40 : vnaSweep
-# 42 : targetSweep
+    # ======================================================================== #
+    # .vnaSweep
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('N_steps', default=500, type=int)
+    def vnaSweep(self, session, params):
+        """vnaSweep()
+
+        **Task** - Perform a stepped frequency sweep with current comb, save as vna sweep.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        N_steps: int
+            Number of LO frequencies to divide each channel into.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'vnaSweep', 
+            com_to   = params['com_to'],
+            com_args = f'N_steps={params["N_steps"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"vnaSweep: {rtn}"
+    
+
+    # ======================================================================== #
+    # .targetSweep
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('N_steps', default=500, type=int)
+    @ocs_agent.param('chan_bandwidth', default=0.2, type=float)
+    def targetSweep(self, session, params):
+        """targetSweep()
+
+        **Task** - Perform a stepped frequency sweep with current comb, save as target sweep.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        N_steps: int
+            Number of LO frequencies to divide each channel into.
+        chan_bandwidth: float
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'targetSweep', 
+            com_to   = params['com_to'],
+            com_args = f'N_steps={params["N_steps"]}, chan_bandwidth={params["chan_bandwidth"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"targetSweep: {rtn}"
+
+
 # 50 : findVnaResonators
 # 51 : findTargResonators
 # 55 : findCalTones
@@ -401,6 +457,9 @@ def main(args=None):
     agent.register_task('writeCombFromCustomList', readout.writeCombFromCustomList, blocking=True)
     agent.register_task('createCustomCombFilesFromCurrentComb', readout.createCustomCombFilesFromCurrentComb, blocking=True)
     agent.register_task('modifyCustomCombAmps', readout.modifyCustomCombAmps, blocking=True)
+    agent.register_task('vnaSweep', readout.vnaSweep, blocking=True)
+    agent.register_task('targetSweep', readout.targetSweep, blocking=True)
+    
     
 
     runner.run(agent, auto_reconnect=True)
