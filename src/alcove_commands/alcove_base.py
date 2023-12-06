@@ -229,7 +229,7 @@ def setNCLO(f_lo):
     import numpy as np
 
     chan = cfg.drid
-    f_lo = int(f_lo)
+    f_lo = float(f_lo)
     _setNCLO(chan, f_lo)
     io.save(io.file.f_center_vna, f_lo*1e6)
 
