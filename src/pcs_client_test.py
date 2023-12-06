@@ -34,10 +34,17 @@ print(" Done.")
 # print(" Done.")
 # print(f"getSnapData message: {msg}")
 
-print("Sending writeNewVnaComb command...", end="")
-msg = queen_agent.writeNewVnaComb(com_to='1.1')
+# print("Sending writeNewVnaComb command...", end="")
+# msg = queen_agent.writeNewVnaComb(com_to='1.1')
+# print(" Done.")
+# print(f"writeNewVnaComb message: {msg}")
+
+print("Sending writeTargCombFromVnaSweep command...", end="")
+msg = queen_agent.writeTargCombFromVnaSweep(com_to='1.1', cal_tones=False)
 print(" Done.")
-print(f"writeNewVnaComb message: {msg}")
+print(f"writeTargCombFromVnaSweep message: {msg}")
+
+
 
 
 # Parser for collecting the necessary arguments

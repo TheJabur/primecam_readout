@@ -133,7 +133,7 @@ class ReadoutAgent:
         return True, f"getSnapData: {rtn}"
     
 
-   # ======================================================================== #
+    # ======================================================================== #
     # .writeTestTone
     @ocs_agent.param('com_to', default=None, type=str)
     def writeTestTone(self, session, params):
@@ -157,7 +157,7 @@ class ReadoutAgent:
         return True, f"writeTestTone: {rtn}"
 
 
-# ======================================================================== #
+    # ======================================================================== #
     # .writeNewVnaComb
     @ocs_agent.param('com_to', default=None, type=str)
     def writeNewVnaComb(self, session, params):
@@ -181,8 +181,37 @@ class ReadoutAgent:
         return True, f"writeNewVnaComb: {rtn}"
 
 
+    # ======================================================================== #
+    # .writeTargCombFromVnaSweep
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('cal_tones', default=False, type=bool)
+    def writeTargCombFromVnaSweep(self, session, params):
+        """writeTargCombFromVnaSweep()
+
+        **Task** - Write the target comb from the vna sweep resonator frequencies. Note that vnaSweep and findVnaResonators must be run first.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        cal_tones: bool
+            Include calibration tones (True) or not (False).
+            Note that findCalTones must be run first.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'writeTargCombFromVnaSweep', 
+            com_to   = params['com_to'],
+            com_args = f'cal_tones={params["cal_tones"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"writeTargCombFromVnaSweep: {rtn}"
+
 
 # 32 : writeTargCombFromVnaSweep
+
 # 33 : writeTargCombFromTargSweep
 # 34 : writeCombFromCustomList
 # 35 : createCustomCombFilesFromCurrentComb
@@ -261,6 +290,8 @@ def main(args=None):
     agent.register_task('setFineNCLO', readout.setFineNCLO, blocking=True)
     agent.register_task('getSnapData', readout.getSnapData, blocking=True)
     agent.register_task('writeNewVnaComb', readout.writeNewVnaComb, blocking=True)
+    agent.register_task('writeTargCombFromVnaSweep', readout.writeTargCombFromVnaSweep, blocking=True)
+
 
     runner.run(agent, auto_reconnect=True)
 
