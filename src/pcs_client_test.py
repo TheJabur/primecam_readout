@@ -65,15 +65,30 @@ print(" Done.")
 # print(" Done.")
 # print(f"modifyCustomCombAmps message: {msg}")
 
-print("Sending vnaSweep command...", end="")
-msg = queen_agent.vnaSweep(com_to='1.1', N_steps=500)
-print(" Done.")
-print(f"vnaSweep message: {msg}")
+# print("Sending vnaSweep command...", end="")
+# msg = queen_agent.vnaSweep(com_to='1.1', N_steps=500)
+# print(" Done.")
+# print(f"vnaSweep message: {msg}")
 
-print("Sending targetSweep command...", end="")
-msg = queen_agent.targetSweep(com_to='1.1', N_steps=500, chan_bandwidth=0.2)
+# print("Sending targetSweep command...", end="")
+# msg = queen_agent.targetSweep(com_to='1.1', N_steps=500, chan_bandwidth=0.2)
+# print(" Done.")
+# print(f"targetSweep message: {msg}")
+
+print("Sending findVnaResonators command...", end="")
+msg = queen_agent.findVnaResonators(com_to='1.1', stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, prom_dB=1, distance=30, width_min=5, width_max=100)
 print(" Done.")
-print(f"targetSweep message: {msg}")
+print(f"findVnaResonators message: {msg}")
+
+print("Sending findTargResonators command...", end="")
+msg = queen_agent.findTargResonators(com_to='1.1', stitch_bw=500)
+print(" Done.")
+print(f"findTargResonators message: {msg}")
+
+print("Sending findCalTones command...", end="")
+msg = queen_agent.findCalTones(com_to='1.1', f_lo=0.1, f_hi=50, tol=2, max_tones=10)
+print(" Done.")
+print(f"findCalTones message: {msg}")
 
 
 # Parser for collecting the necessary arguments

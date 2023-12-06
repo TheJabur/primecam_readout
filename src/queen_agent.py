@@ -380,9 +380,122 @@ class ReadoutAgent:
         return True, f"targetSweep: {rtn}"
 
 
-# 50 : findVnaResonators
-# 51 : findTargResonators
-# 55 : findCalTones
+    # ======================================================================== #
+    # .findVnaResonators
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('stitch_bw', default=500, type=int)
+    @ocs_agent.param('stitch_sw', default=100, type=int)
+    @ocs_agent.param('f_hi', default=50, type=int)
+    @ocs_agent.param('f_lo', default=1, type=int)
+    @ocs_agent.param('prom_dB', default=1, type=int)
+    @ocs_agent.param('distance', default=30, type=int)
+    @ocs_agent.param('width_min', default=5, type=int)
+    @ocs_agent.param('width_max', default=100, type=int)
+    def findVnaResonators(self, session, params):
+        """findVnaResonators()
+
+        **Task** - Find the resonator peak frequencies from vnaSweep S21. 
+            See findResonators() for possible arguments. 
+            Note that vnaSweep must be run first.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        stitch_bw: int 
+            Width of the stitch bins.
+        stitch_sw: int 
+            Width of slice (at ends) of each stitch bin to take median.
+        f_hi: float
+            Highpass filter cutoff frequency. [data units]
+        f_lo: float
+            lowpass filter cutoff frequency. [data units]
+        prom_dB: float
+            Peak prominence cutoff. [dB]
+        distance: int
+            Min distance between peaks. [bins]
+        width_min: int
+            Peak width minimum. [bins]
+        width_max: int
+            Peak width maximum. [bins]
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'findVnaResonators', 
+            com_to   = params['com_to'],
+            com_args = f'stitch_bw={params["stitch_bw"]}, stitch_sw={params["stitch_sw"]}, f_hi={params["f_hi"]}, f_lo={params["f_lo"]}, prom_dB={params["prom_dB"]}, distance={params["distance"]}, width_min={params["width_min"]}, width_max={params["width_max"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"findVnaResonators: {rtn}"
+
+
+    # ======================================================================== #
+    # .findTargResonators
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('stitch_bw', default=500, type=int)
+    def findTargResonators(self, session, params):
+        """findTargResonators()
+
+        **Task** - Find the resonator peak frequencies from targSweep S21.
+            See findResonators() for possible arguments.
+            Note that targSweep must be run first.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        stitch_bw: int 
+            Width of the stitch bins.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'findTargResonators', 
+            com_to   = params['com_to'],
+            com_args = f'stitch_bw={params["stitch_bw"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"findTargResonators: {rtn}"
+
+
+    # ======================================================================== #
+    # .findCalTones
+    @ocs_agent.param('com_to', default=None, type=str)
+    @ocs_agent.param('f_lo', default=0.1, type=float)
+    @ocs_agent.param('f_hi', default=50, type=float)
+    @ocs_agent.param('tol', default=2, type=float)
+    @ocs_agent.param('max_tones', default=10, type=int)
+    def findCalTones(self, session, params):
+        """findCalTones()
+
+        **Task** - Determine the indices of calibration tones.
+
+        Args
+        -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
+        f_hi: float 
+            Highpass filter cutoff frequency (data units).
+        f_lo: float 
+            lowpass filter cutoff frequency (data units).
+        tol: float 
+            Reject tones tol*std_noise from continuum.
+        max_tones: int 
+            Maximum number of tones to return.
+        """
+  
+        rtn = _sendAlcoveCommand(
+            com_str  = 'findCalTones', 
+            com_to   = params['com_to'],
+            com_args = f'f_hi={params["f_hi"]}, f_lo={params["f_lo"]}, tol={params["tol"]}, max_tones={params["max_tones"]}')
+        
+        # return is a fail message str or number of clients int
+        return True, f"findCalTones: {rtn}"
 
 
 
@@ -459,8 +572,9 @@ def main(args=None):
     agent.register_task('modifyCustomCombAmps', readout.modifyCustomCombAmps, blocking=True)
     agent.register_task('vnaSweep', readout.vnaSweep, blocking=True)
     agent.register_task('targetSweep', readout.targetSweep, blocking=True)
-    
-    
+    agent.register_task('findVnaResonators', readout.findVnaResonators, blocking=True)
+    agent.register_task('findTargResonators', readout.findTargResonators, blocking=True)
+    agent.register_task('findCalTones', readout.findCalTones, blocking=True)
 
     runner.run(agent, auto_reconnect=True)
 

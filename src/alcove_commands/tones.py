@@ -264,7 +264,7 @@ def writeTestTone():
 
 
 # ============================================================================ #
-# writeVnaComb
+# writeNewVnaComb
 def writeNewVnaComb():
     """Create and write the vna sweep tone comb.
     """
