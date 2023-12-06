@@ -31,42 +31,70 @@ class ReadoutAgent:
         self.agent = agent
 
 
+
     # ======================================================================== #
     # .getClientList
-    @ocs_agent.param('text', default='hello world', type=str)
     def getClientList(self, session, params):
         """getClientList()
 
-        **Task** -
+        **Task** - Return the current list of clients attached to the Redis server.
         """
 
-        # print(queen.getClientList())
-
         return True, f"client list: {queen.getClientList()}"
-        # return True, "Printed client list."
+
+
+    # ======================================================================== #
+    # .queenListenMode
+    # 2 : listenMode
+    # TODO
 
 
     # ======================================================================== #
     # .setNCLO
+    @ocs_agent.param('com_to', default=None, type=str)
     @ocs_agent.param('f_lo', type=float)
     def setNCLO(self, session, params):
         """setNCLO()
 
-        **Task** - set the numerically controlled local oscillator
+        **Task** - Set the numerically controlled local oscillator.
 
         Args
         -------
+        com_to: str
+            Drone to send command to in format bid.drid.
+            If None, will send to all drones.
+            Default is None.
         f_lo: float
-            center frequency in [MHz]
+            Center frequency in [MHz].
         """
-
-        # return is a fail message str or number of clients int
+  
         rtn = _sendAlcoveCommand(
-            com_str  ='setNCLO', 
-            com_to   ='1.1', 
-            com_args ='f_lo=500')
+            com_str  = 'setNCLO', 
+            com_to   = params['com_to'], 
+            com_args = f'f_lo={params["f_lo"]}')
         
+        # return is a fail message str or number of clients int
         return True, f"setNCLO: {rtn}"
+    
+
+
+# 21 : setFineNCLO
+
+
+
+# 25 : getSnapData
+# 30 : writeTestTone
+# 31 : writeNewVnaComb
+# 32 : writeTargCombFromVnaSweep
+# 33 : writeTargCombFromTargSweep
+# 34 : writeCombFromCustomList
+# 35 : createCustomCombFilesFromCurrentComb
+# 36 : modifyCustomCombAmps
+# 40 : vnaSweep
+# 42 : targetSweep
+# 50 : findVnaResonators
+# 51 : findTargResonators
+# 55 : findCalTones
 
 
 
