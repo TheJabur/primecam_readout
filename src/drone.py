@@ -97,8 +97,6 @@ def setupArgparse():
 def modifyConfig(args):
     '''modify config level variables'''
 
-    # sys.path.insert(1, os.path.realpath(os.path.pardir))
-
     ## project root directory (src)
     cfg.root_dir = os.getcwd()          # assuming this file lives in root dir
 

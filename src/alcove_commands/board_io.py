@@ -151,3 +151,12 @@ class file:
                 'dname'         :cfg.drone_dir+'/comb',
                 'use_timestamp' :True}
     p_tones_comb = _p_tones_comb()
+
+    class _IQ_generic:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'IQ_generic',
+                'file_type'     :'npy', 
+                'dname'         :cfg.root_dir+'/tmp',
+                'use_timestamp' :True}
+    IQ_generic = _IQ_generic()

@@ -71,7 +71,7 @@ def generateWaveDdr4(freq_list, amp_list, phi):
 # ============================================================================ #
 # _getSnapData
 # capture data from ADC
-def _getSnapData(chan, mux_sel):
+def _getSnapData(chan, mux_sel, wrap=False):
 
     import numpy as np
     from pynq import MMIO
@@ -150,14 +150,18 @@ def _getSnapData(chan, mux_sel):
         I[0::2] = i0
         I[1::2] = i1
         I, Q = I[4:], Q[4:]
-    return I, Q
+
+    if wrap:
+        return io.returnWrapper(io.file.IQ_generic, (I,Q))
+    else:
+        return I, Q
 
 
 # ============================================================================ #
 # getSnapData
-def getSnapData(mux_sel):
+def getSnapData(mux_sel, wrap=True):
     chan = cfg.drid
-    return _getSnapData(chan, int(mux_sel))
+    return _getSnapData(chan, int(mux_sel), wrap=wrap)
 
 
 # ============================================================================ #

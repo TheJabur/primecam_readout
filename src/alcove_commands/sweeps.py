@@ -77,8 +77,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
     else:                      # LO bandwidth is tone difference
         bw = np.diff(freqs)[0]/1e6 # MHz
     flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
-    _, _ = getSnapData(3) # discard previously collected accum samples
-    It, Qt = getSnapData(3) # grab new accumulator samples for template
+    _, _ = getSnapData(3, wrap=False) # discard previously collected accum samples
+    It, Qt = getSnapData(3, wrap=False) # grab new accumulator samples for template
     def _Z(lofreq, Naccums=N_accums):
         setFineNCLO(lofreq)
         # _setNCLO2(chan, lofreq)
@@ -86,11 +86,11 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
         # read accumulator snap block a few times to assure
         # new data
         Is, Qs = 0, 0
-        I, Q = getSnapData(3) #
+        I, Q = getSnapData(3, wrap=False) #
         for i in range(Naccums):
             #I, Q = _getCleanAccum(It, Qt)
             sleep(0.003)
-            I, Q = getSnapData(3) #
+            I, Q = getSnapData(3, wrap=False) #
             Is += I/Naccums
             Qs += Q/Naccums
         Z = Is + 1j*Qs     # convert I and Q to complex
