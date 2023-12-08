@@ -1,29 +1,40 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+# ============================================================================ #
+# primecam_readout specific rules
 
+# logfiles
+*.log
+
+# temp dir
+tmp/
+
+# config files
+_cfg_board.py
+_cfg_queen.py
+
+# drones
+drone?/cal_tones/
+drone?/targ/
+drone?/vna/
+
+
+# ============================================================================ #
+# general rules
+
+# Byte-compiled / optimized / DLL
+__pycache__/
 
 # Visual Studio Code
 .vscode
 
-
 # Jupyter Notebook
 .ipynb_checkpoints
-
 
 # IPython
 profile_default/
 ipython_config.py
 
-
-# Ignore redis binary dump (dump.rdb) files
+# Redis binary dump (dump.rdb)
 *.rdb
-
-
-# pyenv
-# For a library or package, you might want to ignore these files since the code is
-# intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
 
 # Environments
 .env
@@ -34,28 +45,12 @@ ENV/
 env.bak/
 venv.bak/
 
-
 # Spyder project settings
 .spyderproject
 .spyproject
 
-
 # Cython debug symbols
 cython_debug/
 
-
-# logfiles
-*.log
-
-
 # Apple config files
 .DS_store
-
-
-# temp dir
-tmp/
-
-
-# config files
-_cfg_board.py
-_cfg_queen.py

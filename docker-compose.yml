@@ -19,6 +19,7 @@ services:
       - SITE_HUB=ws://127.0.0.1:8001/ws
       - SITE_HTTP=http://127.0.0.1:8001/call
     volumes: #outside:inside
-      - /home/player1/primecam_readout/cfg:/cfg # primecam_readout config files
-      - /home/player1/ocs-site-configs/:/config # OCS config files
-      - /home/player1/primecam_readout/logs:/logs # primecam_readout logs
+      - /home/player1/ocs-site-configs/:/config       # OCS config files
+      - /home/player1/primecam_readout/cfg:/cfg       # primecam_readout config
+      - /home/player1/primecam_readout/logs:/logs     # primecam_readout logs
+      - /home/player1/primecam_readout/drones:/drones # primecam_readout drones
