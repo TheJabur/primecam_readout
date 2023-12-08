@@ -1,15 +1,5 @@
 version: '3.7'
 
-# networks:
-#   default:
-#     external: true
-#     name: ocs-net
-#     #external:
-#     # name: ocs-net
-#   host-network:
-#     name: host-network
-#     driver: bridge
-
 x-log-options:
   &log-options
   logging:
@@ -21,37 +11,14 @@ services:
 
   ocs-queen:
     image: queen_agent
-    #<<: *log-options
+    <<: *log-options
     hostname: gamow-docker
     network_mode: "host"
-    # networks:
-    #   - default
-    #   - host-network
-    # ports:
-    #   - 6379:6379
     environment:
       - INSTANCE_ID=queenagent
       - SITE_HUB=ws://127.0.0.1:8001/ws
       - SITE_HTTP=http://127.0.0.1:8001/call
     volumes: #outside:inside
-      - /home/player1/primecam_readout/cfg:/cfg 
-      - /home/player1/ocs-site-configs/:/config
-      - /home/player1/primecam_readout/logs:/logs
-
-
-  # grafana:
-  #   image: queen_agent
-  #   <<: *log-options
-  #   restart: always
-  #   ports:
-  #     - "127.0.0.1:3000:3000"
-  #     - "3000:3000"
-  #   environment:
-  #       - GF_RENDERING_SERVER_URL=http://grafana-renderer:8081/render
-  #       - GF_RENDERING_CALLBACK_URL=http://grafana:3000
-  #   volumes:
-  #     - grafana-storage:/var/lib/grafana
-  # grafana-renderer:
-  #   <<: *log-options
-  #   image: grafana/grafana-image-renderer:latest
-  #   restart: always
+      - /home/player1/primecam_readout/cfg:/cfg # primecam_readout config files
+      - /home/player1/ocs-site-configs/:/config # OCS config files
+      - /home/player1/primecam_readout/logs:/logs # primecam_readout logs
