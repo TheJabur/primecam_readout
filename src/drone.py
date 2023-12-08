@@ -97,11 +97,16 @@ def setupArgparse():
 def modifyConfig(args):
     '''modify config level variables'''
 
-    ## project root directory
+    # sys.path.insert(1, os.path.realpath(os.path.pardir))
+
+    ## project root directory (src)
     cfg.root_dir = os.getcwd()          # assuming this file lives in root dir
 
+    ## parent directory
+    par_dir = os.path.realpath(os.path.pardir)
+
     ## drone directory
-    cfg.drone_dir = f'{cfg.root_dir}/drones/drone{args.drid}'
+    cfg.drone_dir = f'{par_dir}/drones/drone{args.drid}'
 
     ## drone config
     sys.path.append(cfg.drone_dir)
