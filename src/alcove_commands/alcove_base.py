@@ -35,6 +35,10 @@ except Exception as e:
 # ============================================================================ #
 
 
+def freqOffsetFixHackFactor():
+    return 1.0009707 # need to check this
+
+
 # ============================================================================ #
 # generateWaveDdr4
 def generateWaveDdr4(freq_list, amp_list, phi):  
@@ -167,6 +171,9 @@ def getSnapData(mux_sel, wrap=True):
 # ============================================================================ #
 # _setNCLO
 def _setNCLO(chan, lofreq):
+
+    lofreq *= freqOffsetFixHackFactor() # Fequency offset fix
+    # implemented in tones._writeComb and alcove_base._setNCLO
 
     # import xrfdc
     rf_data_conv = firmware.usp_rf_data_converter_0
