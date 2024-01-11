@@ -38,7 +38,7 @@ except Exception as e:
 # ============================================================================ #
 # freqOffsetFixHackFactor
 def freqOffsetFixHackFactor():
-    return 1.0009707 # need to check this
+    return 1.00009707 # need to check this
 
 
 # ============================================================================ #
