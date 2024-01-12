@@ -395,6 +395,37 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
 
 
 # ============================================================================ #
+# writeTargCombFromCustomList
+def writeTargCombFromCustomList():
+    """Write the target comb from the custom tone files:
+    alcove_commands/custom_freqs.npy
+    alcove_commands/custom_amps.npy
+    alcove_commands/custom_phis.npy
+
+    This differs from tones.writeCombFromCustomList only in that it assumes these are resonator frequencies and writes f_res_targ (to be used in a target sweep).
+    """
+
+    import numpy as np
+
+    chan = cfg.drid
+
+    f_center   = io.load(io.file.f_center_vna)
+    freqs_rf = np.load("alcove_commands/custom_freqs.npy")
+    freqs_bb = freqs_rf - f_center
+    amps = np.load("alcove_commands/custom_amps.npy")
+    phis = np.load("alcove_commands/custom_phis.npy")
+
+    io.save(io.file.f_res_targ, freqs_rf)
+
+    freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
+    freqs_rf_comb = freqs_bb_comb + f_center
+
+    return io.returnWrapperMultiple(
+        [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
+        [freqs_rf_comb, amps, phis])
+
+
+# ============================================================================ #
 # writeCombFromCustomList
 def writeCombFromCustomList():
     """Write the comb from custom tone files:
