@@ -1,0 +1,13 @@
+[Unit]
+Description=Queen listen service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/player1/primecam_readout/src/queen_cli.py 2 -q
+Restart=always
+User=player1
+Group=player1
+WorkingDirectory=/home/player1/primecam_readout/src
+
+[Install]
+WantedBy=default.target

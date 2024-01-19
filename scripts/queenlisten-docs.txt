@@ -1,0 +1,17 @@
+The Queen listen service intercepts return files from drones and saves to tmp.
+This is necessary when a command is sent to multiple drones simultaneously.
+
+To add the service:
+sudo mv /home/player1/primecam_readout/scripts/queenlisten.service /etc/systemd/system/
+sudo systemctl enable queenlisten.service
+sudo systemctl start queenlisten.service
+
+To check the status:
+sudo systemctl status queenlisten.service
+
+If you modify or otherwise need to restart:
+sudo systemctl restart queenlisten.service
+sudo systemctl daemon-reload
+
+To modify in place:
+sudo nano /etc/systemd/system/queenlisten.service
