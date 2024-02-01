@@ -124,7 +124,7 @@ def vnaSweep(N_steps=500, N_accums=5):
     f_center = io.load(io.file.f_center_vna)
     freqs_bb = io.load(io.file.freqs_vna)
 
-    S21 = np.array(_sweep(chan, f_center/1e6, freqs_bb, N_steps, N_accums)) # f, Z
+    S21 = np.array(_sweep(chan, f_center/1e6, freqs_bb, N_steps, N_accums=N_accums)) # f, Z
 
     io.save(io.file.s21_vna, S21)
     io.save(io.file.f_center_vna, f_center)
@@ -173,7 +173,7 @@ def targetSweep(N_steps=500, chan_bandwidth=0.2, N_accums=5):
     freqs_bb = freqs_rf - f_center
 
     S21 = np.array(_sweep(chan, f_center/1e6, freqs_bb, 
-                          N_steps, chan_bandwidth, N_accums)) 
+                          N_steps, chan_bandwidth=chan_bandwidth, N_accums=N_accums)) 
 
     io.save(io.file.s21_targ, S21)
 
