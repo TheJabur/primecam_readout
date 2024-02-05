@@ -66,8 +66,9 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
     import numpy as np
     from time import sleep
 
-    N_steps = int(N_steps)
+    N_steps  = int(N_steps)
     f_center = float(f_center)
+    N_accums = int(N_accums)
 
     # if getNCLO(chan) != f_center:
     #     print(f"Warning: Set NCLO (={getNCLO(chan)}) differs from f_center (={f_center}).")
@@ -165,8 +166,10 @@ def targetSweep(N_steps=500, chan_bandwidth=0.2, N_accums=5):
     import numpy as np
 
     chan = cfg.drid
-    N_steps = int(N_steps)
+
+    N_steps        = int(N_steps)
     chan_bandwidth = float(chan_bandwidth)
+    N_accums       = int(N_accums)
     
     f_center = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_res_targ)
