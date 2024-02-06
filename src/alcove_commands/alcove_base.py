@@ -37,8 +37,8 @@ except Exception as e:
 
 # ============================================================================ #
 # freqOffsetFixHackFactor
-def freqOffsetFixHackFactor():
-    return 1.00009707 # need to check this
+# def freqOffsetFixHackFactor():
+#     return 1.00009707 # need to check this
 
 
 # ============================================================================ #
@@ -174,7 +174,7 @@ def getSnapData(mux_sel, wrap=True):
 # _setNCLO
 def _setNCLO(chan, lofreq):
 
-    lofreq *= freqOffsetFixHackFactor() # Fequency offset fix
+    # lofreq *= freqOffsetFixHackFactor() # Fequency offset fix
     # implemented in tones._writeComb and alcove_base._setNCLO
 
     # import xrfdc
