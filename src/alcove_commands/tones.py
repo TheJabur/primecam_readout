@@ -234,7 +234,7 @@ def _writeComb(chan, freqs, amps, phi):
         # what do we want to do if freqs empty?
         raise Exception("freqs must not be empty.")
 
-    freqs *= freqOffsetFixHackFactor() # Fequency offset fix
+    # freqs *= freqOffsetFixHackFactor() # Fequency offset fix
      # implemented in tones._writeComb and alcove_base._setNCLO
 
     wave, dphi, freq_actual = generateWaveDdr4(freqs, amps, phi)
