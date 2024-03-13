@@ -5,15 +5,17 @@
 # CCAT Prime 2023   
 # ============================================================================ #
 
-# import os
-# print(os.listdir('../cfg'))
-
-# from ..cfg import _cfg_queen as queen
-# from ..cfg import _cfg_board as board
 
 import sys, os
-# sys.path.append('/')
-sys.path.insert(1, os.path.realpath(os.path.pardir))
+
+def parentDir():
+    this_path = os.path.abspath(__file__)
+    this_dir = os.path.dirname(this_path)
+    par_dir = os.path.dirname(this_dir)
+    return par_dir
+
+# add parent dir to path (where cfg/ is)
+sys.path.insert(1, parentDir())
 
 from cfg import _cfg_queen as queen
 from cfg import _cfg_board as board
