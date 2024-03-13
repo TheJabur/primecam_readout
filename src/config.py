@@ -8,14 +8,19 @@
 
 import sys, os
 
-def parentDir():
-    this_path = os.path.abspath(__file__)
+def thisDir(file):
+    this_path = os.path.abspath(file)
     this_dir = os.path.dirname(this_path)
-    par_dir = os.path.dirname(this_dir)
+    return this_dir
+
+def parentDir(file):
+    # this_path = os.path.abspath(file)
+    # this_dir = os.path.dirname(this_path)
+    par_dir = os.path.dirname(thisDir(file))
     return par_dir
 
 # add parent dir to path (where cfg/ is)
-sys.path.insert(1, parentDir())
+sys.path.insert(1, parentDir(__file__))
 
 from cfg import _cfg_queen as queen
 from cfg import _cfg_board as board

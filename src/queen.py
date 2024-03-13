@@ -11,6 +11,7 @@
 # IMPORTS
 # ============================================================================ #
 
+import os
 import redis
 import numpy as np
 import logging
@@ -20,6 +21,7 @@ from datetime import datetime
 # import tempfile
 
 from config import queen as cfg
+from config import parentDir
 
 import queen_commands.control_io as io
 import redis_channels as rc
@@ -33,7 +35,7 @@ import queen_commands.test_functions as test
 
 
 logging.basicConfig(
-    filename='../logs/queen.log', level=logging.DEBUG,
+    filename=f'{parentDir(__file__)}/logs/queen.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
     format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
