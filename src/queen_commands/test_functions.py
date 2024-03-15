@@ -114,8 +114,10 @@ def tonysHeatingTest():
     nclo = 500
 
     def sendCom(com_str, args_str=None):
-        return queen.alcoveCommand(queen.comNumFromStr(com_str), 
-                        bid=bid, drid=drid, all_boards=False, args=args_str)
+        com_num = queen.comNumFromStr(com_str)
+        print(f"{com_num=}")
+        return queen.alcoveCommand(
+            com_num, bid=bid, drid=drid, all_boards=False, args=args_str)
 
     print("   Setting NCLO... ", end="", flush=True)
     sendCom("alcove_base.setNCLO", nclo)
