@@ -448,16 +448,17 @@ class MainWindow(QMainWindow):
         # save to instance variable for next loop
         self.data_timestream = np.array([I, Q])
 
-        # plot in timestream figure00
-        # self.figure_timestream.clear() # clear figure and replot
-        if self.pulldown_timestream.currentText() == 'power':
-            # plt.plot(I[kid_id]**2 + Q[kid_id]**2, 
-                    #  label='power', color='tab:green')
-            self.line1.set_ydata(I[kid_id]**2 + Q[kid_id]**2)
-        else:
-            plt.plot(np.arctan2(Q[kid_id], I[kid_id]), 
-                    label='phase', color='tab:green')
-        self.canvas_timestream.draw()
+        if len(I[kid_id]**2 + Q[kid_id]**2) == 1000:
+            # plot in timestream figure00
+            # self.figure_timestream.clear() # clear figure and replot
+            if self.pulldown_timestream.currentText() == 'power':
+                # plt.plot(I[kid_id]**2 + Q[kid_id]**2, 
+                        #  label='power', color='tab:green')
+                self.line1.set_ydata(I[kid_id]**2 + Q[kid_id]**2)
+            else:
+                plt.plot(np.arctan2(Q[kid_id], I[kid_id]), 
+                        label='phase', color='tab:green')
+            self.canvas_timestream.draw()
 
 
 
