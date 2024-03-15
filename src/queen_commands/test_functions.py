@@ -10,7 +10,7 @@ import time
 import traceback
 
 import queen
-# import alcove
+import alcove
 import alcove_commands.alcove_base as alcove_base
 import queen_commands.control_io as io
 from timestream import TimeStream
@@ -116,7 +116,8 @@ def tonysHeatingTest():
 
     def sendCom(com_str, args_str=None):
         print("Sending command...")
-        com_num = queen.comNumFromStr(com_str)
+        # com_num = queen.comNumFromStr(com_str)
+        com_num = alcove.comNumFromStr(com_str)
         print(f"{com_num=}")
         return queen.alcoveCommand(
             com_num, bid=bid, drid=drid, all_boards=False, args=args_str)
