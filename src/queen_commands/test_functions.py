@@ -115,10 +115,7 @@ def tonysHeatingTest():
     nclo = 500
 
     def sendCom(com_str, args_str=None):
-        print("Sending command...")
-        # com_num = queen.comNumFromStr(com_str)
         com_num = alcove.comNumFromStr(com_str)
-        print(f"{com_num=}")
         return queen.alcoveCommand(
             com_num, bid=bid, drid=drid, all_boards=False, args=args_str)
 
@@ -126,15 +123,14 @@ def tonysHeatingTest():
 
         print("   Setting NCLO... ", end="", flush=True)
         sendCom("setNCLO", nclo)
-        
         print("Done.")
 
         # vna sweep
         print("   Writing VNA comb... ", end="", flush=True)
-        sendCom("tones.writeNewVnaComb")
+        sendCom("writeNewVnaComb")
         print("Done.")
         print("   Performing VNA sweep... ", end="", flush=True)
-        sendCom("sweeps.vnaSweep")
+        sendCom("vnaSweep")
         print("Done.")
 
         # loop
@@ -147,7 +143,7 @@ def tonysHeatingTest():
             print(f"      {n=}/{n_max}")
             
             time.sleep(1800)
-            sendCom("sweeps.vnaSweep")
+            sendCom("vnaSweep")
 
     except Exception: 
         traceback.print_exc()
