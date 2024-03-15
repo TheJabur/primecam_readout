@@ -50,7 +50,8 @@ def _com():
         3:getKeyValue,
         4:setKeyValue,
         5:getClientList,
-        10:test.tonePowerTest
+        10:test.tonePowerTest,
+        11:test.tonysHeatingTest
     }
 
 

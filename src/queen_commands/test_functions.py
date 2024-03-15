@@ -6,6 +6,7 @@
 # ============================================================================ #
 
 import numpy as np
+import time
 
 import queen
 # import alcove
@@ -98,3 +99,29 @@ def tonePowerTest():
         fname = io.saveToTmp(np.array([I, Q]), filename=f'timestream_{f}', use_timestamp=True)
         
  
+ # ============================================================================ #
+# tonePowerTest
+def tonysHeatingTest():
+    """
+
+    Queen listen mode must be running to intercept all the files.
+    """
+
+    bid = 1
+    drid = 1
+    nclo = 500
+
+    def sendCom(com_str, args_str=None):
+        queen.alcoveCommand(queen.comNumFromStr(com_str), 
+                        bid=None, drid=None, all_boards=False, args=args_str)
+
+    sendCom("alcove_base.setNCLO", nclo)
+
+    # vna sweep
+    sendCom("tones.writeNewVnaComb")
+    sendCom("sweeps.vnaSweep")
+
+    # loop
+    while True:
+        time.sleep(1800)
+        sendCom("sweeps.vnaSweep")
