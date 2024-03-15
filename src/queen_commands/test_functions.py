@@ -114,6 +114,7 @@ def tonysHeatingTest():
     nclo = 500
 
     def sendCom(com_str, args_str=None):
+        print("Sending command...")
         com_num = queen.comNumFromStr(com_str)
         print(f"{com_num=}")
         return queen.alcoveCommand(
