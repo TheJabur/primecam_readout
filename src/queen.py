@@ -74,6 +74,7 @@ def comList():
 def comNumFromStr(com_str):
     """Command number (int) from command name (str)."""
 
+    print("comNumFromStr")
     coms = {com[key].__name__:key for key in com.keys()}
     return int(coms[com_str])
 
