@@ -121,7 +121,10 @@ def tonysHeatingTest():
             com_num, bid=bid, drid=drid, all_boards=False, args=args_str)
 
     print("   Setting NCLO... ", end="", flush=True)
-    sendCom("alcove_base.setNCLO", nclo)
+    try:
+        sendCom("alcove_base.setNCLO", nclo)
+    except Exception as e: 
+        print(e)
     print("Done.")
 
     # vna sweep
