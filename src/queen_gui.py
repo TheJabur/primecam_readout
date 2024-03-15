@@ -247,8 +247,8 @@ class MainWindow(QMainWindow):
 
         def testPlot():
             I, Q = np.array((
-                [np.random.normal(size=(900)) for i in range(10)],
-                [np.random.normal(size=(900)) for i in range(10)]))
+                [np.random.normal(size=(1000)) for i in range(10)],
+                [np.random.normal(size=(1000)) for i in range(10)]))
             kid_id = 0
             
             self.figure_timestream.clear()
