@@ -122,6 +122,12 @@ def tonysHeatingTest():
     sendCom("sweeps.vnaSweep")
 
     # loop
-    while True:
+    n = 0
+    while n < 48:
+        n += 1
+        
         time.sleep(1800)
         sendCom("sweeps.vnaSweep")
+
+
+        
