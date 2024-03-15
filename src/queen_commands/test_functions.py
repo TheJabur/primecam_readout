@@ -7,6 +7,7 @@
 
 import numpy as np
 import time
+import traceback
 
 import queen
 # import alcove
@@ -123,15 +124,15 @@ def tonysHeatingTest():
     print("   Setting NCLO... ", end="", flush=True)
     try:
         sendCom("alcove_base.setNCLO", nclo)
-    except Exception as e: 
-        print(e)
+    except Exception: 
+        traceback.print_exc()
     print("Done.")
 
     # vna sweep
-    print("   Setting NCLO... ", end="", flush=True)
+    print("   Writing VNA comb... ", end="", flush=True)
     sendCom("tones.writeNewVnaComb")
     print("Done.")
-    print("   Setting NCLO... ", end="", flush=True)
+    print("   Performing VNA sweep... ", end="", flush=True)
     sendCom("sweeps.vnaSweep")
     print("Done.")
 
