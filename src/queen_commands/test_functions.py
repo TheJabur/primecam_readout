@@ -107,6 +107,8 @@ def tonysHeatingTest():
     Queen listen mode must be running to intercept all the files.
     """
 
+    print("Running tonysHeatingTest()...")
+
     bid = 1
     drid = 1
     nclo = 500
@@ -125,6 +127,8 @@ def tonysHeatingTest():
     n = 0
     while n < 48:
         n += 1
+
+        print(f"{n=}")
         
         time.sleep(1800)
         sendCom("sweeps.vnaSweep")
