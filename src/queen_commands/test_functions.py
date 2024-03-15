@@ -50,8 +50,8 @@ def tonePowerTest():
     nclo = 500
 
     def sendCom(com_str, args_str=None):
-        queen.alcoveCommand(queen.comNumFromStr(com_str), 
-                        bid=None, drid=None, all_boards=False, args=args_str)
+        return queen.alcoveCommand(queen.comNumFromStr(com_str), 
+                        bid=bid, drid=drid, all_boards=False, args=args_str)
 
     sendCom("alcove_base.setNCLO", nclo)
 
@@ -114,7 +114,7 @@ def tonysHeatingTest():
     nclo = 500
 
     def sendCom(com_str, args_str=None):
-        queen.alcoveCommand(queen.comNumFromStr(com_str), 
+        return queen.alcoveCommand(queen.comNumFromStr(com_str), 
                         bid=bid, drid=drid, all_boards=False, args=args_str)
 
     print("   Setting NCLO... ", end="", flush=True)
