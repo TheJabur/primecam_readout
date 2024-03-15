@@ -115,7 +115,7 @@ def tonysHeatingTest():
 
     def sendCom(com_str, args_str=None):
         queen.alcoveCommand(queen.comNumFromStr(com_str), 
-                        bid=None, drid=None, all_boards=False, args=args_str)
+                        bid=bid, drid=drid, all_boards=False, args=args_str)
 
     print("   Setting NCLO... ", end="", flush=True)
     sendCom("alcove_base.setNCLO", nclo)
@@ -130,7 +130,7 @@ def tonysHeatingTest():
     print("Done.")
 
     # loop
-    print("   Performing VNA sweet loop:")
+    print("   Performing VNA sweep loop:")
     n = 0
     n_max = 48
     while n < n_max:
