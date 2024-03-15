@@ -121,32 +121,33 @@ def tonysHeatingTest():
         return queen.alcoveCommand(
             com_num, bid=bid, drid=drid, all_boards=False, args=args_str)
 
-    print("   Setting NCLO... ", end="", flush=True)
     try:
-        sendCom("alcove_base.setNCLO", nclo)
+
+        print("   Setting NCLO... ", end="", flush=True)
+        sendCom("setNCLO", nclo)
+        
+        print("Done.")
+
+        # vna sweep
+        print("   Writing VNA comb... ", end="", flush=True)
+        sendCom("tones.writeNewVnaComb")
+        print("Done.")
+        print("   Performing VNA sweep... ", end="", flush=True)
+        sendCom("sweeps.vnaSweep")
+        print("Done.")
+
+        # loop
+        print("   Performing VNA sweep loop:")
+        n = 0
+        n_max = 48
+        while n < n_max:
+            n += 1
+
+            print(f"      {n=}/{n_max}")
+            
+            time.sleep(1800)
+            sendCom("sweeps.vnaSweep")
+
     except Exception: 
         traceback.print_exc()
-    print("Done.")
-
-    # vna sweep
-    print("   Writing VNA comb... ", end="", flush=True)
-    sendCom("tones.writeNewVnaComb")
-    print("Done.")
-    print("   Performing VNA sweep... ", end="", flush=True)
-    sendCom("sweeps.vnaSweep")
-    print("Done.")
-
-    # loop
-    print("   Performing VNA sweep loop:")
-    n = 0
-    n_max = 48
-    while n < n_max:
-        n += 1
-
-        print(f"      {n=}/{n_max}")
-        
-        time.sleep(1800)
-        sendCom("sweeps.vnaSweep")
-
-
         
