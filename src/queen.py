@@ -76,6 +76,7 @@ def comNumFromStr(com_str):
 
     print("comNumFromStr")
     coms = {com[key].__name__:key for key in com.keys()}
+    print(coms)
     return int(coms[com_str])
 
 
