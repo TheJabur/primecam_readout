@@ -142,7 +142,7 @@ def tonysHeatingTest():
 
             print(f"      {n=}/{n_max}")
             
-            time.sleep(1800)
+            time.sleep(900)
             sendCom("vnaSweep")
 
     except Exception: 
