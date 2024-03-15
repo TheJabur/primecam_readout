@@ -23,6 +23,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QSizePolicy, QWidget, QGr
 from PyQt5.QtGui import QIcon, QMovie, QPixmap, QTextCursor
 from PyQt5.QtCore import Qt, QTimer, QSize, QThread, QObject, pyqtSignal, QRunnable, pyqtSlot, QThreadPool
 
+from config import thisDir
+
 import base_io as io
 import queen
 import alcove
@@ -239,8 +241,19 @@ class MainWindow(QMainWindow):
 
     def uisetupTimestream(self, layout):
         self.figure_timestream = plt.figure(figsize=(5, 3), dpi=100)
+        self.axes_timestream = self.figure_timestream.add_subplot(111)
         self.canvas_timestream = FigureCanvas(self.figure_timestream)
         layout.addWidget(self.canvas_timestream)
+
+        def testPlot():
+            I, Q = np.array((
+                [np.random.normal(size=(1000)) for i in range(10)],
+                [np.random.normal(size=(1000)) for i in range(10)]))
+            kid_id = 0
+            
+            self.figure_timestream.clear()
+            self.line1, = plt.plot(I[kid_id]**2 + Q[kid_id]**2, label='power', color='tab:green')
+        testPlot()
 
         layout_timestreamui = QHBoxLayout()
         layout.addLayout(layout_timestreamui)
@@ -304,7 +317,10 @@ class MainWindow(QMainWindow):
                 # tIP = '192.168.3.40'
                 tIP = self.textbox_timestream_ip.text()
                 t_port = 4096
+
+                # TODO: 
                 self.timestream = TimeStream(host=tIP, port=t_port)
+                # self.timestream = 'hi'
                 
                 self.timer_timestream.start(100)  # milliseconds
                 self.updateTimeStreamUI(running=True)
@@ -400,7 +416,11 @@ class MainWindow(QMainWindow):
         # self.textbox_timestream_bid_drid.setText(str(f'{bid}.{drid}')) # update GUI
 
         # grab a chunk of timestream, hardcoded 100 packets
+        # TODO:
         I, Q = _getTimestreamData(self.timestream, 100, kid_id)
+        # I, Q = np.array((
+        #     [np.random.normal(size=(1000)) for i in range(10)],
+        #     [np.random.normal(size=(1000)) for i in range(10)]))
 
         # add new data to capture data
         if self.button_timestream_save.isChecked():
@@ -428,11 +448,12 @@ class MainWindow(QMainWindow):
         # save to instance variable for next loop
         self.data_timestream = np.array([I, Q])
 
-        # plot in timestream figure
-        self.figure_timestream.clear() # clear figure and replot
+        # plot in timestream figure00
+        # self.figure_timestream.clear() # clear figure and replot
         if self.pulldown_timestream.currentText() == 'power':
-            plt.plot(I[kid_id]**2 + Q[kid_id]**2, 
-                     label='power', color='tab:green')
+            # plt.plot(I[kid_id]**2 + Q[kid_id]**2, 
+                    #  label='power', color='tab:green')
+            self.line1.set_ydata(I[kid_id]**2 + Q[kid_id]**2)
         else:
             plt.plot(np.arctan2(Q[kid_id], I[kid_id]), 
                     label='phase', color='tab:green')
@@ -583,7 +604,8 @@ class MainWindow(QMainWindow):
 
 
     def getLatestS21(self):
-        dname = 'tmp'
+        dname = thisDir(__file__) + '/tmp'
+        # dname = 'tmp'
 
         files = _getFiles(dname)
 
