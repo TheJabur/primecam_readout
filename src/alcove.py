@@ -19,6 +19,7 @@ import alcove_commands.alcove_base as alcove_base
 import alcove_commands.tones as tones
 import alcove_commands.sweeps as sweeps
 import alcove_commands.analysis as analysis
+from config import parentDir
 
 
 
@@ -28,7 +29,7 @@ import alcove_commands.analysis as analysis
 
 
 logging.basicConfig(
-    filename='../logs/board.log', level=logging.DEBUG,
+    filename=f'{parentDir(__file__)}/logs/board.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
     format='{asctime} {levelname} {filename}:{lineno}: {message}'
 )
