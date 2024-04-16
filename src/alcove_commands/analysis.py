@@ -8,6 +8,31 @@
 from alcove_commands.alcove_base import *
 
 
+
+# ============================================================================ #
+# _butterFilter
+def _butterFilter(y, x, btype, cutoff_freqs, order=3, x_time=False):
+    '''Butterworth digital and analog filter.
+    
+    x, y: (1D array of floats) The data.
+    btype: (str) {'lowpass', 'highpass', 'bandpass', 'bandstop'}.
+    cutoff_freq: (float or 2-tuple of floats) The cutoff frequencies.
+    order: (int) Filter order.
+    x_time: (bool) x axis is time (default is frequency).
+    '''
+
+    import numpy as np
+    from scipy.signal import butter, filtfilt
+
+    fs = np.abs(x[1] - x[0])
+    nyquist = 0.5*fs
+    normal_cutoff = cutoff_freqs / nyquist
+    b, a = butter(order, normal_cutoff, btype=btype, fs=fs)
+    filtered_data = filtfilt(b, a, y)
+
+    return filtered_data
+
+
 # ============================================================================ #
 # _stitchS21m
 def _stitchS21m(S21m, bw=500, sw=100):
@@ -111,6 +136,80 @@ def _findResonators(f, Z,
 
 
 # ============================================================================ #
+# _findResonators_alt
+def _findResonators_alt(f, Z, 
+                      peak_prom_std=10, peak_prom_db=0, 
+                      peak_dis=100, peak_width=(10,200),
+                      stitch=True, stitch_bw=500, stitch_sw=100, 
+                      remove_cont=True, continuum_wn=300, 
+                      remove_noise=True, noise_wn=30_000,
+                     ):
+    '''
+    
+    f:   (1D array of floats) Frequency of S21 samples.
+    Z: (1D array of complex) Forward transmission S_21 as complex.
+    peak_prom_std: (float) Peak height from surroundings, in noise std multiples.
+                    Uses larger of peak_prom_db or peak_prom_std.
+    peak_prom_db:  (float) Peak height from surroundings, in Db.
+                    Uses larger of peak_prom_db or peak_prom_std.
+    peak_dis:      (int) Min distance between peaks [bins].
+    peak_width:    (2-tuple of ints) Min/max peak width [bins].
+    stitch:        (bool) Whether to stitch (comb discontinuities).
+    stitch_bw:     (int) Discontinuity period [bins].
+    stitch_sw:     (int) Discontinuity edge size for alignment [bins].
+    remove_cont:   (bool) Whether to subtract the continuum.
+    continuum_wn:  (int) Continuum filter cutoff frequency [Hz].
+    remove_noise:  (bool) Whether to subtract noise.
+    noise_wn:      (int) Noise filter cutoff frequency [Hz].
+    '''
+    
+    from scipy.signal import find_peaks
+    import numpy as np
+    
+    # type enforcement
+    # required since parameters can get passed as strings
+    peak_prom_std = float(peak_prom_std)
+    peak_prom_db  = float(peak_prom_db)
+    peak_dis      = int(peak_dis)
+    peak_width    = np.array(peak_width).astype(int)
+    stitch_bw     = int(stitch_bw)
+    stitch_sw     = int(stitch_sw)
+    continuum_wn  = int(continuum_wn)
+    noise_wn      = int(noise_wn)
+    
+    x = f
+    y = np.abs(Z)
+    
+    # convert Db input to linear
+    peak_prom_lin = np.amax(y)*(1 - 10**(-peak_prom_db/20))
+    
+    # stitch discontinuities
+    if stitch:
+        y = _stitchS21m(y, bw=stitch_bw, sw=stitch_sw)
+        
+    # remove continuum
+    if remove_cont:
+        y -= _butterFilter(y, x, 'low', continuum_wn, order=3)
+        
+    # remove noise
+    y_noise = _butterFilter(y, x, 'high', noise_wn, order=3)
+    noise_std = np.std(y_noise)
+    if remove_noise:
+        y -= y_noise
+        
+    # prominence
+    prom = max(peak_prom_std*noise_std, peak_prom_lin)
+    
+    # find peaks
+    i_peaks, peak_properties = find_peaks(
+        x=-y, prominence=prom, distance=peak_dis, width=peak_width) 
+        
+    f_res = f[i_peaks]
+
+    return f_res
+
+
+# ============================================================================ #
 # _findMins
 def _findMins(f, Z,
     stitch_bw=500, stitch_sw=100,
@@ -151,7 +250,8 @@ def findVnaResonators(**kwargs):
     """
 
     f, Z = io.load(io.file.s21_vna)
-    f_res = _findResonators(f, Z, **kwargs)
+    # f_res = _findResonators(f, Z, **kwargs)
+    f_res = _findResonators_alt(f, Z, **kwargs)
 
     io.save(io.file.f_res_vna, f_res)
 
