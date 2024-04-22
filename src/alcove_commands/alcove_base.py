@@ -336,9 +336,9 @@ def createCustomCombFiles(freqs_rf=None, amps=None, phis=None):
 
     import numpy as np
 
-    if freqs_rf:    np.save(_customCombFilename("freqs_rf"), freqs_rf)
-    if amps:        np.save(_customCombFilename("amps"), amps)
-    if phis:        np.save(_customCombFilename("phis"), phis)
+    if freqs_rf is not None:    np.save(_customCombFilename("freqs_rf"), freqs_rf)
+    if amps is not None:        np.save(_customCombFilename("amps"), amps)
+    if phis is not None:        np.save(_customCombFilename("phis"), phis)
 
 
 # ============================================================================ #
