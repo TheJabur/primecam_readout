@@ -245,8 +245,11 @@ def _writeComb(chan, freqs, amps, phi):
     _loadBinList(chan, freq_actual)
     _resetAccumAndSync(chan, freq_actual)
 
+    f_center   = io.load(io.file.f_center_vna) # Hz
+    freqs_rf_actual = freq_actual + f_center 
+
     # save the current comb
-    io.save(io.file.f_rf_tones_comb, freq_actual)
+    io.save(io.file.f_rf_tones_comb, freqs_rf_actual)
     io.save(io.file.a_tones_comb, amps)
     io.save(io.file.p_tones_comb, phi)
 
