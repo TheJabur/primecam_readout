@@ -347,9 +347,12 @@ def createCustomCombFilesFromCurrentComb():
     """Create custom comb files from the current comb.
     """
 
-    f_comb = io.load(io.file.f_res_targ)
-    a_comb = io.load(io.file.a_res_targ)
-    p_comb = io.load(io.file.p_res_targ)
+    # f_comb = io.load(io.file.f_res_targ)
+    # a_comb = io.load(io.file.a_res_targ)
+    # p_comb = io.load(io.file.p_res_targ)
+    f_comb = io.load(io.file.f_rf_tones_comb)
+    a_comb = io.load(io.file.a_tones_comb)
+    p_comb = io.load(io.file.p_tones_comb)
 
     createCustomCombFiles(freqs_rf=f_comb, amps=a_comb, phis=p_comb)
 
