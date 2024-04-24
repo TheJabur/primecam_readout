@@ -22,5 +22,12 @@ def parentDir(file):
 # add parent dir to path (where cfg/ is)
 sys.path.insert(1, parentDir(__file__))
 
-from cfg import _cfg_queen as queen
-from cfg import _cfg_board as board
+try:
+    from cfg import _cfg_queen as queen
+except ImportError:
+    pass
+
+try:
+    from cfg import _cfg_board as board
+except ImportError:
+    pass
