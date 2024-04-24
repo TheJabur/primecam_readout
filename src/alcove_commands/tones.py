@@ -2,7 +2,7 @@
 # tones.py
 # Tone and comb functions and commands.
 # James Burgoyne jburgoyne@phas.ubc.ca 
-# CCAT Prime 2023  
+# CCAT Prime 2024  
 # ============================================================================ #
 
 from alcove_commands.alcove_base import *
@@ -408,24 +408,28 @@ def writeTargCombFromCustomList():
     This differs from tones.writeCombFromCustomList only in that it assumes these are resonator frequencies and writes f_res_targ (to be used in a target sweep).
     """
 
-    import numpy as np
-
-    chan = cfg.drid
-
-    f_center   = io.load(io.file.f_center_vna)
-    freqs_rf = np.load("alcove_commands/custom_freqs.npy")
-    freqs_bb = freqs_rf - f_center
-    amps = np.load("alcove_commands/custom_amps.npy")
-    phis = np.load("alcove_commands/custom_phis.npy")
-
+    freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
     io.save(io.file.f_res_targ, freqs_rf)
 
-    freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
-    freqs_rf_comb = freqs_bb_comb + f_center
+    return writeCombFromCustomList()
 
-    return io.returnWrapperMultiple(
-        [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
-        [freqs_rf_comb, amps, phis])
+    # chan = cfg.drid
+
+    # f_center   = io.load(io.file.f_center_vna)
+    # freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
+    # amps = io.load(io.file.a_tones_comb_cust)
+    # phis = io.load(io.file.p_tones_comb_cust)
+
+    # freqs_bb = freqs_rf - f_center
+
+    # io.save(io.file.f_res_targ, freqs_rf)
+
+    # freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
+    # freqs_rf_comb = freqs_bb_comb + f_center
+
+    # return io.returnWrapperMultiple(
+    #     [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
+    #     [freqs_rf_comb, amps, phis])
 
 
 # ============================================================================ #
@@ -437,15 +441,14 @@ def writeCombFromCustomList():
     alcove_commands/custom_phis.npy
     """
 
-    import numpy as np
-
     chan = cfg.drid
 
     f_center   = io.load(io.file.f_center_vna)
-    freqs_rf = np.load("alcove_commands/custom_freqs.npy")
+    freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
+    amps = io.load(io.file.a_tones_comb_cust)
+    phis = io.load(io.file.p_tones_comb_cust)
+
     freqs_bb = freqs_rf - f_center
-    amps = np.load("alcove_commands/custom_amps.npy")
-    phis = np.load("alcove_commands/custom_phis.npy")
         
     freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_comb = freqs_bb_comb + f_center

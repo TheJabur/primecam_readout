@@ -312,20 +312,6 @@ def setFineNCLO(df_lo):
     # io.save(io.file.f_center_vna, f_lo*1e6)
 
 
-# ============================================================================ #
-# _customCombFilename
-def _customCombFilename(type):
-    """Relative filename string for custom comb file.
-
-    Type: The file ("freqs_rf", "amps", "phis")
-    """
-
-    fnames = {
-        "freqs_rf":"alcove_commands/custom_freqs.npy",
-        "amps":"alcove_commands/custom_amps.npy",
-        "phis":"alcove_commands/custom_phis.npy"
-    }
-    return fnames[type]
 
 # ============================================================================ #
 # createCustomCombFiles
@@ -334,11 +320,9 @@ def createCustomCombFiles(freqs_rf=None, amps=None, phis=None):
     Used in tones.writeTargCombFromCustomList().
     """
 
-    import numpy as np
-
-    if freqs_rf is not None:    np.save(_customCombFilename("freqs_rf"), freqs_rf)
-    if amps is not None:        np.save(_customCombFilename("amps"), amps)
-    if phis is not None:        np.save(_customCombFilename("phis"), phis)
+    if freqs_rf is not None:    io.save(io.file.f_rf_tones_comb_cust, freqs_rf)
+    if amps is not None:        io.save(io.file.a_tones_comb_cust, amps)
+    if phis is not None:        io.save(io.file.p_tones_comb_cust, phis)
 
 
 # ============================================================================ #
@@ -347,29 +331,11 @@ def createCustomCombFilesFromCurrentComb():
     """Create custom comb files from the current comb.
     """
 
-    # f_comb = io.load(io.file.f_res_targ)
-    # a_comb = io.load(io.file.a_res_targ)
-    # p_comb = io.load(io.file.p_res_targ)
     f_comb = io.load(io.file.f_rf_tones_comb)
     a_comb = io.load(io.file.a_tones_comb)
     p_comb = io.load(io.file.p_tones_comb)
 
     createCustomCombFiles(freqs_rf=f_comb, amps=a_comb, phis=p_comb)
-
-
-'''
-# ============================================================================ #
-# createCustomCombFilesFromTarget
-def createCustomCombFilesFromTarget():
-    """Create the custom comb files from the most recent target files.
-    """
-
-    f_res_targ = io.load(io.file.f_res_targ)
-    a_res_targ = io.load(io.file.a_res_targ)
-    p_res_targ = io.load(io.file.p_res_targ)
-
-    createCustomCombFiles(freqs_rf=f_res_targ, amps=a_res_targ, phis=p_res_targ)
-'''
 
 
 # ============================================================================ #
@@ -379,11 +345,9 @@ def loadCustomCombFiles():
     Used in tones.writeTargCombFromCustomList().
     """
     
-    import numpy as np
-
-    freqs_rf =  np.load(_customCombFilename("freqs_rf"))
-    amps =      np.load(_customCombFilename("amps"))
-    phis =      np.load(_customCombFilename("phis"))
+    freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
+    amps     = io.load(io.file.a_tones_comb_cust)
+    phis     = io.load(io.file.p_tones_comb_cust)
 
     return freqs_rf, amps, phis
 
@@ -394,8 +358,7 @@ def modifyCustomCombAmps(factor=1):
     """Modify custom tone amps file by multiplying by given factor.
     """
     
-    import numpy as np
-
-    amps = np.load(_customCombFilename("amps"))
+    amps     = io.load(io.file.a_tones_comb_cust)
     amps *= float(factor)
-    np.save(_customCombFilename("amps"), amps)
+    io.save(io.file.a_tones_comb_cust, amps)
+    

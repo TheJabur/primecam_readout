@@ -1,18 +1,11 @@
-## base_io.py
-
-########################################################
-### IO module base.                                  ###
-### Provides functionality to control and board io.  ###
-###                                                  ###
-### James Burgoyne jburgoyne@phas.ubc.ca             ###
-### CCAT Prime 2023                                  ###
-########################################################
+# ============================================================================ #
+# base_io.py
+# Provides functionality to control and board io.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2024
+# ============================================================================ #
 
 
-
-#####################
-# Global attributes #
-#####################
 
 try:
     from config import board as cfg
@@ -21,11 +14,13 @@ except Exception as e:
 
 
 
-######################
-# External Functions #
-######################
+# ============================================================================ #
+# EXTERNAL FUNCTIONS
+# ============================================================================ #
 
 
+# ============================================================================ #
+# save
 def save(file, data):
     """
     Save data to a file with given attributes.
@@ -57,6 +52,8 @@ def save(file, data):
         np.save(f'{dname}/{fname}.npy', data)
 
 
+# ============================================================================ #
+# load
 def load(file):
     """
     Load file with given attributes.
@@ -69,6 +66,8 @@ def load(file):
     return loadVersion(file, mostRecentTimestamp(file))
 
 
+# ============================================================================ #
+# loadVersion
 def loadVersion(file, timestamp):
     """
     Load file with given attributes and specific timestamp.
@@ -99,6 +98,8 @@ def loadVersion(file, timestamp):
     return data
 
 
+# ============================================================================ #
+# saveToTmp
 def saveToTmp(data, filename=None, use_timestamp=True):
     """
     Save a new file to tmp directory.
@@ -145,6 +146,8 @@ def saveToTmp(data, filename=None, use_timestamp=True):
             return tf.name
 
 
+# ============================================================================ #
+# saveWrappedToTmp
 def saveWrappedToTmp(wrappedData):
     """Save returnWrapper output to file in tmp.
     Assumes wrappedData is returnWrapper return or a list of them.
@@ -182,6 +185,8 @@ def saveWrappedToTmp(wrappedData):
         processWrappedData(wrappedData)
 
 
+# ============================================================================ #
+# returnWrapper
 def returnWrapper(file, data):
     """Create a dictionary wrapper for data to return to queen.
 
@@ -204,6 +209,8 @@ def returnWrapper(file, data):
     return d
 
 
+# ============================================================================ #
+# returnWrapperMultiple
 def returnWrapperMultiple(file_list, data_list):
     """Similar to returnWrapper but accepts lists of inputs.
     Returns a list of returnWrapper outputs.
@@ -214,6 +221,8 @@ def returnWrapperMultiple(file_list, data_list):
         for file, data in zip(file_list, data_list)] # type: ignore
 
 
+# ============================================================================ #
+# unwrapData
 def unwrapData(wrapped_data):
     """Return the original data input to the wrapping process.
     """
@@ -227,6 +236,8 @@ def unwrapData(wrapped_data):
         return wrapped_data['data']
 
 
+# ============================================================================ #
+# mostRecentTimestamp
 def mostRecentTimestamp(file):
     """
     Timestamp of most recent of given file.
@@ -242,6 +253,9 @@ def mostRecentTimestamp(file):
     fname          = file['fname']
     dname          = file['dname']
 
+    if not file.get('use_timestamp', False):
+        return None
+
     allversions = sorted(
         glob.iglob(os.path.join(dname, f'{fname}*')), 
         reverse=True)
@@ -252,12 +266,42 @@ def mostRecentTimestamp(file):
     return timestamp
 
 
+# ============================================================================ #
+# mostRecentPath
+def mostRecentPath(file):
+    """
+    Path of most recent version of given file.
 
-######################
-# Internal Functions #
-######################
+    file:      (dict) File attributes. See file class.
+    """
+
+    from pathlib import Path
+
+    fname          = file['fname']
+    file_type      = file['file_type']
+    dname          = file['dname']
+    
+    fname = f'{dname}/{fname}'
+
+    # timestamp modification
+    if file.get('use_timestamp', False):
+        fname += f'_{mostRecentTimestamp(file)}'
+    
+    # file extension modification
+    if file_type:
+        fname += f'.{file_type}'
+
+    return Path(fname)
 
 
+
+# ============================================================================ #
+# INTERNAL FUNCTIONS
+# ============================================================================ #
+
+
+# ============================================================================ #
+# _timestamp
 def _timestamp():
     """
     String timestamp of current time (UTC) for use in filenames.
@@ -269,6 +313,8 @@ def _timestamp():
     return datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
 
 
+# ============================================================================ #
+# _pathSplit
 def _pathSplit(file, path):
     """
     Separate fname, timestamp, and ext from given path with file attributes.

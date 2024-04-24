@@ -1,8 +1,11 @@
-## board_io.py
+# ============================================================================ #
+# board_io.py
+# File management for the boards.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2024
+# ============================================================================ #
 
-#####################
-# Global attributes #
-#####################
+
 
 from base_io import *
 
@@ -13,10 +16,6 @@ except Exception as e:
 
 
 
-#######################
-# Internal attributes #
-#######################
-
 class file:
 # parameters:
     # required:
@@ -25,6 +24,35 @@ class file:
         # dname           (str) Absolute directory containing fname.
     # optional:
         # use_timestamp   (bool) Append timestamp to filename.
+
+
+    class _IQ_generic:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'IQ_generic',
+                'file_type'     :'npy', 
+                'dname'         :cfg.root_dir+'/tmp',
+                'use_timestamp' :True}
+    IQ_generic = _IQ_generic()
+
+
+# ============================================================================ #
+# NCLO
+# ============================================================================ #
+
+    class _f_center_vna:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'f_center_vna',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/vna',
+                'use_timestamp' :True}
+    f_center_vna = _f_center_vna()
+
+
+# ============================================================================ #
+# VNA sweep
+# ============================================================================ #
 
     class _freqs_vna:
         def __get__(self, obj, cls):
@@ -43,15 +71,6 @@ class file:
                 'dname'         :cfg.drone_dir+'/vna',
                 'use_timestamp' :True}
     s21_vna = _s21_vna()
-
-    class _f_center_vna:
-        def __get__(self, obj, cls):
-            return {
-                'fname'         :'f_center_vna',
-                'file_type'     :'npy', 
-                'dname'         :cfg.drone_dir+'/vna',
-                'use_timestamp' :True}
-    f_center_vna = _f_center_vna()
 
     class _f_res_vna:
         def __get__(self, obj, cls):
@@ -79,6 +98,12 @@ class file:
                 'dname'         :cfg.drone_dir+'/vna',
                 'use_timestamp' :True}
     amps_vna = _amps_vna()
+
+
+
+# ============================================================================ #
+# Target sweep
+# ============================================================================ #
 
     class _f_res_targ:
         def __get__(self, obj, cls):
@@ -125,6 +150,11 @@ class file:
                 'use_timestamp' :True}
     f_cal_tones = _f_cal_tones()
 
+
+# ============================================================================ #
+# Current comb
+# ============================================================================ #
+
     class _f_rf_tones_comb:
         def __get__(self, obj, cls):
             return {
@@ -152,11 +182,34 @@ class file:
                 'use_timestamp' :True}
     p_tones_comb = _p_tones_comb()
 
-    class _IQ_generic:
+
+# ============================================================================ #
+# Custom comb files
+# ============================================================================ #
+
+    class _f_rf_tones_comb_cust:
         def __get__(self, obj, cls):
             return {
-                'fname'         :'IQ_generic',
+                'fname'         :'f_rf_tones_comb_cust',
                 'file_type'     :'npy', 
-                'dname'         :cfg.root_dir+'/tmp',
-                'use_timestamp' :True}
-    IQ_generic = _IQ_generic()
+                'dname'         :cfg.drone_dir+'/custom_comb',
+                'use_timestamp' :False}
+    f_rf_tones_comb_cust = _f_rf_tones_comb_cust()
+
+    class _a_tones_comb_cust:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'a_tones_comb_cust',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/custom_comb',
+                'use_timestamp' :False}
+    a_tones_comb_cust = _a_tones_comb_cust()
+
+    class _p_tones_comb_cust:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'p_tones_comb_cust',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/custom_comb',
+                'use_timestamp' :False}
+    p_tones_comb_cust = _p_tones_comb_cust()
