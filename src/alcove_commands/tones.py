@@ -193,7 +193,7 @@ def genAmpsAndPhis(freqs, amp_max=(2**15-1)):
     # The factor here reduces the amps so they don't clip 
     # at max peaks from constructive interference
     # However I don't have a good theory for predicting 
-    factors = np.arange(0.40, 0.15, -0.02) # 13 steps
+    factors = np.arange(0.36, 0.15, -0.02) # 13 steps
     for factor in factors:
         amps = np.ones(N)*amp_max/np.sqrt(N)*factor  
         # randomly generate phases until peak amp is lower than required max
