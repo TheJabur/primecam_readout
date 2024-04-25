@@ -180,27 +180,26 @@ def genPhis(freqs, amps, amp_max=(2**15-1), loop_max=100):
 
 # ============================================================================ #
 # genAmpsAndPhis
-def genAmpsAndPhis(freqs, amp_max=(2**15-1)):
+def genAmpsAndPhis(freqs, amp_max=(2**15-1), amp_factor=0.36):
     """Generate lists of (constant) amplitudes and phases.
     freqs: 1D float array of resonator frequencies.
-    amp_max: Maximum allowable time stream amplitude.
+    amp_max: Maximum allowable summed tone amplitude for RFSoC.
+    amp_factor: (float) Multiplicative factor for each tone amp.
+        Crest factor is limiter. Too high and no phase solution.
+        Too low and not using full output of DAC. 
+        Also if too high then results in high tone amp variability.
     """
 
     import numpy as np
 
     N = np.size(freqs)
 
-    # The factor here reduces the amps so they don't clip 
+    # The amp_factor here reduces the amps so they don't clip 
     # at max peaks from constructive interference
-    # However I don't have a good theory for predicting 
-    factors = np.arange(0.36, 0.15, -0.02) # 13 steps
-    for factor in factors:
-        amps = np.ones(N)*amp_max/np.sqrt(N)*factor  
-        # randomly generate phases until peak amp is lower than required max
-        # maximum 13 steps at 10 loops each before giving up
-        phis = genPhis(freqs, amps, amp_max=amp_max, loop_max=10) # loops
+    amps = np.ones(N)*amp_max*amp_factor/np.sqrt(N)
+    phis = genPhis(freqs, amps, amp_max=amp_max, loop_max=10) # loops
 
-        return amps, phis # return and stop looping
+    return amps, phis # return and stop looping
 
 
 # ============================================================================ #
@@ -271,16 +270,21 @@ def writeTestTone():
 
 # ============================================================================ #
 # writeNewVnaComb
-def writeNewVnaComb():
+def writeNewVnaComb(freq_noise=5_000):
     """Create and write the vna sweep tone comb.
+
+    freq_noise: (float) Frequency noise to add to the tone placement.
+        This uses a uniform distribution of noise. [Hz]
     """
 
     import numpy as np
     
     chan = cfg.drid # drone (chan) id is from config
-    freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    amps, phis = genAmpsAndPhis(freqs_bb)
 
+    freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
+
+    amps, phis = genAmpsAndPhis(freqs_bb)
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
 
     io.save(io.file.freqs_vna, freqs_bb_actual)
