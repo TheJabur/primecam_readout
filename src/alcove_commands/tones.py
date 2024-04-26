@@ -278,6 +278,8 @@ def writeNewVnaComb(freq_noise=5_000):
     """
 
     import numpy as np
+
+    freq_noise = float(freq_noise)
     
     chan = cfg.drid # drone (chan) id is from config
 
