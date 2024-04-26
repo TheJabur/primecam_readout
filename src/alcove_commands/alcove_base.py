@@ -26,7 +26,7 @@ try:
 
 except Exception as e: 
     firmware = None
-    print(f"Error loading firmware: {e}")
+    # print(f"Error loading firmware: {e}")
 
 
 
@@ -361,4 +361,3 @@ def modifyCustomCombAmps(factor=1):
     amps     = io.load(io.file.a_tones_comb_cust)
     amps *= float(factor)
     io.save(io.file.a_tones_comb_cust, amps)
-    
