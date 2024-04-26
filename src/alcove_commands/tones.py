@@ -284,7 +284,7 @@ def writeNewVnaComb(freq_noise=5_000):
     chan = cfg.drid # drone (chan) id is from config
 
     freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
+    # freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
 
     amps, phis = genAmpsAndPhis(freqs_bb)
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
