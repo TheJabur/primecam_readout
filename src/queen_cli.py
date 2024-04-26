@@ -113,13 +113,12 @@ def _processCommand(args):
 
     # queen command
     if args.queen:
-        print(f"Queen command {args.com_num}... ", end='', flush=True)
+        print(f"Queen command {args.com_num}... ", flush=True)
         ret = queen.callCom(args.com_num, args.arguments)
 
     # specific board/drone command
     elif args.bid:
-        print(f"Sending board {args.bid} command {args.com_num}... ", 
-              end='', flush=True)
+        print(f"Sending board {args.bid} command {args.com_num}... ", flush=True)
         ids = args.bid.split('.')
         bid = int(ids[0]) # must exist
         drid = int(ids[1]) if len(ids)>1 else None
@@ -132,8 +131,7 @@ def _processCommand(args):
 
     # all-boards commands
     else:
-        print(f"Processing all boards command {args.com_num}... ", 
-              end='', flush=True)
+        print(f"Processing all boards command {args.com_num}... ", flush=True)
         ret = queen.alcoveCommand(
             args.com_num, all_boards=True, args=args.arguments)
         
