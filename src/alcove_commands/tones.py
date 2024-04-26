@@ -150,56 +150,35 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
 
 
 # ============================================================================ #
-# genPhis
-def genPhis(freqs, amps, amp_max=(2**15-1), loop_max=100):
-    """Generate lists of phases for given tone amplitudes.
-    freqs: 1D float array of resonator frequencies.
-    amps: 1D float array of tone amplitudes.
-    amp_max: Maximum allowable time stream amplitude.
-    """
-
-    import numpy as np
-
-    # randomly generate phases until peak amp is lower than required max
-    N = np.size(amps)
-    loop = 0 # could infinitely loop otherwise
-    while True: # conditional at bottom to act like do-while
-        loop += 1
-
-        phis = np.random.uniform(-np.pi, np.pi, N) # phases
+# genAmpsAndPhis
+def genAmpsAndPhis(
+        freqs, amp_max=(2**15-1), amp_factor_init=0.36, phase_loops=10):
+    '''Generate the amps and phis from given freqs for a tone comb.
+    
+    freqs: (1D array of floats) The tone placement frequencies. 
+    amp_max: (float) The maximum waveform amplitude allowed (DAC limited). 
+    amp_factor_init (float) Initial amp_max factor to try.
+        0.36 usually has a quick solution (11+/-5 loops).
+    phase_loops: (float) Max number of loops with random phases.
+    '''
+    
+    import numpy as np    
+    
+    def ampPeak(freqs, amps, phis):
         x, _, _ = generateWaveDdr4(freqs, amps, phis)
         x.real, x.imag = x.real.astype("int16"), x.imag.astype("int16")
+        return np.max(np.abs(x.real + 1j*x.imag))
+    
+    N = len(freqs)
+    
+    for amp_factor in np.arange(amp_factor_init, 0, -0.02):
+        amps = np.ones(N)*amp_max*amp_factor/np.sqrt(N)
+           
+        for _ in range(phase_loops):
+            phis = np.random.uniform(-np.pi, np.pi, N) # phases
 
-        amp_peak = np.max(np.abs(x.real + 1j*x.imag))
-
-        if (amp_peak < amp_max) or (loop > loop_max):
-            break
-
-    return phis
-
-
-# ============================================================================ #
-# genAmpsAndPhis
-def genAmpsAndPhis(freqs, amp_max=(2**15-1), amp_factor=0.36):
-    """Generate lists of (constant) amplitudes and phases.
-    freqs: 1D float array of resonator frequencies.
-    amp_max: Maximum allowable summed tone amplitude for RFSoC.
-    amp_factor: (float) Multiplicative factor for each tone amp.
-        Crest factor is limiter. Too high and no phase solution.
-        Too low and not using full output of DAC. 
-        Also if too high then results in high tone amp variability.
-    """
-
-    import numpy as np
-
-    N = np.size(freqs)
-
-    # The amp_factor here reduces the amps so they don't clip 
-    # at max peaks from constructive interference
-    amps = np.ones(N)*amp_max*amp_factor/np.sqrt(N)
-    phis = genPhis(freqs, amps, amp_max=amp_max, loop_max=10) # loops
-
-    return amps, phis # return and stop looping
+            if ampPeak(freqs, amps, phis) < amp_max:
+                return amps, phis
 
 
 # ============================================================================ #
