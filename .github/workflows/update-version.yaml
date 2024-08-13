@@ -4,8 +4,7 @@ name: Update Git Version
 on:
   push:
     branches:
-      - main
-      - 'release/*'  # Optionally, include other branches like release branches
+      - '**' # Match all branches
 
 jobs:
   update-version:
