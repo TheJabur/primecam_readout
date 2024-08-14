@@ -139,7 +139,7 @@ def _findResonators(f, Z,
 # _findResonators_alt
 def _findResonators_alt(f, Z, 
                       peak_prom_std=10, peak_prom_db=0, 
-                      peak_dis=100, peak_width=(10,200),
+                      peak_dis=100, peak_width_min=10, peak_width_max=200,
                       stitch=True, stitch_bw=500, stitch_sw=100, 
                       remove_cont=True, continuum_wn=300, 
                       remove_noise=True, noise_wn=30_000,
@@ -171,7 +171,8 @@ def _findResonators_alt(f, Z,
     peak_prom_std = float(peak_prom_std)
     peak_prom_db  = float(peak_prom_db)
     peak_dis      = int(peak_dis)
-    peak_width    = np.array(peak_width).astype(int)
+    # peak_width    = np.array(peak_width).astype(int)
+    peak_width    = (int(peak_width_min), int(peak_width_max))
     stitch_bw     = int(stitch_bw)
     stitch_sw     = int(stitch_sw)
     continuum_wn  = int(continuum_wn)
