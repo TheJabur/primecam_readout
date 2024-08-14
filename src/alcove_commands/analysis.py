@@ -99,7 +99,7 @@ def _resonatorIndicesInS21(f, Z, stitch_bw=500, stitch_sw=100, f_hi=50, f_lo=1, 
 # ============================================================================ #
 # _findResonators
 def _findResonators(f, Z,
-                   stitch_bw=500, stitch_sw=100, 
+                   stitch_sw=100, 
                    f_hi=50, f_lo=1, prom_dB=1, 
                    distance=30, width_min=5, width_max=100):
     """Find the resonator peak frequencies in previously saved s21.npy file.
@@ -107,7 +107,6 @@ def _findResonators(f, Z,
     f:         (1D array of floats) Frequency bins of signal.
     Z:         (1D array of floats) S21 complex values.
     stitch_bw: (int) Width of the stitch bins.
-    stitch_sw: (int) Width of slice (at ends) of each stitch bin to take median.
     f_hi:      (float) Highpass filter cutoff frequency. [data units]
     f_lo:      (float) lowpass filter cutoff frequency. [data units]
     prom_dB:   (float) Peak prominence cutoff. [dB]
@@ -119,7 +118,6 @@ def _findResonators(f, Z,
     import numpy as np
 
     # All params are str from Redis so need to cast
-    stitch_bw   = int(stitch_bw)
     stitch_sw   = int(stitch_sw)
     f_hi        = float(f_hi)
     f_lo        = float(f_lo)
@@ -128,7 +126,7 @@ def _findResonators(f, Z,
     width       = (int(width_min), int(width_max))
 
     i_peaks = _resonatorIndicesInS21(
-        f, Z, stitch_bw, stitch_sw, f_hi, f_lo, prom_dB, 
+        f, Z, cfg.sweep_steps, stitch_sw, f_hi, f_lo, prom_dB, 
         distance, width, testing=False)
     f_res = f[i_peaks]
 
@@ -139,8 +137,8 @@ def _findResonators(f, Z,
 # _findResonators_alt
 def _findResonators_alt(f, Z, 
                       peak_prom_std=10, peak_prom_db=0, 
-                      peak_dis=100, peak_width_min=10, peak_width_max=200,
-                      stitch=True, stitch_bw=500, stitch_sw=100, 
+                      peak_dis=100, width_min=5, width_max=100,
+                      stitch=True, stitch_sw=100, 
                       remove_cont=True, continuum_wn=300, 
                       remove_noise=True, noise_wn=30_000,
                      ):
@@ -153,9 +151,9 @@ def _findResonators_alt(f, Z,
     peak_prom_db:  (float) Peak height from surroundings, in Db.
                     Uses larger of peak_prom_db or peak_prom_std.
     peak_dis:      (int) Min distance between peaks [bins].
-    peak_width:    (2-tuple of ints) Min/max peak width [bins].
+    width_min      (int) Peak width minimum. [bins]
+    width_max      (int) Peak width maximum. [bins]
     stitch:        (bool) Whether to stitch (comb discontinuities).
-    stitch_bw:     (int) Discontinuity period [bins].
     stitch_sw:     (int) Discontinuity edge size for alignment [bins].
     remove_cont:   (bool) Whether to subtract the continuum.
     continuum_wn:  (int) Continuum filter cutoff frequency [Hz].
@@ -171,9 +169,7 @@ def _findResonators_alt(f, Z,
     peak_prom_std = float(peak_prom_std)
     peak_prom_db  = float(peak_prom_db)
     peak_dis      = int(peak_dis)
-    # peak_width    = np.array(peak_width).astype(int)
-    peak_width    = (int(peak_width_min), int(peak_width_max))
-    stitch_bw     = int(stitch_bw)
+    peak_width    = (int(width_min), int(width_max))
     stitch_sw     = int(stitch_sw)
     continuum_wn  = int(continuum_wn)
     noise_wn      = int(noise_wn)
@@ -186,7 +182,7 @@ def _findResonators_alt(f, Z,
     
     # stitch discontinuities
     if stitch:
-        y = _stitchS21m(y, bw=stitch_bw, sw=stitch_sw)
+        y = _stitchS21m(y, bw=cfg.sweep_steps, sw=stitch_sw)
         
     # remove continuum
     if remove_cont:

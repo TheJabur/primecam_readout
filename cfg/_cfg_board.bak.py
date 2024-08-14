@@ -47,6 +47,13 @@ wf_lut_len = 2**20 # look-up table length
 wf_fft_len = 1024  # fft length
 
 
+# ============================================================================ #
+# frequency sweep properties
+sweep_steps    = 500 # number of sweep steps
+sweep_accums   = 5   # number of repeats of each sweep (averaging)
+target_chan_bw = 0.2 # target sweep channel bandwidth [MHz]
+
+
 
 
 # ============================================================================ #

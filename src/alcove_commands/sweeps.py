@@ -112,10 +112,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
 
 # ============================================================================ #
 # vnaSweep
-def vnaSweep(N_steps=500, N_accums=5):
+def vnaSweep():
     """Perform a stepped frequency sweep with current comb, save as vna sweep.
-
-    N_steps:    (int) Number of LO frequencies to divide each channel into.
     """
 
     import numpy as np
@@ -125,7 +123,7 @@ def vnaSweep(N_steps=500, N_accums=5):
     f_center = io.load(io.file.f_center_vna)
     freqs_bb = io.load(io.file.freqs_vna)
 
-    S21 = np.array(_sweep(chan, f_center/1e6, freqs_bb, N_steps, N_accums=N_accums)) # f, Z
+    S21 = np.array(_sweep(chan, f_center/1e6, freqs_bb,cfg.sweep_steps, N_accums=cfg.sweep_accums)) # f, Z
 
     io.save(io.file.s21_vna, S21)
     io.save(io.file.f_center_vna, f_center)
@@ -158,7 +156,7 @@ def vnaSweepFull(f_center, N_steps=500):
 
 # ============================================================================ #
 # targetSweep
-def targetSweep(N_steps=500, chan_bandwidth=0.2, N_accums=5):
+def targetSweep():
 
     # assume comb is written
     # assume nclo is written
@@ -176,7 +174,7 @@ def targetSweep(N_steps=500, chan_bandwidth=0.2, N_accums=5):
     freqs_bb = freqs_rf - f_center
 
     S21 = np.array(_sweep(chan, f_center/1e6, freqs_bb, 
-                          N_steps, chan_bandwidth=chan_bandwidth, N_accums=N_accums)) 
+                          cfg.sweep_steps, chan_bandwidth=cfg.target_chan_bw, N_accums=cfg.sweep_accums)) 
 
     io.save(io.file.s21_targ, S21)
 
