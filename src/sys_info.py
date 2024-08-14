@@ -20,7 +20,7 @@ def sys_info():
 
     info_dicts = [
         _getConfigBoard(),
-        _getConfigQueen(),
+        _getConfigQueen(), # missing?
         _getUptime(),
         _getVersPrimecam_readout(),
         _getVersFirmwareRfsoc(),
@@ -129,7 +129,7 @@ def _getConfigQueen():
         for attr in attributes if not attr.startswith("__")
         }
 
-    return {'config:board':variables}
+    return {'config:queen':variables}
 
 
 # ============================================================================ #
