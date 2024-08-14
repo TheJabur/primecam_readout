@@ -39,6 +39,14 @@ udp_ori_ip_4 = '192.168.3.53'
 udp_ori_mac = 'c0:ff:ee:c0:ff:ee'
 
 
+# ============================================================================ #
+# waveform properties
+# edit with extreme caution - changes may have unitended consequences
+wf_fs      = 512e6 # sampling rate
+wf_lut_len = 2**20 # look-up table length
+wf_fft_len = 1024  # fft length
+
+
 
 
 # ============================================================================ #

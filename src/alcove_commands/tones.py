@@ -14,15 +14,15 @@ def _loadBinList(chan, freq_list):
 
     import numpy as np
 
-    fs = 512e6
-    fft_len = 1024
-    lut_len = 2**20
+    fs = cfg.wf_fs # 512e6 
+    lut_len = cfg.wf_lut_len # 2**20
+    fft_len = cfg.wf_fft_len # 1024
     k = np.int64(np.round(-freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
     bin_list = np.int64(np.round(freq_actual / (fs / fft_len)))
     pos_bin_idx = np.where(bin_list > 0)
     if np.size(pos_bin_idx) > 0:
-        bin_list[pos_bin_idx] = 1024 - bin_list[pos_bin_idx]
+        bin_list[pos_bin_idx] = fft_len - bin_list[pos_bin_idx]
     bin_list = np.abs(bin_list)
     # DSP REGS
     if chan == 1:
@@ -41,15 +41,15 @@ def _loadBinList(chan, freq_list):
     # 0x0c -  dds_shift[8 downto 0]
     
     # initialization 
-    sync_in = 2**26
-    accum_rst = 2**24  # (active low)
-    accum_length = (2**19)-1
+    # sync_in = 2**26
+    # accum_rst = 2**24  # (active low)
+    # accum_length = (2**19)-1
 
-    # Load DDC bins
-    offs=0
+    # # Load DDC bins
+    # offs=0
     
     # only write tones to bin list
-    for addr in range(1024):
+    for addr in range(fft_len):
         if addr<(np.size(bin_list)):
             #print("addr = {}, bin# = {}".format(addr, bin_list[addr]))
             dsp_regs.write(0x04,int(bin_list[addr]))

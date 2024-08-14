@@ -52,9 +52,9 @@ def generateWaveDdr4(freq_list, amp_list, phi):
     amp_list = np.real(amp_list)
     phi = np.real(phi)
 
-    fs = 512e6 
-    lut_len = 2**20
-    fft_len = 1024
+    fs = cfg.wf_fs # 512e6 
+    lut_len = cfg.wf_lut_len # 2**20
+    fft_len = cfg.wf_fft_len # 1024
     k = np.int64(np.round(freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
     X = np.zeros(lut_len,dtype='complex')
@@ -284,7 +284,8 @@ def _setNCLO2(chan, lofreq):
     def nclo_num(freqMHz):
         # freq in MHz
         # returns 32 bit signed integer for setting nclo2
-        MHz_per_int = 512.0/2**22 #MHz per_step !check with spec-analyzer
+        # MHz_per_int = 512.0/2**22 #MHz per_step !check with spec-analyzer
+        MHz_per_int = cfg.wf_fs/1e6/2**22
         digi_val = int(np.round(freqMHz/MHz_per_int))
         actual_freq = digi_val*MHz_per_int
         return digi_val, actual_freq
