@@ -54,7 +54,7 @@ def _getUptime():
 def _getVersPrimecam_readout():
     '''Dictionary of version string for primecam_readout.'''
 
-    file_path = f'{parentDir()}/VERSION'
+    file_path = f'../VERSION' # {parentDir()}
     with open(file_path, 'r') as version_file:
         version = version_file.read().strip()
 
