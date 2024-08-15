@@ -54,7 +54,7 @@ def sys_info():
 
 
 # ============================================================================ #
-# uptime
+# _getUptime
 def _getUptime():
     '''Dictionary of system uptime in seconds.'''
 
@@ -65,7 +65,7 @@ def _getUptime():
 
 
 # ============================================================================ #
-# git version
+# _getVersPrimecam_readout
 def _getVersPrimecam_readout():
     '''Dictionary of version string for primecam_readout.'''
 
@@ -77,15 +77,16 @@ def _getVersPrimecam_readout():
 
 
 # ============================================================================ #
-# firmware version
+# _getVersFirmwareRfsoc
 def _getVersFirmwareRfsoc():
     '''Dictionary of version string for RFSoC firmware.
     Note that this depends on the bit file being the same version as flashed.'''
 
     filename = cfg_b.firmware_file # e.g. 'tetra_v7p1_impl_5.bit'
-    name_without_extension = os.path.splitext(filename)[0]
+    # name = os.path.splitext(filename)[0]
+    name = os.path.splitext(os.path.basename(filename))[0]
 
-    return {'version:firmware_rfsoc':name_without_extension}
+    return {'version:firmware_rfsoc':name}
 
 
 # ============================================================================ #
