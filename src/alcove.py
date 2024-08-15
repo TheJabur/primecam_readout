@@ -13,13 +13,16 @@
 
 
 import logging
+
 import alcove_commands.test_functions as test
 import alcove_commands.board_utilities as utils
 import alcove_commands.alcove_base as alcove_base
 import alcove_commands.tones as tones
 import alcove_commands.sweeps as sweeps
 import alcove_commands.analysis as analysis
+
 from config import parentDir
+import sys_info
 
 
 
@@ -58,6 +61,7 @@ def _com():
         50:analysis.findVnaResonators,
         51:analysis.findTargResonators,
         55:analysis.findCalTones,
+        60:sys_info.sys_info,
     }
 
 
