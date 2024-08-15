@@ -10,7 +10,8 @@ import subprocess
 
 from config import queen as cfg_q
 from config import board as cfg_b
-from config import parentDir
+# from config import parentDir
+import alcove_commands.board_utilities as utils
 
 
 # ============================================================================ #
@@ -19,16 +20,20 @@ def sys_info():
     '''Dictionary containing all system information.'''
 
     info_dicts = [
-        _getConfigBoard(),
-        _getConfigQueen(), # missing?
-        _getUptime(),
-        _getVersPrimecam_readout(),
-        _getVersFirmwareRfsoc(),
-        _getVersOs(),
-        _getVersApt(),
-        _getRecentAuthLogEvents(),
-        _getRecentSysLogEvents(),
-        _getRecentDmesgEvents(),
+        _getConfigBoard(),           # config: board
+        _getConfigQueen(),           # config: queen
+        _getUptime(),                # system uptime
+        _getVersPrimecam_readout(),  # primecam_readout version
+        _getVersFirmwareRfsoc(),     # firmware version
+        _getVersOs(),                # OS version
+        _getVersRedis(),             # Redis version
+        _getNetwork(),               # network connections info
+        _getTemps(),                 # board temperature sensors
+        # _getPtp(),                   # PTP info
+        _getRecentAuthLogEvents(),   # recent auth log entries
+        _getRecentSysLogEvents(),    # recent sys log entries
+        _getRecentDmesgEvents(),     # recent dmesg entries
+        _getVersApt(),               # apt list
     ]
 
     merged_dict = {}
@@ -111,6 +116,8 @@ def _getVersApt():
 # ============================================================================ #
 # _getConfigBoard
 def _getConfigBoard():
+    '''Dictionary of board config variables.'''
+
     attributes = dir(cfg_b)
     variables = {
         attr: getattr(cfg_b, attr) 
@@ -123,6 +130,8 @@ def _getConfigBoard():
 # ============================================================================ #
 # _getConfigQueen
 def _getConfigQueen():
+    '''Dictionary of queen config variables.'''
+
     attributes = dir(cfg_q)
     variables = {
         attr: getattr(cfg_q, attr) 
@@ -135,7 +144,7 @@ def _getConfigQueen():
 # ============================================================================ #
 # _getRecentAuthLogEvents
 def _getRecentAuthLogEvents(log_file_path='/var/log/auth.log', num_lines=10):
-    ''''''
+    '''Dictionary of recent auth log entries.'''
 
     with open(log_file_path, 'r') as file:
         lines = file.readlines() # Read all lines from the log file
@@ -147,7 +156,7 @@ def _getRecentAuthLogEvents(log_file_path='/var/log/auth.log', num_lines=10):
 # ============================================================================ #
 # _getRecentSysLogEvents
 def _getRecentSysLogEvents(log_file_path='/var/log/syslog', num_lines=10):
-    ''''''
+    '''Dictionary of recent sys log entries.'''
 
     with open(log_file_path, 'r') as file:
         lines = file.readlines() # Read all lines from the log file
@@ -160,7 +169,7 @@ def _getRecentSysLogEvents(log_file_path='/var/log/syslog', num_lines=10):
 # ============================================================================ #
 # _getRecentDmesgEvents
 def _getRecentDmesgEvents(num_lines=10):
-    ''''''
+    '''Dictionary of dmesg log entries.'''
 
     # Use subprocess to call the dmesg command and capture the output
     result = subprocess.run(['dmesg', '-T', '--level=err,warn'], stdout=subprocess.PIPE, text=True)
@@ -169,3 +178,52 @@ def _getRecentDmesgEvents(num_lines=10):
     recent_dmesg_lines = dmesg_output[-num_lines:]
 
     return {'log:dmesg':recent_dmesg_lines}
+
+
+# ============================================================================ #
+# _getNetwork
+def _getNetwork():
+    '''Dictionary of network info.'''
+    
+    result = subprocess.run(['ip', '-br', 'addr'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    return {'network':result.stdout}
+
+    # Fallback to using `ifconfig` if `ip` is not available
+    # result = subprocess.run(['ifconfig'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    # if result.returncode == 0:
+    #     return result.stdout
+    # else:
+    #     raise Exception(result.stderr)
+
+
+
+# ============================================================================ #
+# _getVersRedis
+def _getVersRedis():
+    '''Dictionary of redis version.'''
+
+    # Run the command to get the Redis server version
+    result = subprocess.run(['redis-server', '--version'], capture_output=True, text=True)
+    
+    # Extract the version number from the output
+    version_info = result.stdout.split()
+    for item in version_info:
+        if item.startswith("v="):
+            vers = item.split('=')[1]
+    
+    return {'version:redis':vers}
+
+
+# ============================================================================ #
+# _getTemps
+def _getTemps():
+    '''Dictionary of board temperatures.'''
+
+    return {'temps_board':utils.boardTemps()}
+
+
+# ============================================================================ #
+# _getPtp
+def _getPtp():
+    pass

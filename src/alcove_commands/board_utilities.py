@@ -29,4 +29,4 @@ def boardTemps():
     ps_temp_raw = np.loadtxt("/sys/bus/iio/devices/iio:device0/in_temp0_ps_temp_raw",dtype="int32")
     pl_temp_raw = np.loadtxt("/sys/bus/iio/devices/iio:device0/in_temp2_pl_temp_raw",dtype="int32")
     
-    return calc_temp(ps_temp_raw), calc_temp(pl_temp_raw)
+    return {'ps_processor':calc_temp(ps_temp_raw), 'pl_fabric':calc_temp(pl_temp_raw)}
