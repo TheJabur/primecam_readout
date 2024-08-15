@@ -62,6 +62,7 @@ def _com():
         51:analysis.findTargResonators,
         55:analysis.findCalTones,
         60:sys_info.sys_info,
+        61:sys_info.sys_info_v,
     }
 
 

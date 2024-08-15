@@ -7,26 +7,27 @@
 
 import os
 import subprocess
+import numpy as np
 
 from config import queen as cfg_q
 from config import board as cfg_b
-# from config import parentDir
 import alcove_commands.board_utilities as utils
+import alcove_commands.board_io as io
 
-try:
-    import xrfdc # type: ignore
-    import xrfclk
-    from pynq import Overlay
-    firmware = Overlay(cfg_b.firmware_file, ignore_version=True)
-    clksrc = 409.6 # MHz
-    xrfclk.set_all_ref_clks(clksrc)
-except Exception as e: 
-    firmware = None
+# try:
+#     # import xrfdc # type: ignore
+#     import xrfclk
+#     from pynq import Overlay
+#     firmware = Overlay(cfg_b.firmware_file, ignore_version=True)
+#     clksrc = 409.6 # MHz
+#     xrfclk.set_all_ref_clks(clksrc)
+# except Exception as e: 
+#     firmware = None
 
 
 # ============================================================================ #
 # sys_info
-def sys_info():
+def sys_info_v():
     '''Dictionary containing all system information.'''
 
     info_dicts = [
@@ -50,7 +51,38 @@ def sys_info():
     for d in info_dicts:
         merged_dict.update(d)
 
-    return merged_dict
+    return io.returnWrapper(io.file.sys_info_v, np.array(merged_dict))
+    # return merged_dict
+
+
+# ============================================================================ #
+# sys_info
+def sys_info():
+    '''Dictionary containing all system information.'''
+
+    info_dicts = [
+        _getConfigBoard(),           # config: board
+        _getConfigQueen(),           # config: queen
+        _getUptime(),                # system uptime
+        _getVersPrimecam_readout(),  # primecam_readout version
+        _getVersFirmwareRfsoc(),     # firmware version
+        # _getVersOs(),                # OS version
+        # _getVersRedis(),             # Redis version
+        _getTemps(),                 # board temperature sensors
+        # _getPtp(),                   # PTP info
+        _getRecentAuthLogEvents(),   # recent auth log entries
+        _getRecentSysLogEvents(),    # recent sys log entries
+        _getRecentDmesgEvents(),     # recent dmesg entries
+        _getNetwork(),               # network connections info
+        # _getVersApt(),               # apt list
+    ]
+
+    merged_dict = {}
+    for d in info_dicts:
+        merged_dict.update(d)
+
+    return io.returnWrapper(io.file.sys_info, np.array(merged_dict))
+    # return merged_dict
 
 
 # ============================================================================ #

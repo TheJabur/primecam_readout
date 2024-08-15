@@ -213,3 +213,26 @@ class file:
                 'dname'         :cfg.drone_dir+'/custom_comb',
                 'use_timestamp' :False}
     p_tones_comb_cust = _p_tones_comb_cust()
+
+
+# ============================================================================ #
+# System Info
+# ============================================================================ #
+
+    class _sys_info:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'sys_info',
+                'file_type'     :'npy', 
+                'dname'         :cfg.root_dir+'/tmp',
+                'use_timestamp' :True}
+    sys_info = _sys_info()
+
+    class _sys_info_v: # verbose
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'sys_info_v',
+                'file_type'     :'npy', 
+                'dname'         :cfg.root_dir+'/tmp',
+                'use_timestamp' :True}
+    sys_info_v = _sys_info_v()
