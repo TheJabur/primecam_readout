@@ -204,7 +204,7 @@ def _getVersRedis():
     '''Dictionary of redis version.'''
 
     # Run the command to get the Redis server version
-    result = subprocess.run(['redis-server', '--version'], capture_output=True, text=True)
+    result = subprocess.run(['redis-server', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     # Extract the version number from the output
     version_info = result.stdout.split()
