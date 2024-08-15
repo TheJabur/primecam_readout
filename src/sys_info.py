@@ -13,6 +13,13 @@ from config import board as cfg_b
 # from config import parentDir
 import alcove_commands.board_utilities as utils
 
+try:
+    # import xrfdc # type: ignore
+    from pynq import Overlay
+    firmware = Overlay(cfg_b.firmware_file, ignore_version=True, download=False)
+except Exception as e: 
+    firmware = None
+
 
 # ============================================================================ #
 # sys_info
