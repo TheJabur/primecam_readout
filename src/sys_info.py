@@ -220,7 +220,10 @@ def _getVersRedis():
 def _getTemps():
     '''Dictionary of board temperatures.'''
 
-    return {'temps_board':utils.boardTemps()}
+    try:
+        return {'temps_board':utils.boardTemps()}
+    except:
+        return {}
 
 
 # ============================================================================ #
