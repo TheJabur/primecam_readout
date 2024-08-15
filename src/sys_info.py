@@ -15,8 +15,11 @@ import alcove_commands.board_utilities as utils
 
 try:
     import xrfdc # type: ignore
+    import xrfclk
     from pynq import Overlay
-    firmware = Overlay(cfg_b.firmware_file, ignore_version=True, download=False)
+    firmware = Overlay(cfg_b.firmware_file, ignore_version=True)
+    clksrc = 409.6 # MHz
+    xrfclk.set_all_ref_clks(clksrc)
 except Exception as e: 
     firmware = None
 
