@@ -99,7 +99,7 @@ def _getVersApt():
     '''Dictionary of apt software list and versions.'''
 
     result = subprocess.run(['apt', 'list', '--installed'], 
-                            stdout=subprocess.PIPE, text=True)
+                            stdout=subprocess.PIPE, universal_newlines=True)
     packages = result.stdout.splitlines()
 
     software_list = {}
@@ -172,7 +172,7 @@ def _getRecentDmesgEvents(num_lines=10):
     '''Dictionary of dmesg log entries.'''
 
     # Use subprocess to call the dmesg command and capture the output
-    result = subprocess.run(['dmesg', '-T', '--level=err,warn'], stdout=subprocess.PIPE, text=True)
+    result = subprocess.run(['dmesg', '-T', '--level=err,warn'], stdout=subprocess.PIPE, universal_newlines=True)
     dmesg_output = result.stdout.splitlines()
     # Get the most recent 'num_lines' events
     recent_dmesg_lines = dmesg_output[-num_lines:]
@@ -185,7 +185,7 @@ def _getRecentDmesgEvents(num_lines=10):
 def _getNetwork():
     '''Dictionary of network info.'''
     
-    result = subprocess.run(['ip', '-br', 'addr'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run(['ip', '-br', 'addr'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
     return {'network':result.stdout}
 
@@ -204,7 +204,7 @@ def _getVersRedis():
     '''Dictionary of redis version.'''
 
     # Run the command to get the Redis server version
-    result = subprocess.run(['redis-server', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run(['redis-server', '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     
     # Extract the version number from the output
     version_info = result.stdout.split()
