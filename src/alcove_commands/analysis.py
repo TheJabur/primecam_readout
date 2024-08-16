@@ -219,6 +219,17 @@ def _findMins(f, Z,
     
     import numpy as np
 
+    # type enforcement
+    # required since parameters can get passed as strings
+    stitch_bw     = int(stitch_bw)
+    # stitch_sw     = int(stitch_sw)
+    # f_hi          = int(f_hi)
+    # f_lo          = int(f_lo)
+    # prom_dB       = float(prom_dB)
+    # distance      = int(distance)
+    # width_min     = int(width_min)
+    # width_max     = int(width_max)
+
     m = np.abs(Z)
     
     a = m.reshape(-1, stitch_bw)               # reshape into targ bins
