@@ -8,6 +8,7 @@
 import os
 import subprocess
 import numpy as np
+from datetime import datetime, timezone
 
 from config import queen as cfg_q
 from config import board as cfg_b
@@ -31,6 +32,8 @@ def sys_info_v():
     '''Dictionary containing all system information.'''
 
     info_dicts = [
+        _getDroneID(),               # board and drone ID, bid.drid
+        _getTimestamp(),             # current timestamp, UTC
         _getConfigBoard(),           # config: board
         _getConfigQueen(),           # config: queen
         _getUptime(),                # system uptime
@@ -61,6 +64,8 @@ def sys_info():
     '''Dictionary containing all system information.'''
 
     info_dicts = [
+        _getDroneID(),               # board and drone ID, bid.drid
+        _getTimestamp(),             # current timestamp, UTC
         _getConfigBoard(),           # config: board
         _getConfigQueen(),           # config: queen
         _getUptime(),                # system uptime
@@ -83,6 +88,22 @@ def sys_info():
 
     return io.returnWrapper(io.file.sys_info, np.array(merged_dict))
     # return merged_dict
+
+
+
+# ============================================================================ #
+# _getDroneInfo
+def _getDroneID():
+    '''Dictionary of board and drone identifier (bid.drid).'''
+
+    return {'bid.drid': f"{cfg_b.bid}.{cfg_b.drid}"}
+
+
+def _getTimestamp():
+    '''Dictionary of current timestamp in UTC.'''
+
+    t = datetime.now(timezone.utc)
+    return {'timestamp_utc': t.timestamp() }
 
 
 # ============================================================================ #
