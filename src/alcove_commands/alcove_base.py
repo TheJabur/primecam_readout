@@ -42,6 +42,53 @@ except Exception as e:
 
 
 # ============================================================================ #
+# timestreamOn
+def timestreamOn(on=True):
+    '''Turn the UDP timestream on (or off) for the current drone.'''
+
+    udp_control = firmware.gpio_udp_info_control
+    
+    # current drone channel
+    chan = cfg.drid
+    chan_bit = 1 << (chan - 1)  # in hex
+
+    # get the current udp control state
+    current_state = udp_control(0x00)
+
+    # determine new state from channel, on/off status, and current state
+    if on:
+        new_state = current_state | chan_bit
+    else:
+        new_state = current_state & ~chan_bit
+
+    # 0x00 offset 4 bit binary for UDP on/off lsb is chan 1 msb chan 4
+    # e.g. udp_control.write(0x04, 1) turns on only chan 3
+    udp_control.write(0x00, new_state)
+
+
+# ============================================================================ #
+# userPacket
+def userPacket(data):
+    '''Write a given 32 bit data into the UDP timestream packet.
+
+    data: 32 bit data to write, e.g. 0xffffffff
+        If this is garbage, then will write 0 instead.
+    '''
+
+    udp_control = firmware.gpio_udp_info_control
+
+    try:
+        data = int(data)             # enforce data is integer
+        if not (0 <= data <= 0xFFFFFFFF):
+            raise ValueError("Data is out of the 32-bit range")
+    except (ValueError, TypeError):
+        data = 0                     # data is garbage: set to 0
+
+    # Write the data
+    udp_control.write(0x08, data)
+
+
+# ============================================================================ #
 # generateWaveDdr4
 def generateWaveDdr4(freq_list, amp_list, phi):  
 
