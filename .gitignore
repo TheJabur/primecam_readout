@@ -55,3 +55,4 @@ cython_debug/
 # Apple config files
 .DS_store
 scripts/drone_manager/drone_manager_state.json
+scripts/drone_manager_state.json
