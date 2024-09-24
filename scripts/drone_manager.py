@@ -106,7 +106,7 @@ class DroneManager:
     state_file = 'drone_manager_state.json'
     drone_file = '../src/drone.py'
     # drone_file = 'drone_manager/drone.py'
-    python_bin = 'python' # should be accessible from path
+    python_bin = 'sudo python3' # should be accessible from path
 
     drid = None
     should_run = False
