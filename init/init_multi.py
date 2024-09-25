@@ -1,9 +1,15 @@
 from pynq import Overlay
 import xrfclk
-import xrfdc # 'Library loaded!' print statement in here
 
 import sys
 import os
+
+# 'Library loaded!' print statement in xrfdc library
+# suppressing all output while importing it
+sys.stdout = open(os.devnull, 'w')
+import xrfdc 
+sys.stdout = sys.__stdout__
+
 sys.path.insert(1, os.path.realpath(os.path.pardir) + '/src')
 
 import ip_addr
