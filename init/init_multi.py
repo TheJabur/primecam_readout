@@ -1,17 +1,11 @@
 from pynq import Overlay
 import xrfclk
+import xrfdc
+# 'Library loaded!' print statement in xrfdc library
+# I haven't been able to find a way to suppress it yet!
 
 import sys
 import os
-
-# 'Library loaded!' print statement in xrfdc library
-# suppressing all output while importing it
-def import_xrfdc():
-    sys.stdout = open(os.devnull, 'w')
-    import xrfdc
-    sys.stdout = sys.__stdout__
-import_xrfdc()
-
 sys.path.insert(1, os.path.realpath(os.path.pardir) + '/src')
 
 import ip_addr
