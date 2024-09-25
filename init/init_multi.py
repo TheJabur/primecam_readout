@@ -6,9 +6,11 @@ import os
 
 # 'Library loaded!' print statement in xrfdc library
 # suppressing all output while importing it
-sys.stdout = open(os.devnull, 'w')
-import xrfdc 
-sys.stdout = sys.__stdout__
+def import_xrfdc():
+    sys.stdout = open(os.devnull, 'w')
+    import xrfdc
+    sys.stdout = sys.__stdout__
+import_xrfdc()
 
 sys.path.insert(1, os.path.realpath(os.path.pardir) + '/src')
 
