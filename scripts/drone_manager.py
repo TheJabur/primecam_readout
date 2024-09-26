@@ -202,7 +202,7 @@ class DroneManager:
         # save states to file
         ## we could run into issues of simultaneous access
         with open(self.state_file, 'w') as f:
-            json.dump(state, f)
+            json.dump(state, f, indent=4)
         
 
 # ============================================================================ #
