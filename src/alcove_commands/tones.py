@@ -214,7 +214,6 @@ def _writeComb(chan, freqs, amps, phi):
 
     # freqs *= freqOffsetFixHackFactor() # Fequency offset fix
      # implemented in tones._writeComb and alcove_base._setNCLO
-
     wave, dphi, freq_actual = generateWaveDdr4(freqs, amps, phi)
     #wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
     wave_real, wave_imag = wave.real.astype("int16"), wave.imag.astype("int16") 
@@ -267,7 +266,7 @@ def writeNewVnaComb(freq_noise=5_000):
 
     amps, phis = genAmpsAndPhis(freqs_bb)
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
-
+    
     io.save(io.file.freqs_vna, freqs_bb_actual)
     io.save(io.file.amps_vna, amps)
     io.save(io.file.phis_vna, phis)

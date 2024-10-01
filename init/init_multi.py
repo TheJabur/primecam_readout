@@ -11,6 +11,8 @@ sys.path.insert(1, os.path.realpath(os.path.pardir) + '/src')
 import ip_addr
 from config import board as cfg
 
+import subprocess
+
 try:
 
 
@@ -21,8 +23,12 @@ try:
 
     clksrc = 409.6 # MHz
     xrfclk.set_all_ref_clks(clksrc)
-
-
+    
+    # PTP config - need to be able to configure PTP ip address
+    subprocess.run("ifconfig eth0 192.168.5.4 up".split(" "))
+    subprocess.run("./run_ptp4l.sh".split(" "))
+    subprocess.run("./run_phc2sys.sh".split(" "))
+    print("PTP configured")
 
 # ============================================================================ #
 # Digital Mixers

@@ -30,10 +30,10 @@ from config import board as cfg
 
 def cIPofThisBoard():
     """The control network IP address of this board.
-    Assumes it is eth0.
+    Assumes it is eth3.
     """
 
-    ip_address = _getIPv4WithNIC('eth0')
+    ip_address = _getIPv4WithNIC('eth3')
 
     return ip_address
 
