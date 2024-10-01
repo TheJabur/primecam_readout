@@ -26,8 +26,10 @@ try:
     from cfg import _cfg_queen as queen
 except ImportError:
     print("Error: _cfg_queen.py is missing from cfg/ directory.")
+    raise
 
 try:
     from cfg import _cfg_board as board
 except ImportError:
     print("Error: _cfg_board.py is missing from cfg/ directory.")
+    raise
