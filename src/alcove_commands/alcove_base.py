@@ -45,17 +45,26 @@ except Exception as e:
 # timestreamOn
 def timestreamOn(on=True):
     '''Turn the UDP timestream on (or off) for the current drone.'''
-    import time
     
-    on = int(on)
+    import time
+
+    def toBool(value):
+        truthy_values = {True, 1, '1', 'True', 'true'}
+        return str(value) in truthy_values
+    on = toBool(on)
+
     udp_control = firmware.gpio_udp_info_control
     
     # current drone channel
     chan = cfg.drid
-    time.sleep(chan*0.1)
     chan_bit = 1 << (chan - 1)  # in hex
+
+    # chan dependent delay instead of resource locking
+    time.sleep(chan*0.1)
+
     # get the current udp control state
     current_state = udp_control.read(0x00)
+
     # determine new state from channel, on/off status, and current state
     if on:
         new_state = current_state | chan_bit
