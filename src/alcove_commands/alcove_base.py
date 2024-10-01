@@ -53,7 +53,7 @@ def timestreamOn(on=True):
     chan_bit = 1 << (chan - 1)  # in hex
 
     # get the current udp control state
-    current_state = udp_control(0x00)
+    current_state = udp_control.read(0x00)
 
     # determine new state from channel, on/off status, and current state
     if on:
