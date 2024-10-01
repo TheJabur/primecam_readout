@@ -25,9 +25,9 @@ sys.path.insert(1, parentDir(__file__))
 try:
     from cfg import _cfg_queen as queen
 except ImportError:
-    pass
+    print("_cfg_queen.py is missing from cfg/ directory.")
 
 try:
     from cfg import _cfg_board as board
 except ImportError:
-    pass
+    print("_cfg_board.py is missing from cfg/ directory.")
