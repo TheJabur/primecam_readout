@@ -118,7 +118,7 @@ class DroneManager:
 
         # construct needed paths (absolute)
         self.state_file = os.path.abspath(os.path.join(
-            self.dir_drones, f'/drone{drid}/', self.state_file))
+            self.dir_drones, f'drone{drid}/', self.state_file))
         self.drone_file = os.path.abspath(self.drone_file)
         self.dir_drones = os.path.abspath(self.dir_drones)
 
