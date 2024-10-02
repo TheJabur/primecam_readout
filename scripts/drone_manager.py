@@ -117,10 +117,10 @@ class DroneManager:
         self.drid = drid
 
         # construct needed paths (absolute)
-        self.dir_drones = os.path.abspath(self.dir_drones)
         self.state_file = os.path.abspath(os.path.join(
             self.dir_drones, f'/drone{drid}/', self.state_file))
         self.drone_file = os.path.abspath(self.drone_file)
+        self.dir_drones = os.path.abspath(self.dir_drones)
 
         # Load the state of running drones on startup
         self.loadState() 
