@@ -43,6 +43,23 @@ except Exception as e:
 
 # ============================================================================ #
 # timestreamOn
+def safe_cast_to_int(data_str):
+    try:
+        if data_str.lower().startswith('0x'):   # hex
+            return int(data_str, 16)
+        elif data_str.lower().startswith('0b'): # bin
+            return int(data_str, 2)
+        elif data_str.lower().startswith('0o'): # oct
+            return int(data_str, 8)
+        else:                                   # everything else
+            return int(float(data_str)) # catches sci, underscores, etc.
+    except (ValueError, SyntaxError) as e:
+        # raise ValueError(f"Invalid integer string format: {data_str}") from e
+        return None
+
+
+# ============================================================================ #
+# timestreamOn
 def timestreamOn(on=True):
     '''Turn the UDP timestream on (or off) for the current drone.'''
     
@@ -78,23 +95,45 @@ def timestreamOn(on=True):
 # ============================================================================ #
 # userPacket
 def userPacket(data):
-    '''Write a given 32 bit data into the UDP timestream packet.
+    '''Write 8 bit data into the UDP timestream packet.
+    Each drone is given 8 bits of a 32 bit packet allocation.
 
-    data: 32 bit data to write, e.g. 0xffffffff
-        If this is garbage, then will write 0 instead.
+    data: 8 bit int to write.
+        Note that Redis will convert user input to string.
+        e.g. 255 can be sent as:
+            '255', '255.0', '0xFF', '0b11111111', '0o377'
+        If conversion fails, then will write 0 instead.
     '''
 
-    udp_control = firmware.gpio_udp_info_control
+    import time
 
-    try:
-        data = int(data)             # enforce data is integer
-        if not (0 <= data <= 0xFFFFFFFF):
-            raise ValueError("Data is out of the 32-bit range")
-    except (ValueError, TypeError):
-        data = 0                     # data is garbage: set to 0
+    # input parameter casting
+    data = safe_cast_to_int(data) # returns None if fails
+    data = 0 if data is None else data # fails to 0
+    data = data & 0xFF # ensure data is 8 bits
+
+    udp_control = firmware.gpio_udp_info_control
+    
+    # current drone channel
+    chan = cfg.drid
+
+    # chan dependent delay instead of resource locking
+    delay_factor = 0.1 # in seconds
+    time.sleep(chan*delay_factor - delay_factor)
+
+    # Calculate the shift amount based on the channel 
+    # (chan 1 is the least significant byte)
+    shift_amount = (chan - 1) * 8
+
+    # get the current user data state
+    current_state = udp_control.read(0x08)
+
+    # determine the new state
+    mask = 0xFF << shift_amount
+    new_state = (current_state & ~mask) | (data << shift_amount)
 
     # Write the data
-    udp_control.write(0x08, data)
+    udp_control.write(0x08, new_state)
 
 
 # ============================================================================ #
