@@ -103,23 +103,23 @@ class DroneManager:
 
 # ============================================================================ #
 # CONFIG
-    state_file = 'drone_manager_state.json'
+    dir_drones = '../drones'
+    state_file = 'drone_state.json'
     drone_file = '../src/drone.py'
-    # drone_file = 'drone_manager/drone.py'
-    # python_bin = 'sudo python3' # should be accessible from path
-
-    drid = None
-    should_run = False
-    pid = None
 # ============================================================================ #
 
+    drid        = None
+    should_run  = False
+    pid         = None
 
     def __init__(self, drid):
 
         self.drid = drid
 
-        # convert relative path strings
-        self.state_file = os.path.abspath(self.state_file)
+        # construct needed paths (absolute)
+        self.dir_drones = os.path.absolute(self.dir_drones)
+        self.state_file = os.path.abspath(os.path.join(
+            self.dir_drones, f'/drone{drid}/', self.state_file))
         self.drone_file = os.path.abspath(self.drone_file)
 
         # Load the state of running drones on startup
@@ -187,20 +187,11 @@ class DroneManager:
     def saveState(self):
         """Save the state of this drone to file."""
 
-        state = {}
-
-        # load states from file if it exists
-        if os.path.exists(self.state_file):
-            with open(self.state_file, 'r') as f:
-                state = json.load(f)
-
-        # update states with this drone params
-        state[self.drid] = {
+        state = {
             'should_run':self.should_run, 
             'pid':self.pid}
-
-        # save states to file
-        ## we could run into issues of simultaneous access
+        
+        # save state to file
         with open(self.state_file, 'w') as f:
             json.dump(state, f, indent=4)
         
