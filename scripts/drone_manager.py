@@ -168,8 +168,11 @@ class DroneManager:
             # load state for this drone
             state = json.load(f)
 
-            # json forced str keys back to int
-            state = {int(key):value for key, value in state.items()}
+            try:
+                # json forced str keys back to int
+                state = {int(key):value for key, value in state.items()}
+            except: # something wrong with state file
+                return 
 
             if self.drid in state:
                 d = state[self.drid]
@@ -187,9 +190,9 @@ class DroneManager:
     def saveState(self):
         """Save the state of this drone to file."""
 
-        state = {
+        state = {self.drid:{
             'should_run':self.should_run, 
-            'pid':self.pid}
+            'pid':self.pid}}
         
         # save state to file
         with open(self.state_file, 'w') as f:
