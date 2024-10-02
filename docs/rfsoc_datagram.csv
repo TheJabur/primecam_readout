@@ -23,8 +23,10 @@ start,end,,,
 50,53,32,channel 1 - i,little
 54,57,32,channel 1 - q,little
 ..,..,..,..,..
-8234,8237,32,Channel 1023 - i,little
-8238,8241,32,Channel 1023 - q,little
-8242,8245,32,packet info ,big
-8246,8249,32,packet count,big
-8250,8253,96,ptp timestamp,big
+8210,8213,32,channel 1021 – i,
+8214,8217,32,channel 1021 - q,little
+8218,8221,32,channel 1022 – i,little
+8222,8223,16,unused,
+8224,8237,32,packet info,big
+8238,8241,32,packet count,big
+8242,8253,96,ptp timestamp,big
