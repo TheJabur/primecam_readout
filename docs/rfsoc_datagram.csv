@@ -1,0 +1,32 @@
+Prime-Cam RFSoC UDP packet structure - Adrian Sinclair - Last edit: Oct 1st 2024,,,,
+bytes,,num bits,description,endianness
+start,end,,,
+0,5,48,mac destination,
+6,11,48,mac source,
+12,13,16,eth type,
+14,14,8,header length,
+15,15,8,congestion notification,
+16,17,16,total length,
+18,19,16,Identification,
+20,21,16,fragment offset,
+22,22,8,time to live,
+23,23,8,protocol,
+24,25,16,header checksum,
+26,29,32,IP source,
+30,33,32,IP destination,
+34,35,16,source port,
+36,37,16,destination port,
+38,39,16,data payload length,
+40,41,16,data payload checksum,
+42,45,32,channel 0 - i,little
+46,49,32,channel 0 - q,little
+50,53,32,channel 1 - i,little
+54,57,32,channel 1 - q,little
+..,..,..,..,..
+8210,8213,32,channel 1021 – i,
+8214,8217,32,channel 1021 - q,little
+8218,8221,32,channel 1022 – i,little
+8222,8223,16,unused,
+8224,8237,32,packet info,big
+8238,8241,32,packet count,big
+8242,8253,96,ptp timestamp,big
