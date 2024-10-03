@@ -5,4 +5,5 @@
 host = 'localhost'
 # host = '192.168.2.80'
 port = 6379
-db = 0
+db   = 0
+pw   = None
