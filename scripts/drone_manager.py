@@ -238,7 +238,6 @@ class DroneManager:
 # ============================================================================ #
 # stopDrone
     def stopDrone(self):
-        
         self.should_run = False
 
         # Ensure there's a PID
@@ -246,27 +245,39 @@ class DroneManager:
             return
 
         try:
+            # Fetch process and check if it exists
             process = psutil.Process(self.pid)
+
+            if not psutil.pid_exists(self.pid):
+                raise psutil.NoSuchProcess(self.pid)
 
             # Check if the script has permission to kill the process
             if process.username() != os.getlogin():
-                # If not the same user, use sudo to terminate
-                subprocess.run(["sudo", "kill", "-15", str(self.pid)], check=True)  # SIGTERM
+                # Use sudo to terminate
+                subprocess.run(["sudo", "kill", "-15", str(self.pid)], check=True)
                 time.sleep(1)
-                subprocess.run(["sudo", "kill", "-9", str(self.pid)], check=True)   # SIGKILL
+
+                if psutil.pid_exists(self.pid):  # Check if process is still running before sending SIGKILL
+                    subprocess.run(["sudo", "kill", "-9", str(self.pid)], check=True)
+
             else:
                 # If the same user, kill normally
-                process.terminate()  
+                process.terminate()
                 process.wait(timeout=1)
 
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-
+        except (psutil.NoSuchProcess, psutil.ZombieProcess):
+            print(f"Process {self.pid} does not exist or is already terminated.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error when killing process with sudo: {e}")
+        except psutil.AccessDenied:
+            print("Access denied when trying to manage process.")
+        
         # Validate and reset PID if necessary
         if not self.validateProcess(self.pid):
             self.pid = None
 
         self.saveState()
+
 
     # def stopDrone(self):
 
