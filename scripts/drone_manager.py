@@ -144,7 +144,8 @@ class DroneManager:
     def recoverDrone(self):
         """Handle the recovery of a drone based on its state."""
         
-        validated = self.validateProcess(self.pid) if self.pid else False
+        # validated = self.validateProcess(self.pid) if self.pid else False
+        validated = self.validateProcess(self.pid)
 
         print(f"should_run={self.should_run}")
         print(f"validated={validated}")
