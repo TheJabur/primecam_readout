@@ -137,9 +137,11 @@ class DroneManager:
 
         try:
             process = psutil.Process(pid)
-            return process.is_running() and process.status() != psutil.STATUS_ZOMBIE
-        except psutil.NoSuchProcess:
+        except psutil.Error as error:  # includes NoSuchProcess error
             return False
+        if psutil.pid_exists(pid) and process.status() not in (psutil.STATUS_DEAD, psutil.STATUS_ZOMBIE):
+            return True
+        return False
 
         # try:
         #     os.kill(pid, 0)  # check if running (doesn't kill)
