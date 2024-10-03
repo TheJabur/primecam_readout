@@ -131,6 +131,8 @@ class DroneManager:
     def validateProcess(self, pid):
         """Check if the process with the given pid is running."""
 
+        print(pid)
+
         try:
             os.kill(pid, 0)  # check if running (doesn't kill)
             return True
@@ -144,7 +146,6 @@ class DroneManager:
     def recoverDrone(self):
         """Handle the recovery of a drone based on its state."""
         
-        # validated = self.validateProcess(self.pid) if self.pid else False
         validated = self.validateProcess(self.pid)
 
         print(f"should_run={self.should_run}")
