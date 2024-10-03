@@ -134,6 +134,8 @@ class DroneManager:
         """Check if the process with the given pid is running."""
 
         print(pid)
+        if pid is None:
+            return False
 
         try:
             process = psutil.Process(pid)
