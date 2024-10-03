@@ -237,36 +237,36 @@ class DroneManager:
 
 # ============================================================================ #
 # stopDrone
-def stopDrone(self):
-    
-    self.should_run = False
+    def stopDrone(self):
+        
+        self.should_run = False
 
-    # Ensure there's a PID
-    if not self.pid:
-        return
+        # Ensure there's a PID
+        if not self.pid:
+            return
 
-    try:
-        process = psutil.Process(self.pid)
+        try:
+            process = psutil.Process(self.pid)
 
-        # Check if the script has permission to kill the process
-        if process.username() != os.getlogin():
-            # If not the same user, use sudo to terminate
-            subprocess.run(["sudo", "kill", "-15", str(self.pid)], check=True)  # SIGTERM
-            time.sleep(1)
-            subprocess.run(["sudo", "kill", "-9", str(self.pid)], check=True)   # SIGKILL
-        else:
-            # If the same user, kill normally
-            process.terminate()  
-            process.wait(timeout=1)
+            # Check if the script has permission to kill the process
+            if process.username() != os.getlogin():
+                # If not the same user, use sudo to terminate
+                subprocess.run(["sudo", "kill", "-15", str(self.pid)], check=True)  # SIGTERM
+                time.sleep(1)
+                subprocess.run(["sudo", "kill", "-9", str(self.pid)], check=True)   # SIGKILL
+            else:
+                # If the same user, kill normally
+                process.terminate()  
+                process.wait(timeout=1)
 
-    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-        pass
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
 
-    # Validate and reset PID if necessary
-    if not self.validateProcess(self.pid):
-        self.pid = None
+        # Validate and reset PID if necessary
+        if not self.validateProcess(self.pid):
+            self.pid = None
 
-    self.saveState()
+        self.saveState()
 
     # def stopDrone(self):
 
