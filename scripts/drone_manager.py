@@ -133,24 +133,23 @@ class DroneManager:
     def validateProcess(self, pid):
         """Check if the process with the given pid is running."""
 
-        print(pid)
+        # check if pid is set
         if pid is None:
             return False
-
+        
+        # get process by pid
         try:
             process = psutil.Process(pid)
-        except psutil.Error as error:  # includes NoSuchProcess error
-            return False
-        if psutil.pid_exists(pid) and process.status() not in (psutil.STATUS_DEAD, psutil.STATUS_ZOMBIE):
+        except psutil.Error as error:
+            return False # no such process
+        
+        # check that not dead
+        dead = process.status() in (psutil.STATUS_DEAD, psutil.STATUS_ZOMBIE)
+        if psutil.pid_exists(pid) and not dead:
             return True
+        
+        # default to not a valid process
         return False
-
-        # try:
-        #     os.kill(pid, 0)  # check if running (doesn't kill)
-        # except OSError as e:
-        #     if e.errno == errno.ESRCH: # no such process
-        #         return False
-        # return True
     
 
 # ============================================================================ #
@@ -279,29 +278,6 @@ class DroneManager:
             self.pid = None
 
         self.saveState()
-
-
-    # def stopDrone(self):
-
-    #     self.should_run = False
-
-    #     # need a pid
-    #     if not self.pid:
-    #         return
-
-    #     # stop the drone process
-    #     try:
-    #         os.kill(self.pid, signal.SIGTERM) # terminate
-    #         time.sleep(1)                     # wait
-    #         os.kill(self.pid, signal.SIGKILL) # kill
-    #     except:
-    #         pass
-        
-    #     # remove pid if not running
-    #     if not self.validateProcess(self.pid):
-    #         self.pid = None
-
-    #     self.saveState()
 
 
 # ============================================================================ #
