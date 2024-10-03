@@ -237,27 +237,58 @@ class DroneManager:
 
 # ============================================================================ #
 # stopDrone
-    def stopDrone(self):
+def stopDrone(self):
+    
+    self.should_run = False
 
-        self.should_run = False
+    # Ensure there's a PID
+    if not self.pid:
+        return
 
-        # need a pid
-        if not self.pid:
-            return
+    try:
+        process = psutil.Process(self.pid)
 
-        # stop the drone process
-        try:
-            os.kill(self.pid, signal.SIGTERM) # terminate
-            time.sleep(1)                     # wait
-            os.kill(self.pid, signal.SIGKILL) # kill
-        except:
-            pass
+        # Check if the script has permission to kill the process
+        if process.username() != os.getlogin():
+            # If not the same user, use sudo to terminate
+            subprocess.run(["sudo", "kill", "-15", str(self.pid)], check=True)  # SIGTERM
+            time.sleep(1)
+            subprocess.run(["sudo", "kill", "-9", str(self.pid)], check=True)   # SIGKILL
+        else:
+            # If the same user, kill normally
+            process.terminate()  
+            process.wait(timeout=1)
+
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        pass
+
+    # Validate and reset PID if necessary
+    if not self.validateProcess(self.pid):
+        self.pid = None
+
+    self.saveState()
+
+    # def stopDrone(self):
+
+    #     self.should_run = False
+
+    #     # need a pid
+    #     if not self.pid:
+    #         return
+
+    #     # stop the drone process
+    #     try:
+    #         os.kill(self.pid, signal.SIGTERM) # terminate
+    #         time.sleep(1)                     # wait
+    #         os.kill(self.pid, signal.SIGKILL) # kill
+    #     except:
+    #         pass
         
-        # remove pid if not running
-        if not self.validateProcess(self.pid):
-            self.pid = None
+    #     # remove pid if not running
+    #     if not self.validateProcess(self.pid):
+    #         self.pid = None
 
-        self.saveState()
+    #     self.saveState()
 
 
 # ============================================================================ #
