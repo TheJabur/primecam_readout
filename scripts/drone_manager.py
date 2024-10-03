@@ -10,6 +10,7 @@ import os
 import time
 import json
 import errno
+import psutil
 import signal
 import argparse
 import subprocess
@@ -135,11 +136,17 @@ class DroneManager:
         print(pid)
 
         try:
-            os.kill(pid, 0)  # check if running (doesn't kill)
-        except OSError as e:
-            if e.errno == errno.ESRCH: # no such process
-                return False
-        return True
+            process = psutil.Process(pid)
+            return process.is_running() and process.status() != psutil.STATUS_ZOMBIE
+        except psutil.NoSuchProcess:
+            return False
+
+        # try:
+        #     os.kill(pid, 0)  # check if running (doesn't kill)
+        # except OSError as e:
+        #     if e.errno == errno.ESRCH: # no such process
+        #         return False
+        # return True
     
 
 # ============================================================================ #
