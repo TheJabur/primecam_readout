@@ -1,0 +1,11 @@
+#!/bin/bash
+# Cody Roberson 2024
+
+cd /home/xilinx/
+# Source the environment as the init system won't
+set -a
+. /etc/environment
+set +a
+for f in /etc/profile.d/*.sh; do source $f; done
+
+
