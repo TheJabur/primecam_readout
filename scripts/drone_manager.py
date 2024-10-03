@@ -159,8 +159,8 @@ class DroneManager:
         
         validated = self.validateProcess(self.pid)
 
-        print(f"should_run={self.should_run}")
-        print(f"validated={validated}")
+        # print(f"should_run={self.should_run}")
+        # print(f"validated={validated}")
 
         if self.should_run and not validated: # should be running but isn't
             self.startDrone()
