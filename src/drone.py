@@ -118,7 +118,7 @@ def modifyConfig(args):
 # connectRedis
 def connectRedis():
     '''connect to redis server'''
-    r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db)
+    r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db, password=cfg.pw)
     p = r.pubsub()
 
     # check for connection

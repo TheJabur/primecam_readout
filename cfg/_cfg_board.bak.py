@@ -14,7 +14,8 @@ bid = 1    # should match physical id on board
 
 # ============================================================================ #
 # Firmware
-firmware_file = '../init/tetra_v7p1_impl_5.bit'
+# firmware_file = '../init/tetra_v7p1_impl_5.bit'
+firmware_file = '../init/tetra_v12p13.xsa'
 
 
 # ============================================================================ #
@@ -22,7 +23,8 @@ firmware_file = '../init/tetra_v7p1_impl_5.bit'
 #host = 'localhost'
 host = '192.168.2.80'
 port = 6379
-db = 0
+db   = 0
+pw   = None
 
 
 # ============================================================================ #
