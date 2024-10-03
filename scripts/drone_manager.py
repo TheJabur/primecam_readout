@@ -9,6 +9,7 @@
 import os
 import time
 import json
+import errno
 import signal
 import argparse
 import subprocess
@@ -135,10 +136,10 @@ class DroneManager:
 
         try:
             os.kill(pid, 0)  # check if running (doesn't kill)
-            return True
-        
-        except:     
-            return False
+        except OSError as e:
+            if e.errno == errno.ESRCH: # no such process
+                return False
+        return True
     
 
 # ============================================================================ #
