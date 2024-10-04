@@ -1,8 +1,6 @@
 from pynq import Overlay
 import xrfclk
 import xrfdc
-# 'Library loaded!' print statement in xrfdc library
-# I haven't been able to find a way to suppress it yet!
 
 import sys
 import os
@@ -24,11 +22,26 @@ try:
     clksrc = 409.6 # MHz
     xrfclk.set_all_ref_clks(clksrc)
     
-    # PTP config - need to be able to configure PTP ip address
-    subprocess.run("ifconfig eth0 192.168.5.4 up".split(" "))
-    subprocess.run("./run_ptp4l.sh".split(" "))
-    subprocess.run("./run_phc2sys.sh".split(" "))
+
+    # # PTP config - need to be able to configure PTP ip address
+    # subprocess.run("ifconfig eth0 192.168.5.4 up".split(" "))
+    # subprocess.run("./run_ptp4l.sh".split(" "))
+    # subprocess.run("./run_phc2sys.sh".split(" "))
+
+    # Define the variables
+    interface = "eth0"
+    mac_address = "01:80:C2:00:00:0E"
+    ip_address = "192.168.5.4"
+
+    # Bring up the interface with the specified IP
+    subprocess.run(f"ifconfig {interface} {ip_address} up".split(" "))
+
+    # Pass the MAC address and interface to the PTP and PHC scripts
+    subprocess.run(f"./run_ptp4l.sh {interface} {mac_address}".split(" "))
+    subprocess.run(f"./run_phc2sys.sh {interface}".split(" "))
+
     print("PTP configured")
+
 
 # ============================================================================ #
 # Digital Mixers
