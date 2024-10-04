@@ -31,7 +31,7 @@ try:
     # Define the variables
     interface = "eth0"
     mac_address = "01:80:C2:00:00:0E"
-    ip_address = "192.168.5.4"
+    ip_address = "192.168.2.4"
 
     # Bring up the interface with the specified IP
     subprocess.run(f"ifconfig {interface} {ip_address} up".split(" "))
