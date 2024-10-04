@@ -28,6 +28,13 @@ pw   = None
 
 
 # ============================================================================ #
+# PTP interface
+ptp_interface   = "eth0"
+ptp_mac_address = "01:80:C2:00:00:0E"
+ptp_ip_address  = "192.168.2.4"
+
+
+# ============================================================================ #
 # timestream configuration
 # UDP data ethernet destination
 udp_dest_ip = '192.168.3.40'

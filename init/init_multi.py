@@ -15,30 +15,19 @@ try:
 
 
 # ============================================================================ #
-# Firmware & clocks
+# Firmware, PTP, clocks
 
     firmware = Overlay(cfg.firmware_file, ignore_version=True)
 
     clksrc = 409.6 # MHz
     xrfclk.set_all_ref_clks(clksrc)
-    
 
-    # # PTP config - need to be able to configure PTP ip address
-    # subprocess.run("ifconfig eth0 192.168.5.4 up".split(" "))
-    # subprocess.run("./run_ptp4l.sh".split(" "))
-    # subprocess.run("./run_phc2sys.sh".split(" "))
-
-    # Define the variables
-    interface = "eth0"
-    mac_address = "01:80:C2:00:00:0E"
-    ip_address = "192.168.2.4"
-
-    # Bring up the interface with the specified IP
-    subprocess.run(f"ifconfig {interface} {ip_address} up".split(" "))
+    # Bring up the PTP interface
+    subprocess.run(["ifconfig", cfg.ptp_interface, cfg.ptp_ip_address, "up"])
 
     # Pass the MAC address and interface to the PTP and PHC scripts
-    subprocess.run(f"./run_ptp4l.sh {interface} {mac_address}".split(" "))
-    subprocess.run(f"./run_phc2sys.sh {interface}".split(" "))
+    subprocess.run(["./run_ptp4l.sh", cfg.ptp_interface, cfg.ptp_mac_address])
+    subprocess.run(["./run_phc2sys.sh", cfg.ptp_interface])
 
     print("PTP configured")
 
