@@ -307,7 +307,7 @@ def _fail(e, msg=None):
 def _connectRedis():
     '''connect to redis server'''
 
-    r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db, pw=cfg.pw)
+    r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db, password=cfg.pw)
     p = r.pubsub()
 
     r.client_setname(f'queen')
