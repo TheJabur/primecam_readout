@@ -389,6 +389,21 @@ def _setNCLO2(chan, lofreq):
     mix.write(offset, digi_val) # frequency
     return
 
+# ============================================================================ #
+# _setAtten
+def _setAtten(chan,direction,atten):
+    from transceiver_serialdriver import Transceiver
+    #atten = Transceiver("/dev/ttyACM0")
+    if direction=="drive":
+        d = 0 
+    elif direction=="sense":
+        d = 1
+    else:
+        print("Error: unrecognized direction string, needs to be drive or sense")
+    atten_id = chan + d
+    print(atten_id)
+    print(type(atten_id))
+    #atten.set_atten(atten_id, atten)
 
 # ============================================================================ #
 # setFineNCLO 
@@ -457,3 +472,16 @@ def modifyCustomCombAmps(factor=1):
     amps     = io.load(io.file.a_tones_comb_cust)
     amps *= float(factor)
     io.save(io.file.a_tones_comb_cust, amps)
+
+# ============================================================================ #
+# setAttenuator
+def setAtten(direction, atten):
+    """
+    Set RF attenuator values on Arduino controlled RF gain board 
+    direction - string "sense" or "drive"
+    atten - float attenuation value in dB min 0 max 31.75
+    """
+    chan = cfg.drid
+    atten = float(atten)
+    direction = str(direction)
+    return _setAtten(chan,direction,atten)

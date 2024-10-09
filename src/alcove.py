@@ -64,7 +64,8 @@ def _com():
         60:sys_info.sys_info,
         61:sys_info.sys_info_v,
         70:alcove_base.timestreamOn,
-        71:alcove_base.userPacket
+        71:alcove_base.userPacket,
+        80:alcove_base.setAtten
     }
 
 
