@@ -392,8 +392,8 @@ def _setNCLO2(chan, lofreq):
 # ============================================================================ #
 # _setAtten
 def _setAtten(chan,direction,atten):
-    from transceiver_serialdriver import Transceiver
-    #atten = Transceiver("/dev/ttyACM0")
+    from alcove_commands.transceiver_serialdriver import Transceiver
+    atten = Transceiver("/dev/ttyACM0")
     if direction=="drive":
         d = 0 
     elif direction=="sense":
@@ -402,8 +402,7 @@ def _setAtten(chan,direction,atten):
         print("Error: unrecognized direction string, needs to be drive or sense")
     atten_id = chan + d
     print(atten_id)
-    print(type(atten_id))
-    #atten.set_atten(atten_id, atten)
+    atten.set_atten(atten_id, atten)
 
 # ============================================================================ #
 # setFineNCLO 
