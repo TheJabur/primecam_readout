@@ -1,4 +1,4 @@
-Prime-Cam RFSoC UDP packet structure - Adrian Sinclair - Last edit: Oct 1st 2024,,,,
+Prime-Cam RFSoC UDP packet structure - Adrian Sinclair - Last edit: Oct 2nd 2024,,,,
 bytes,,num bits,description,endianness
 start,end,,,
 0,5,48,mac destination,

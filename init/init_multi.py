@@ -40,7 +40,7 @@ try:
 
     # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
     tb_indices = {
-        1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+        1: [1,1,1,3], 2: [1,0,1,2], 3: [0,1,1,1], 4: [0,0,1,0]}
     
     for chan, ii in tb_indices.items():
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]

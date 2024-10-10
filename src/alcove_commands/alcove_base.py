@@ -274,31 +274,30 @@ def _setNCLO(chan, lofreq):
 
     # import xrfdc
     rf_data_conv = firmware.usp_rf_data_converter_0
-    
+
     if chan == 1:
-        rf_data_conv.adc_tiles[0].blocks[0].MixerSettings['Freq']=lofreq
+        rf_data_conv.adc_tiles[1].blocks[1].MixerSettings['Freq']=lofreq
         rf_data_conv.dac_tiles[1].blocks[3].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[0].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
-        rf_data_conv.dac_tiles[1].blocks[3].UpdateEvent(xrfdc.EVENT_MIXER)
+        rf_data_conv.adc_tiles[1].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
+        rf_data_conv.dac_tiles[1].blocks[3].UpdateEvent(xrfdc.EVENT_MIXER)  
     elif chan == 2:
-        rf_data_conv.adc_tiles[0].blocks[1].MixerSettings['Freq']=lofreq
+        rf_data_conv.adc_tiles[1].blocks[0].MixerSettings['Freq']=lofreq
         rf_data_conv.dac_tiles[1].blocks[2].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[0].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
+        rf_data_conv.adc_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
         rf_data_conv.dac_tiles[1].blocks[2].UpdateEvent(xrfdc.EVENT_MIXER)
     elif chan == 3:
-        rf_data_conv.adc_tiles[1].blocks[0].MixerSettings['Freq']=lofreq
+        rf_data_conv.adc_tiles[0].blocks[1].MixerSettings['Freq']=lofreq
         rf_data_conv.dac_tiles[1].blocks[1].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
+        rf_data_conv.adc_tiles[0].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
         rf_data_conv.dac_tiles[1].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
     elif chan == 4:
-        rf_data_conv.adc_tiles[1].blocks[1].MixerSettings['Freq']=lofreq
+        rf_data_conv.adc_tiles[0].blocks[0].MixerSettings['Freq']=lofreq
         rf_data_conv.dac_tiles[1].blocks[0].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[1].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
-        rf_data_conv.dac_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
+        rf_data_conv.adc_tiles[0].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
+        rf_data_conv.dac_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)      
     else:
-        return "Does not compute" # great error message
+        return "Does not compute"
     return
-
 
 def _getNCLO(chan):
 
