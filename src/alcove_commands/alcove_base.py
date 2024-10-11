@@ -402,10 +402,10 @@ def _setAtten(chan,direction,attenuation):
     if direction=="drive":
         d = 0 
     elif direction=="sense":
-        d = 1
+        d = 4
     else:
         print("Error: unrecognized direction string, needs to be drive or sense")
-    atten_id = chan + d
+    atten_id = (chan-1) + d
     print(atten_id)
     atten.set_atten(atten_id, attenuation)
 
