@@ -39,8 +39,13 @@ try:
     rf_data_conv = firmware.usp_rf_data_converter_0
 
     # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
-    tb_indices = {
-        1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    name = os.path.splitext(os.path.basename(cfg.firmware_file))[0]
+    if int(name[7:9]) >= 13:
+        tb_indices = {
+            1: [1,1,1,3], 2: [1,0,1,2], 3: [0,1,1,1], 4: [0,0,1,0]}
+    else:
+        tb_indices = {
+            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
     
     for chan, ii in tb_indices.items():
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]

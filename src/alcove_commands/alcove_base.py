@@ -274,30 +274,22 @@ def _setNCLO(chan, lofreq):
 
     # import xrfdc
     rf_data_conv = firmware.usp_rf_data_converter_0
-    
-    if chan == 1:
-        rf_data_conv.adc_tiles[0].blocks[0].MixerSettings['Freq']=lofreq
-        rf_data_conv.dac_tiles[1].blocks[3].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[0].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
-        rf_data_conv.dac_tiles[1].blocks[3].UpdateEvent(xrfdc.EVENT_MIXER)
-    elif chan == 2:
-        rf_data_conv.adc_tiles[0].blocks[1].MixerSettings['Freq']=lofreq
-        rf_data_conv.dac_tiles[1].blocks[2].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[0].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
-        rf_data_conv.dac_tiles[1].blocks[2].UpdateEvent(xrfdc.EVENT_MIXER)
-    elif chan == 3:
-        rf_data_conv.adc_tiles[1].blocks[0].MixerSettings['Freq']=lofreq
-        rf_data_conv.dac_tiles[1].blocks[1].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
-        rf_data_conv.dac_tiles[1].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
-    elif chan == 4:
-        rf_data_conv.adc_tiles[1].blocks[1].MixerSettings['Freq']=lofreq
-        rf_data_conv.dac_tiles[1].blocks[0].MixerSettings['Freq']=lofreq
-        rf_data_conv.adc_tiles[1].blocks[1].UpdateEvent(xrfdc.EVENT_MIXER)
-        rf_data_conv.dac_tiles[1].blocks[0].UpdateEvent(xrfdc.EVENT_MIXER)
+    name = os.path.splitext(os.path.basename(cfg.firmware_file))[0]
+    if int(name[7:9]) >= 13:
+        tb_indices = {
+            1: [1,1,1,3], 2: [1,0,1,2], 3: [0,1,1,1], 4: [0,0,1,0]}
     else:
-        return "Does not compute" # great error message
-    return
+        tb_indices = {
+            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+
+    ii = tb_indices[chan]
+    adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
+    dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
+
+    adc.MixerSettings['Freq'] = lofreq
+    dac.MixerSettings['Freq'] = lofreq
+    adc.UpdateEvent(xrfdc.EVENT_MIXER)
+    dac.UpdateEvent(xrfdc.EVENT_MIXER)
 
 
 def _getNCLO(chan):
