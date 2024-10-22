@@ -165,10 +165,6 @@ def targetSweep():
 
     chan = cfg.drid
 
-    N_steps        = int(N_steps)
-    chan_bandwidth = float(chan_bandwidth)
-    N_accums       = int(N_accums)
-    
     f_center = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_res_targ)
     freqs_bb = freqs_rf - f_center
