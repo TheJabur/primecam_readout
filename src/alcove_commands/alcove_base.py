@@ -12,6 +12,7 @@
 # IMPORTS & GLOBALS
 # ============================================================================ #
 
+import os
 
 try:
     from config import board as cfg
