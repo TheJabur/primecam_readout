@@ -90,6 +90,7 @@ def loadVersion(file, timestamp):
         fname += f'_{timestamp}'
     
     if file_type == 'npy':
+        print(f'{dname}/{fname}.npy')
         data = np.load(f'{dname}/{fname}.npy')
 
     else: # if not npy then try general load
