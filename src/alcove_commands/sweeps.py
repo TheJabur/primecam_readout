@@ -164,10 +164,6 @@ def targetSweep():
     import numpy as np
 
     chan = cfg.drid
-
-    N_steps        = int(N_steps)
-    chan_bandwidth = float(chan_bandwidth)
-    N_accums       = int(N_accums)
     
     f_center = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_res_targ)
@@ -179,6 +175,29 @@ def targetSweep():
     io.save(io.file.s21_targ, S21)
 
     return io.returnWrapper(io.file.s21_targ, S21)
+
+
+# ============================================================================ #
+# customSweep
+def customSweep(bw=1.):
+    # assume comb is written
+    # assume nclo is written
+
+    import numpy as np
+
+    chan = cfg.drid
+
+    bw = float(bw)
+    
+    f_center = io.load(io.file.f_center_vna) # Hz
+    freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
+    freqs_bb = freqs_rf - f_center
+
+    S21 = np.array(_sweep(
+        chan, f_center/1e6, freqs_bb, cfg.sweep_steps, 
+        chan_bandwidth=bw, N_accums=cfg.sweep_accums)) 
+
+    return io.returnWrapper(io.file.s21_custom, S21)
 
 
 # ============================================================================ #

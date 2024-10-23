@@ -214,6 +214,15 @@ class file:
                 'use_timestamp' :False}
     p_tones_comb_cust = _p_tones_comb_cust()
 
+    class _s21_custom:
+        def __get__(self, obj, cls):
+            return {
+                'fname'         :'s21_custom',
+                'file_type'     :'npy', 
+                'dname'         :cfg.drone_dir+'/custom_comb',
+                'use_timestamp' :True}
+    s21_custom = _s21_custom()
+
 
 # ============================================================================ #
 # System Info

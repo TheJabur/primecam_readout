@@ -57,6 +57,7 @@ def _com():
         # 41:sweeps.vnaSweepFull,
         42:sweeps.targetSweep,
         # 43:sweeps.targetSweepFull,
+        44:sweeps.customSweep,
         # 45:sweeps.loChopSweep,
         50:analysis.findVnaResonators,
         51:analysis.findTargResonators,
