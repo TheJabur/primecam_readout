@@ -15,7 +15,7 @@ bid = 1    # should match physical id on board
 # ============================================================================ #
 # Firmware
 # firmware_file = '../init/tetra_v7p1_impl_5.bit'
-firmware_file = '../init/tetra_v12p13.xsa'
+firmware_file = '../init/tetra_v12p15.xsa'
 
 
 # ============================================================================ #
