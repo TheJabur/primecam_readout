@@ -513,6 +513,7 @@ def _rectifyProcessBuffer(r):
     # set buffer size if needed
     if cfg.client_output_buffer_limit == 0:
         pubsub_buf_cfg = r.config_get('client-output-buffer-limit pubsub')
+        print(pubsub_buf_cfg)
         pubsub_buf_lim_soft = int((pubsub_buf_cfg.split())[1])
         cfg.client_output_buffer_limit = pubsub_buf_lim_soft
         print(f"Setting cfg.client_output_buffer_limit={cfg.client_output_buffer_limit}")
