@@ -19,11 +19,13 @@ import redis
 import queue
 import shutil
 import pickle
+import hashlib
 import logging
 import argparse
 import builtins
 import importlib
 import threading
+import numpy as np
 import logging.handlers
 
 import alcove
@@ -357,23 +359,89 @@ def executeCommand(com_num, ret_data, args, chan_str, kwargs):
 
 
 # ============================================================================ #
+# _requestPublishReturnPermission
+def _requestPublishReturnPermission(r, payload_size_bytes):
+    """
+    Attempt to reserve space in a shared Redis byte counter before publishing return data.
+
+    This function uses a Lua script to atomically check whether a given number of bytes (payload_size_bytes) can be "acquired" from the Redis key 'rtn_data_max_bytes'. If enough bytes are available, it decrements the counter by that amount and returns 1. Otherwise, it returns 0 without modifying the counter.
+
+    Args:
+        r (redis.Redis): Redis client instance.
+        payload_size_bytes (int): Number of bytes to reserve.
+
+    Returns:
+        int: 1 if reservation succeeded (enough space available), 0 otherwise.
+    """
+
+    lua_script = """
+        local available_bytes = tonumber(redis.call('GET', KEYS[1]) or '0')
+        local bytes_to_acquire = tonumber(ARGV[1])
+
+        if available_bytes >= bytes_to_acquire then
+            redis.call('DECRBY', KEYS[1], bytes_to_acquire)
+            return 1
+        else
+            return 0
+        end
+    """
+    reserve_bytes = r.register_script(lua_script)
+
+    return reserve_bytes(keys=['rtn_data_max_bytes'],
+                         args=[payload_size_bytes])
+
+
+    # sha1 = hashlib.sha1(lua_script.encode('utf-8')).hexdigest()
+
+    # def _evalsha():
+    #     return r.evalsha(sha1, 1, 'rtn_data_max_bytes', payload_size_bytes)
+    
+    # try:
+    #     result = _evalsha()
+    # except redis.exceptions.NoScriptError:
+    #     print("Loading publish request LUA script to Redis.")
+    #     r.script_load(lua_script)
+    #     result = _evalsha()
+
+    # return result
+
+
+# ============================================================================ #
 # publishResponse
 def publishResponse(resp, r, chan_str):
     '''Publish a response on return channel.
     '''
 
-    chan = chans.comChan(chan=chan_str)
-    # print(f" {chan.pubRet}")
+    # TODO: publishing needs to be in its own thread
+    # to allow commands to be executed independent of returns
 
+    chan = chans.comChan(chan=chan_str)
+    
+    # request publish permission
+    t_retry = 0.1 # s; intial retry delay, then exponential
+    retries = 50 # total number of retry attempts
+    payload_size_bytes = sys.getsizeof(resp.encode('utf-8'))
+    while not _requestPublishReturnPermission(r, payload_size_bytes):
+        time.sleep(t_retry)
+
+        # exponential wait before retry 
+        # with some randomness to spread load
+        # max 5 s
+        t_retry = min(5., t_retry*np.random.uniform(1.5, 2.5))
+
+        # too many retries, failing
+        if retries <= 0:
+            print(" Publish response failed: Too many retries.")
+            return
+        retries -= 1
+
+    # publish response
     try: 
         ret = pickle.dumps(resp) # convert to bytes object; required by Redis
         r.publish(chan.pubRet, ret) # publish resp with Redis on return channel
 
     except Exception as e:
         print(f' Publish response failed with error: {e}')
-    else:
-        # print(f' Publish response successful.')
-        pass
 
 
 # ============================================================================ #

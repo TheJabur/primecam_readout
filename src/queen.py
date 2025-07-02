@@ -11,10 +11,12 @@
 # IMPORTS
 # ============================================================================ #
 
+import sys
 import time
 import redis
 import pickle
 import logging
+from datetime import datetime
 
 from config import queen as cfg
 from config import parentDir
@@ -136,6 +138,9 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False,
     payload = f'{com_num} {int(ret_data)}' # ret_data: bool->int->str
     payload += '' if args is None else f' {args}'
 
+    # check the process buffer keyval isn't out of sync
+    _rectifyProcessBuffer(r)
+
     # send command to a single chan
     def sendCom(bid, drid, cid=None): # generic alcove command algorithm: 
         chan = chans.comChan(bid, drid, cid=cid)   # get pub/sub chans
@@ -172,7 +177,7 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False,
 
     # Listen for a responses
     print(f"Listening for responses... ", end="")
-    resps = _catchAllResponses(p, num_clients)
+    resps = _catchAllResponses(p, num_clients, r)
     print(f"{len(resps)} received. Done.")
 
     return (num_clients, resps)
@@ -425,23 +430,37 @@ def _connectRedis():
 
 # ============================================================================ #
 #  _processCommandReturn
-def _processCommandReturn(dat):
+def _processCommandReturn(dat, r):
     '''Process the return data from a command.'''
 
-    d = pickle.loads(dat)             # assuming msg is pickled
-    
-    if isinstance(dat, str):          # print if string
-        print(dat) 
+    # increment processing counter and set timestamp
+    r.incr('proc_cmd_rtn_cnt')
+    r.set('proc_cmd_rtn_ts', datetime.now().timestamp())
 
+    # unpickle the returned data
+    d = pickle.loads(dat)
+
+    # just print strings
+    if isinstance(d, str):
+        print(d) 
+
+    # otherwise save
     try:
         io.saveWrappedToTmp(d)        # save a wrapped return
     except:
         io.saveToTmp(dat)             # or save as tmp
 
+    # done; decrement processing counter
+    r.decr('proc_cmd_rtn_cnt')
+
+    # processed: increase available buffer by the size of this return data
+    payload_size_bytes = len(dat)
+    r.incr('rtn_data_max_bytes', payload_size_bytes) #
+
 
 # ============================================================================ #
 # _catchAllResponses
-def _catchAllResponses(p, num_clients):
+def _catchAllResponses(p, num_clients, r):
     """Listen for Redis responses, with a timeout.
 
     p: Redis pubsub object that listens for responses.
@@ -469,7 +488,7 @@ def _catchAllResponses(p, num_clients):
 
         # process this return
         resps.append(new_message)
-        _processCommandReturn(new_message['data'])  # print and save
+        _processCommandReturn(new_message['data'], r)  # print and save
 
         # stop when all expected returns received
         if len(resps) >= num_clients:
@@ -480,6 +499,32 @@ def _catchAllResponses(p, num_clients):
     # timeout logic is a little tricky here
     # because it can sit in the loop waiting and doing nothing
     # and that needs to be independently interrupted at timeout
+
+
+# ============================================================================ #
+# _rectifyProcessBuffer
+def _rectifyProcessBuffer(r):
+    """Reset queens Redis buffer keyval if out of sync.
+
+    Args:
+        r (redis.Redis): Redis connection object.
+    """
+
+    # oldest that the last started command process can be
+    ts_min = datetime.now().timestamp() - cfg.command_return_timeout
+
+    # parse required redis keyvals
+    def parse_int(val):
+        try:
+            return int(val)
+        except (TypeError, ValueError):
+            return 0
+    proc_cmd_rtn_cnt = parse_int(r.get('proc_cmd_rtn_cnt'))
+    proc_cmd_rtn_ts = parse_int(r.get('proc_cmd_rtn_ts'))
+
+    # rectify buffer keyval if out of whack
+    if (proc_cmd_rtn_cnt == 0) or (proc_cmd_rtn_ts < ts_min):
+        r.set('rtn_data_max_bytes', str(cfg.client_output_buffer_limit))
 
 
 # ============================================================================ #
