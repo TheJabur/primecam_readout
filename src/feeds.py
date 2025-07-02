@@ -106,7 +106,7 @@ def getFeedTemps(r, handler):
     pl = programmable logic
     """
 
-    pre = _wilds()['temp']
+    pre = _wilds()['temp'][:-1]
 
     # in keyVals in Redis
     keyVals = _getKeyValsMatching(r, pre)
@@ -136,7 +136,7 @@ def getFeedSpc(r, handler):
     """Get all drones feeds: Free space remaining, in GB.
     """
 
-    pre = _wilds()['spc']
+    pre = _wilds()['spc'][:-1]
 
     # in keyVals in Redis
     keyVals = _getKeyValsMatching(r, pre)
