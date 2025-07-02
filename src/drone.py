@@ -425,11 +425,14 @@ def publishResponse(resp, r, chan_str):
     # to allow commands to be executed independent of returns
 
     chan = chans.comChan(chan=chan_str)
+
+    # convert return to bytes object; required by Redis
+    ret = pickle.dumps(resp) 
     
     # request publish permission
     t_retry = 0.1 # s; intial retry delay, then exponential
     retries = 50 # total number of retry attempts
-    payload_size_bytes = sys.getsizeof(resp.encode('utf-8'))
+    payload_size_bytes = len(ret)
     while not _requestPublishReturnPermission(r, payload_size_bytes):
         print("return rejected")
         time.sleep(t_retry)
@@ -448,7 +451,6 @@ def publishResponse(resp, r, chan_str):
 
     # publish response
     try: 
-        ret = pickle.dumps(resp) # convert to bytes object; required by Redis
         r.publish(chan.pubRet, ret) # publish resp with Redis on return channel
 
     except Exception as e:
