@@ -419,6 +419,8 @@ def publishResponse(resp, r, chan_str):
     '''Publish a response on return channel.
     '''
 
+    print("try to pub response")
+
     # TODO: publishing needs to be in its own thread
     # to allow commands to be executed independent of returns
 
@@ -429,6 +431,7 @@ def publishResponse(resp, r, chan_str):
     retries = 50 # total number of retry attempts
     payload_size_bytes = sys.getsizeof(resp.encode('utf-8'))
     while not _requestPublishReturnPermission(r, payload_size_bytes):
+        print("return rejected")
         time.sleep(t_retry)
 
         # exponential wait before retry 
@@ -441,6 +444,7 @@ def publishResponse(resp, r, chan_str):
             print(" Publish response failed: Too many retries.")
             return
         retries -= 1
+    print("return allowed")
 
     # publish response
     try: 
