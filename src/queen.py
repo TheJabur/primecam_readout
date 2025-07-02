@@ -502,6 +502,28 @@ def _catchAllResponses(p, num_clients, r):
 
 
 # ============================================================================ #
+# _redisConfigBufferLimitPubsubSoft
+def _redisConfigBufferLimitPubsubSoft(r):
+
+    config = r.config_get('client-output-buffer-limit')
+    buf_lims = config.get('client-output-buffer-limit', '')
+    # Example format: "normal 0 0 0 pubsub 33554432 8388608 60 ..."
+    # Split into: [class, hard limit, soft limit, soft seconds]
+    parts = buf_lims.split()
+    grouped = [parts[i:i+4] for i in range(0, len(parts), 4)]
+
+    # Find the pubsub group
+    for group in grouped:
+        if group[0] == 'pubsub':
+            pubsub_buf_lim_soft = int(group[2])
+            break
+    else:
+        raise ValueError("Pubsub buffer limit not found.")
+
+    return pubsub_buf_lim_soft
+
+
+# ============================================================================ #
 # _rectifyProcessBuffer
 def _rectifyProcessBuffer(r):
     """Reset queens Redis buffer keyval if out of sync.
@@ -512,11 +534,9 @@ def _rectifyProcessBuffer(r):
 
     # set buffer size if needed
     if cfg.client_output_buffer_limit == 0:
-        pubsub_buf_cfg = r.config_get('client-output-buffer-limit')
-        print(pubsub_buf_cfg)
-        pubsub_buf_lim_soft = int((pubsub_buf_cfg.split())[1])
+        pubsub_buf_lim_soft = _redisConfigBufferLimitPubsubSoft(r)
         cfg.client_output_buffer_limit = pubsub_buf_lim_soft
-        print(f"Setting cfg.client_output_buffer_limit={cfg.client_output_buffer_limit}")
+        print(cfg.client_output_buffer_limit)
 
     # oldest that the last started command process can be
     ts_min = datetime.now().timestamp() - cfg.command_return_timeout
