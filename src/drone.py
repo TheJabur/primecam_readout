@@ -387,8 +387,15 @@ def _requestPublishReturnPermission(r, payload_size_bytes):
     """
     reserve_bytes = r.register_script(lua_script)
 
-    return reserve_bytes(keys=['rtn_data_max_bytes'],
-                         args=[payload_size_bytes])
+    reserved = reserve_bytes(
+        keys=['rtn_data_max_bytes'],
+        args=[payload_size_bytes])
+    
+
+    print(f"payload_size_bytes={payload_size_bytes}")
+    print(f"reserved={reserved}")
+
+    return reserved
 
 
     # sha1 = hashlib.sha1(lua_script.encode('utf-8')).hexdigest()
