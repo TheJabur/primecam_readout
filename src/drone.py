@@ -67,8 +67,9 @@ def main():
 
     # run loop
     command_queue = queue.Queue()
+    returns_queue = queue.Queue()
     listenMode(r, p, chans.subList(cfg_b.bid, cfg_b.drid), 
-               command_queue, cfg_b.interval_feeds)
+               command_queue, cfg_b.interval_feeds, returns_queue)
 
             
 
@@ -222,13 +223,14 @@ def connectRedis():
 
 # ============================================================================ #
 # _loopExecuteCommands
-def _loopExecuteCommands(r, command_queue):
+def _loopExecuteCommands(r, command_queue, returns_queue):
     '''Loop to listen for and sequentially execute commands.
     '''
 
     while True:
 
-        chan_str, payload = command_queue.get()  # Get next command from queue
+        # Get next command from queue
+        chan_str, payload = command_queue.get()  
         try:
             com_num, ret_data, args, kwargs = payloadToCom(payload)
             com_ret = executeCommand(com_num, ret_data, args, chan_str, kwargs)
@@ -236,7 +238,11 @@ def _loopExecuteCommands(r, command_queue):
             com_ret = f"Payload error ({payload}): {e}"
             print(com_ret)
         
-        publishResponse(com_ret, r, chan_str)  # Send response
+        # publishResponse(com_ret, r, chan_str)  # Send response
+
+        # Queue the return to publish
+        returns_queue.put((com_ret, r, chan_str))
+        
         command_queue.task_done()
 
 
@@ -260,19 +266,44 @@ def _loopUpdateFeeds(r, interval):
 
 
 # ============================================================================ #
+# _loopReturnsQueue
+def _loopReturnsQueue(r, returns_queue):
+    '''Loop to listen for and sequentially execute commands.
+    '''
+
+    while True:
+
+        # Get next return from queue
+        com_ret, r, chan_str = returns_queue.get()
+
+        # publish the return
+        publishResponse(com_ret, r, chan_str)  # Send response
+        
+        returns_queue.task_done()
+
+
+# ============================================================================ #
 # listenMode
-def listenMode(r, p, chan_subs, command_queue, interval_feeds):
+def listenMode(r, p, chan_subs, command_queue, interval_feeds, returns_queue):
     '''
     '''
 
     # Start feeds thread
     threading.Thread(
-        target=_loopUpdateFeeds, args=(r,interval_feeds), daemon=True
+        target=_loopUpdateFeeds, 
+        args=(r, interval_feeds), daemon=True
         ).start()
 
-    # Start commands thread
+    # Start command processing thread
     threading.Thread(
-        target=_loopExecuteCommands, args=(r,command_queue), daemon=True
+        target=_loopExecuteCommands, 
+        args=(r, command_queue, returns_queue), daemon=True
+        ).start()
+    
+    # Start returns queue thread
+    threading.Thread(
+        target=_loopReturnsQueue, 
+        args=(r, returns_queue), daemon=True
         ).start()
 
     # Command loop: listens for messages and adds them to the queue
@@ -292,43 +323,6 @@ def listenMode(r, p, chan_subs, command_queue, interval_feeds):
 
         # Queue the command for execution
         command_queue.put((chan_str, payload))
-
-
-'''
-def listenMode(r, p, chan_subs):
-    p.psubscribe(chan_subs)             # channels to listen to
-
-    last_chan_str = ''
-
-    for new_message in p.listen():      # infinite listening loop
-        # print(new_message)
-
-        # check this is a command
-        if new_message['type'] != 'pmessage':
-            continue
-
-        # get channel string (unique to command)
-        chan_str = new_message['channel'].decode('utf-8')
-        # cid = chan_sub.split('_')[-1]    # recover cid from channel
-
-        # check we haven't already processed this message
-        # e.g. could have come through on another channel
-        if chan_str == last_chan_str:
-            continue
-        last_chan_str = chan_str
-
-        payload = new_message['data'].decode('utf-8')
-        try:
-            com_num, ret_data, args, kwargs = payloadToCom(payload)
-            # print(com_num, args, kwargs)
-            com_ret = executeCommand(com_num, ret_data, args, chan_str, kwargs)
-        except Exception as e:
-            com_ret = f"Payload error ({payload}): {e}"
-            print(com_ret)
-        
-        # publishResponse(com_ret, r, bid, cid) # send response
-        publishResponse(com_ret, r, chan_str) # send response
-'''
 
 
 # ============================================================================ #
@@ -419,22 +413,23 @@ def publishResponse(resp, r, chan_str):
     '''Publish a response on return channel.
     '''
 
-    print("try to pub response")
-
     # TODO: publishing needs to be in its own thread
     # to allow commands to be executed independent of returns
 
     chan = chans.comChan(chan=chan_str)
 
     # convert return to bytes object; required by Redis
-    ret = pickle.dumps(resp) 
-    
+    try:
+        ret = pickle.dumps(resp) 
+    except:
+        print(f' Publish response failed: Cannot pickle.')
+        return
+
     # request publish permission
     t_retry = 0.1 # s; intial retry delay, then exponential
     retries = 50 # total number of retry attempts
     payload_size_bytes = len(ret)
     while not _requestPublishReturnPermission(r, payload_size_bytes):
-        print("return rejected")
         time.sleep(t_retry)
 
         # exponential wait before retry 
@@ -447,7 +442,6 @@ def publishResponse(resp, r, chan_str):
             print(" Publish response failed: Too many retries.")
             return
         retries -= 1
-    print("return allowed")
 
     # publish response
     try: 
