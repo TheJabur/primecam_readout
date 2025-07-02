@@ -510,6 +510,13 @@ def _rectifyProcessBuffer(r):
         r (redis.Redis): Redis connection object.
     """
 
+    # set buffer size if needed
+    if cfg.client_output_buffer_limit == 0:
+        pubsub_buf_cfg = r.config_get('client-output-buffer-limit pubsub')
+        pubsub_buf_lim_soft = int((pubsub_buf_cfg.split())[1])
+        cfg.client_output_buffer_limit = pubsub_buf_lim_soft
+        print(f"Setting cfg.client_output_buffer_limit={cfg.client_output_buffer_limit}")
+
     # oldest that the last started command process can be
     ts_min = datetime.now().timestamp() - cfg.command_return_timeout
 
