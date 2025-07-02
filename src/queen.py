@@ -536,6 +536,7 @@ def _rectifyProcessBuffer(r):
     if cfg.client_output_buffer_limit == 0:
         pubsub_buf_lim_soft = _redisConfigBufferLimitPubsubSoft(r)
         cfg.client_output_buffer_limit = pubsub_buf_lim_soft
+        print(f"buff: {pubsub_buf_lim_soft}")
 
     # oldest that the last started command process can be
     ts_min = datetime.now().timestamp() - cfg.command_return_timeout
