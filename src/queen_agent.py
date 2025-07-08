@@ -2,12 +2,14 @@
 # queen_agent.py
 # OCS agent to control computer (queen) commands.
 #
-# James Burgoyne jburgoyne@phas.ubc.ca
-# Darshan Patel dp649@cornell.edu
-# CCAT Prime 2025
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT Prime 2024
 # ============================================================================ #
 
 import time
+import json
+import pickle
+import numpy as np
 
 from ocs import ocs_agent, site_config
 from ocs.ocs_twisted import TimeoutLock
@@ -63,7 +65,6 @@ def main(args=None):
     rt('sys_info_v', readout.sys_info_v)
     rt('timestreamOn', readout.timestreamOn)
     rt('userPacketInfo', readout.userPacketInfo)
-    rt('startChains', readout.startChains)
     rt('setAtten2024', readout.setAtten2024)
     rt('setAtten2025', readout.setAtten2025)
     rt('getAtten', readout.getAtten)
@@ -238,8 +239,10 @@ class ReadoutAgent:
                 return False
             action = params['action']
             bid, drid = drone_control._bid_drid(params['com_to'])
+            rtn = drone_control.action(action, bid, drid)
+            session.data['data'] = json.dumps(rtn)
 
-            return True, f"action: {drone_control.action(action, bid, drid)}"
+            return True, f"action: Done {action}"
     
 
     # ======================================================================== #
@@ -258,7 +261,8 @@ class ReadoutAgent:
         """
 
         def handler(label, data):
-            session.data[f'{label}'] = data
+            block = data['block_name']
+            session.data[f'{label}_{block}'] = data
             self.agent.publish_to_feed(label, data)
 
         with self.lock.acquire_timeout(timeout=0, job='monitorFeeds') as acquired:
@@ -396,9 +400,9 @@ class ReadoutAgent:
                 com_to   = params['com_to'], 
                 silent   = params['silent'],
                 com_args = f'mux_sel={params["mux_sel"]}')
-        
+            session.data['data'] = json.dumps(rtn, cls=ByteEncoder)
         # return is a fail message str or number of clients int
-        return True, f"getSnapData: {rtn}"
+        return True, f"getSnapData: Done"
     
     
     # ======================================================================== #
@@ -418,9 +422,9 @@ class ReadoutAgent:
                 com_str  = 'getADCrms', 
                 com_to   = params['com_to'],
                 silent   = params['silent'])
-        
+            session.data['data'] = json.dumps(rtn, cls=ByteEncoder)
         # return is a fail message str or number of clients int
-        return True, f"getADCrms: {rtn}"
+        return True, f"getADCrms: Done"
     
 
     # ======================================================================== #
@@ -961,7 +965,7 @@ class ReadoutAgent:
                 com_str  = 'sys_info', 
                 com_to   = params['com_to'],
                 silent   = params['silent'])
-        
+            session.data['data'] = json.dumps(rtn, cls=ByteEncoder)
         # return is a fail message str or number of clients int
         return True, f"sys_info: Done"
     
@@ -990,7 +994,7 @@ class ReadoutAgent:
                 com_str  = 'sys_info_v', 
                 com_to   = params['com_to'],
                 silent   = params['silent'])
-        
+            session.data['data'] = json.dumps(rtn, cls=ByteEncoder)
         # return is a fail message str or number of clients int
         return True, f"sys_info_v: Done"
 
@@ -1113,35 +1117,6 @@ class ReadoutAgent:
             
         # return is a fail message str or number of clients int
         return True, f"userPacketInfo: Done"
-    
-    # ======================================================================== #
-    # .startChains
-    @ocs_agent.param('com_to', default=None, type=str)
-    @ocs_agent.param('silent', default=False, type=bool)
-    def startChains(self, session, params):
-        """startChains()
-
-        **Task** - Start timestream chains.
-
-        Args
-        -------
-        com_to: str
-            Drone to send command to in format bid.drid.
-            If None, will send to all drones.
-            Default is None.
-
-        """
-        with self.lock.acquire_timeout(job='startChains') as acquired:
-            if not acquired:
-                print(f'Lock could not be acquired because it is held by {self.lock.job}.')
-                return False
-            rtn = _sendAlcoveCommand(
-                com_str  = 'startChains', 
-                com_to   = params['com_to'],
-                silent   = params['silent'])
-        
-        # return is a fail message str or number of clients int
-        return True, f"startChains: Done"
 
     # ======================================================================== #
     # .setAtten2024
@@ -1252,9 +1227,9 @@ class ReadoutAgent:
                 com_to   = params['com_to'],
                 silent   = params['silent'],
                 com_args = f'direction={direction},')
-        
+            session.data['data'] = json.dumps(rtn, cls=ByteEncoder)
         # return is a fail message str or number of clients int
-        return True, f"getAtten: {rtn}"
+        return True, f"getAtten: Done"
     # # ======================================================================== #
     # # .vnaSweep
     # @ocs_agent.param('com_to', default=None, type=str)
@@ -1359,3 +1334,24 @@ def _sendAlcoveCommand(com_str, com_to=None, com_args=None, silent=False):
 
 if __name__ == '__main__':
     main()
+
+# ============================================================================ #
+# == CLASS: ByteEncoder
+# ============================================================================ #
+
+class ByteEncoder(json.JSONEncoder):
+    """ByteEncoder
+
+    Custom JSON encoder to handle bytes and bytearray objects.
+    """
+
+    def default(self, obj):
+        if isinstance(obj, (bytes, bytearray)):
+            try:
+                return pickle.loads(obj)
+            except:
+                return obj.decode('ASCII')
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+
+        return super().default(obj)
