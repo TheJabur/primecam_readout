@@ -60,7 +60,8 @@ def _com():
         # 13:test.targetSweepAndNoiseSweep,
         14:test.loopbackCapture,
         15:test.loopbackCaptureLong,
-        16:test.timestreamMonitorTest
+        16:test.timestreamMonitorTest,
+        17:test.timestreamMonitorTest_monitorOnly,
     }
 
 

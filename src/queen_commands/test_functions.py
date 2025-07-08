@@ -249,6 +249,33 @@ def timestreamMonitorTest():
         _sendComAll("timestreamOn", 0)
 
 
+# ============================================================================ #
+# timestreamMonitorTest
+def timestreamMonitorTest_monitorOnly():
+
+    running = True
+
+    import signal
+    def signal_handler(sig, frame):
+        nonlocal running
+        running = False
+    signal.signal(signal.SIGINT, signal_handler)
+
+    try:
+        timestream = None
+        while running:
+            print(f" "*100, end='\r')
+            packets = _captureTimestream(122, timestream)
+            timestream, _,_,_,_,_,_, ips = packets
+            ips_unique = np.unique(ips)
+            print(ips_unique, end='\r')
+            time.sleep(0.75)
+
+    except KeyboardInterrupt:
+        running = False
+    finally:
+        print()
+
 
 
 '''
