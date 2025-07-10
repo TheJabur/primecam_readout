@@ -386,25 +386,10 @@ def _requestPublishReturnPermission(r, payload_size_bytes):
         args=[payload_size_bytes])
     
 
-    print(f"payload_size_bytes={payload_size_bytes}")
-    print(f"reserved={reserved}")
+    # print(f"payload_size_bytes={payload_size_bytes}")
+    # print(f"reserved={reserved}")
 
     return reserved
-
-
-    # sha1 = hashlib.sha1(lua_script.encode('utf-8')).hexdigest()
-
-    # def _evalsha():
-    #     return r.evalsha(sha1, 1, 'rtn_data_max_bytes', payload_size_bytes)
-    
-    # try:
-    #     result = _evalsha()
-    # except redis.exceptions.NoScriptError:
-    #     print("Loading publish request LUA script to Redis.")
-    #     r.script_load(lua_script)
-    #     result = _evalsha()
-
-    # return result
 
 
 # ============================================================================ #

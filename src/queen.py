@@ -502,7 +502,7 @@ def _catchAllResponses(p, num_clients, r, timeout=60):
             return resps
 
     # if we get here then not all expected returns were recieved
-    print(f"Warning: Only {num_clients}/{len(resps)} returns received before timeout.")
+    print(f"Warning: Only {len(resps)}/{num_clients} returns received before timeout.")
     return resps
 
 
