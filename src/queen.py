@@ -93,7 +93,8 @@ def comNumFromStr(com_str):
 # ============================================================================ #
 #  alcoveCommand
 def alcoveCommand(com_num, bid=None, drid=None, all_boards=False, 
-                  args=None, ret_data=True, list_bid_drids=None):
+                  args=None, ret_data=True, list_bid_drids=None, 
+                  timeout=None):
     '''Send an alcove command to given board[s].
 
     com_num: (int) Command number.
@@ -178,7 +179,10 @@ def alcoveCommand(com_num, bid=None, drid=None, all_boards=False,
 
     # Listen for a responses
     print(f"Listening for responses... ", end="")
-    resps = _catchAllResponses(p, num_clients, r)
+    if timeout is not None:
+        resps = _catchAllResponses(p, num_clients, r, timeout)
+    else:
+        resps = _catchAllResponses(p, num_clients, r)
     print(f"{len(resps)} received. Done.")
 
     return (num_clients, resps)

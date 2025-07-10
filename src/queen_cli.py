@@ -101,6 +101,9 @@ def _setupArgparse():
     parser.add_argument("-s", "--silent", 
         action="store_true", help="Silent command: minimal return.")
 
+    parser.add_argument("-t", "--timeout", 
+        type=int, help="Command timeout, s.")
+
     # bid or -q or neither, but not both
     # g1 = parser.add_mutually_exclusive_group(required=False)
     # g1.add_argument("bid", nargs='?',
@@ -128,6 +131,9 @@ def _processCommand(args):
 
     ret_data = not args.silent
 
+    timeout = args.timeout
+    # timeout not implemented in queen command yet
+
     # queen command
     # TODO: not compatible with list yet
     if args.queen:
@@ -143,21 +149,21 @@ def _processCommand(args):
         if bid and drid:
             print(f"Sending drone {bid}.{drid} " \
                   f"command {args.com_num}... ", flush=True)
-            ret = queen.alcoveCommand(args.com_num, 
+            ret = queen.alcoveCommand(args.com_num, timeout=timeout,
                 bid=bid, drid=drid, args=args.arguments, ret_data=ret_data)
             
         # targeted board
         elif bid:
             print(f"Sending board {bid} " \
                   f"command {args.com_num}... ", flush=True)
-            ret = queen.alcoveCommand(args.com_num, 
+            ret = queen.alcoveCommand(args.com_num, timeout=timeout,
                 bid=bid, args=args.arguments, ret_data=ret_data)
             
         # list of targeted drones
         elif list_bid_drids:
             print(f"Sending list " \
                   f"command {args.com_num}... ", flush=True)
-            ret = queen.alcoveCommand(args.com_num, 
+            ret = queen.alcoveCommand(args.com_num, timeout=timeout,
                 args=args.arguments, ret_data=ret_data,
                 list_bid_drids=list_bid_drids)
 
@@ -165,7 +171,7 @@ def _processCommand(args):
         else:
             print(f"Processing all boards " \
                   f"command {args.com_num}... ", flush=True)
-            ret = queen.alcoveCommand(args.com_num, 
+            ret = queen.alcoveCommand(args.com_num, timeout=timeout,
                 all_boards=True, args=args.arguments, ret_data=ret_data)
             
         if ret[0] <= 0:
