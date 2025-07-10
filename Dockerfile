@@ -10,7 +10,7 @@ RUN pip install -r requirements.txt
 
 COPY ./src .
 
-RUN mkdir tmp
+RUN mkdir -p tmp
 
 # CMD ["python", "./primecam_readout/queen_agent.py"]
 
