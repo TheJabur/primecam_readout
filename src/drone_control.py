@@ -498,7 +498,9 @@ def statusDrone(bid, drid, drone_list=None, r=None):
     msg = f"Status: Drone {id}: ip={ip}, to_run={to_run}, running={running}"
     
     print(msg)
-    # return msg
+    return msg
+
+    # ip, to_run, running (or the msg string)
 
 
 # ============================================================================ #
