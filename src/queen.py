@@ -11,7 +11,7 @@
 # IMPORTS
 # ============================================================================ #
 
-import sys
+# import sys
 import time
 import redis
 import pickle
@@ -461,7 +461,7 @@ def _processCommandReturn(dat, r):
 
 # ============================================================================ #
 # _catchAllResponses
-def _catchAllResponses(p, num_clients, r):
+def _catchAllResponses(p, num_clients, r, timeout=60):
     """Listen for Redis responses, with a timeout.
 
     p: Redis pubsub object that listens for responses.
@@ -477,15 +477,17 @@ def _catchAllResponses(p, num_clients, r):
     # nothing to listen for!
     if num_clients <= 0:
         return resps
+    
+    # timeout
+    deadline = time.monotonic() + timeout
 
     # listen for new messages in subscribed channels
-    # there is no timeout logic 
-    # so this will not stop until all replies are received
-    for new_message in p.listen():
+    while time.monotonic() < deadline:
 
-        # only care about pmessages
-        if new_message['type'] != 'pmessage':
-            continue 
+        new_message = p.get_message(timeout=0.1)
+
+        if (not new_message) or (new_message['type'] != 'pmessage'):
+            continue
 
         # process this return
         resps.append(new_message)
@@ -493,13 +495,11 @@ def _catchAllResponses(p, num_clients, r):
 
         # stop when all expected returns received
         if len(resps) >= num_clients:
-            break
+            return resps
 
+    # if we get here then not all expected returns were recieved
+    print(f"Warning: Only {num_clients}/{len(resps)} returns received before timeout.")
     return resps
-
-    # timeout logic is a little tricky here
-    # because it can sit in the loop waiting and doing nothing
-    # and that needs to be independently interrupted at timeout
 
 
 # ============================================================================ #
