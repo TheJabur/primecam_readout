@@ -398,9 +398,6 @@ def publishResponse(resp, r, chan_str):
     '''Publish a response on return channel.
     '''
 
-    # TODO: publishing needs to be in its own thread
-    # to allow commands to be executed independent of returns
-
     chan = chans.comChan(chan=chan_str)
 
     # convert return to bytes object; required by Redis
