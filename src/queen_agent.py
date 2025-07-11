@@ -1286,7 +1286,8 @@ def _comNumAlcove(com_str):
 
 # ============================================================================ #
 # _sendAlcoveCommand
-def _sendAlcoveCommand(com_str, com_to=None, com_args=None, silent=False):
+def _sendAlcoveCommand(com_str, com_to=None, com_args=None, 
+                       silent=False, timeout=None):
     """Send Alcove command.
 
     com_str:    (str)   String name of command. 
@@ -1314,22 +1315,22 @@ def _sendAlcoveCommand(com_str, com_to=None, com_args=None, silent=False):
 
     if bid and drid:
         return queen.alcoveCommand(
-            com_num, args=com_args, ret_data=ret_data, 
+            com_num, args=com_args, ret_data=ret_data, timeout=timeout,
             bid=bid, drid=drid)
     
     elif bid:
         return queen.alcoveCommand(
-            com_num, args=com_args, ret_data=ret_data, 
+            com_num, args=com_args, ret_data=ret_data, timeout=timeout,
             bid=bid)
 
     elif list_bid_drids:
         return queen.alcoveCommand(
-            com_num, args=com_args, ret_data=ret_data,
+            com_num, args=com_args, ret_data=ret_data, timeout=timeout,
             list_bid_drids=list_bid_drids)
 
     else: # all-boards commands
         return queen.alcoveCommand(
-            com_num, args=com_args, ret_data=ret_data, 
+            com_num, args=com_args, ret_data=ret_data, timeout=timeout,
             all_boards=True)
 
 if __name__ == '__main__':
