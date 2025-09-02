@@ -494,13 +494,21 @@ def createCustomCombFiles(freqs_rf=None, amps=None, phis=None):
 
 # ============================================================================ #
 # createCustomCombFilesFromCurrentComb
-def createCustomCombFilesFromCurrentComb():
+def createCustomCombFilesFromCurrentComb(s='fap'):
     """Create custom comb files from the current comb.
+
+    s: (str) Which files to write, e.g. 'f' is freqs.
     """
 
-    f_comb = io.load(io.file.f_rf_tones_comb)
-    a_comb = io.load(io.file.a_tones_comb)
-    p_comb = io.load(io.file.p_tones_comb)
+    f_comb = a_comb = p_comb = None
+    if 'f' in s:
+        f_comb = io.load(io.file.f_rf_tones_comb)
+
+    if 'a' in s:  
+        a_comb = io.load(io.file.a_tones_comb)
+
+    if 'p' in s:
+        p_comb = io.load(io.file.p_tones_comb)
 
     createCustomCombFiles(freqs_rf=f_comb, amps=a_comb, phis=p_comb)
 

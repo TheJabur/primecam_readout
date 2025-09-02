@@ -68,7 +68,7 @@ def _resetAccumAndSync(chan, freqs):
     dsp_regs.write(0x08, accum_length)
     dsp_regs.write(0x08, accum_length | sync_in)
 
-    # accum_rst    = 2**24  # (active rising edge)
+    # accum_rst = 2**24  # (active rising edge)
     # dsp_regs.write(0x08, accum_length | accum_rst | sync_in)
 
     # DDS shift
@@ -93,7 +93,8 @@ def _loadBinList(chan, freq_list):
     bin_list = np.abs(bin_list)
 
     dsp_regs = _firmware_chan(cfg_b.firmware, cfg_b.drid).dsp_regs_0
-    
+    # firmware.chan1.dsp_regs_0
+
     # only write tones to bin list
     for addr in range(fft_len):
         if addr<(np.size(bin_list)):
@@ -275,7 +276,7 @@ def writeTestTone():
 
 # ============================================================================ #
 # writeNewVnaComb
-def writeNewVnaComb(freq_noise=5_000):
+def writeNewVnaComb(freq_noise=0):
     """Create and write the vna sweep tone comb.
 
     freq_noise: (float) Frequency noise to add to the tone placement.
@@ -289,7 +290,10 @@ def writeNewVnaComb(freq_noise=5_000):
     chan = cfg_b.drid # drone (chan) id is from config
 
     freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    # freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
+
+    # add some frequency noise (could be useful for evenly spaced tones)
+    if freq_noise:
+        freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
 
     amps, phis = genAmpsAndPhis(freqs_bb)
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)

@@ -106,6 +106,144 @@ def _progressBar(i, N, msg="", S=10):
 # TESTS
 # ============================================================================ #
 
+# _sendCom()
+# _sendComAll()
+
+# _sendComAll("setNCLO", nclo)
+# _sendComAll("startChains")
+
+# _sendComAll("writeNewVnaComb")
+# _sendComAll("vnaSweep")
+# _sendComAll("findVnaResonators")
+
+# _sendComAll("writeTargCombFromVnaSweep")
+# _sendComAll("targetSweep")
+# _sendComAll("findTargResonators")
+# _sendComAll("writeTargCombFromTargSweep")
+
+# _sendComAll("timestreamOn", 1)
+
+# _sendComAll("modifyCustomCombAmps",factor)
+# _sendComAll("writeCombFromCustomList")
+# _sendComAll("createCustomCombFilesFromCurrentComb")
+
+# _sendComAll("findCalTones")
+
+
+# ============================================================================ #
+# tls_array_test
+def tls_array_test():
+    """
+    TLS test array test.
+
+    Quantify how long this will take.
+    Max current through heater?
+    Attenuate enough that final tone power doesn't exceed DAC max.
+    Confirm attenuation with VNA first.
+
+    Timestreams are ~4 MB/s for a single drone.
+        For a 60 s tod with 4 drones: ~1 GB
+    """
+
+    print("TLS test starting.")
+    
+
+    t_start = time.time()
+
+    # config
+    nclo = 500 # MHz
+    steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
+    # steps_tone = [-5, -3, 0, 3, 5] # dB; Note not to exceed DAC max!
+    steps_tone = [-10, -8, -5, -2, 0] # dB
+    t_step = 1800 # s; time spent at each temperature step in total
+    t_stabilize = 1200 # s; time to wait for temp stabilization at each step
+    t_tod = 60 # s; tod length at each step
+    fs = 512e6/1024/1024 # samples per second (~488 Hz) (single drone)
+    timestream = TimeStream(host="192.168.3.40", port=4096)
+
+    # startup the timestreams
+    _sendComAll("setNCLO", nclo)
+    _sendComAll("startChains")
+    _sendComAll("timestreamOn", 1)
+
+    # number of steps
+    N_steps_T = len(steps_temp) # temp steps
+    N_steps_P = len(steps_tone) # tone power steps
+    N_steps = N_steps_T*N_steps_P # total steps
+
+    # number of packets to collect at each step
+    # assuming single drone
+    N_packets_tod = int(t_tod*fs) 
+    N_packets_total = N_packets_tod*N_steps
+
+    i_T = i_P = 0
+    msg = f"Running: ({N_steps_T*t_step} s; {N_packets_total} packets):"
+    _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
+
+    for i_T,T in enumerate(steps_temp): # step in temperature
+        t_step_start = time.time()
+
+        # sleep, to hopefully let cryostat temp stabilize
+        time.sleep(t_stabilize)
+
+        for i_P,P in enumerate(steps_tone): # step in probe tone power
+            
+            # perform a vna sweep (roughly identfy resonances)
+            _sendComAll("writeNewVnaComb")
+            _sendComAll("vnaSweep")
+            _sendComAll("findVnaResonators", 
+                        "width_min=5, width_max=100, peak_prom_db=, peak_dis=100")
+            # width_min, width_max, peak_prom_db, peak_dis
+            # min width: 5 bins. 1 bin is 500 MHz / (1000 tones * 500 steps) = 5 kHz
+
+            # perform a target sweep (higher resolution to find resonance)
+            _sendComAll("writeTargCombFromVnaSweep")
+            _sendComAll("targetSweep")
+            _sendComAll("findTargResonators")
+            _sendComAll("writeTargCombFromTargSweep")
+
+            # create the custom comb files
+            if i_T == i_P == 0: # first temp and first tone power
+                # for very first test, create all custom comb files
+                _sendComAll("createCustomCombFilesFromCurrentComb", 'fap')
+            else:
+                # but for subsequent tests don't touch amplitudes
+                _sendComAll("createCustomCombFilesFromCurrentComb", 'fp')
+
+            # change tone amplitudes for this step
+            Pl = steps_tone[i_P-1] if i_P>0 else 0
+            factor = 10**((P - Pl)/20) # amp factor for last step to this step
+            _sendComAll("modifyCustomCombAmps", factor)
+
+            # write custom comb
+            _sendComAll("writeCombFromCustomList")
+            # comb should now be on resonances
+            # with amplitudes adjusted for this step
+            # adjust initial tone power tuning to test max
+
+            # take timestreams
+            packets = _captureTimestream(N_packets_tod, timestream)
+
+            # save timestream as raw packets in a single file
+            fname = io.saveToTmp(
+                packets, 
+                filename=f'tls_test_{T}_{P}_', 
+                use_timestamp=True)  
+            
+            _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
+
+        # wait for the next temperature step to start
+        t_wait = t_step - time.time() + t_step_start
+        if t_wait > 0:
+            time.sleep(t_wait)
+        else:
+            # oops, we went over alotted time!
+            print("Temperature step time exceeded!")
+
+    print(f"TLS test complete. Elapsed time: {time.time() - t_start:.6f} seconds")
+
+    _sendComAll("timestreamOn", 0)    
+
 
 # ============================================================================ #
 # loopbackCapture
@@ -279,21 +417,6 @@ def timestreamMonitorTest_monitorOnly():
 
 
 '''
-# ============================================================================ #
-# captureTimestream
-def captureTimestream(packets, ip, port=4096):
-    """Capture I and Q of timestream.
-
-    packets: Number of packets to capture.
-    ip: IP address to capture from.
-    port: IP port.
-    """
-
-    timestream = TimeStream(host=ip, port=port)
-    I, Q = timestream.getTimeStreamChunk(packets)
-
-    return I,Q
-
 
 # ============================================================================ #
 # targetSweepPowerTest 
