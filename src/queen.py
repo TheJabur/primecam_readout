@@ -62,6 +62,7 @@ def _com():
         15:test.loopbackCaptureLong,
         16:test.timestreamMonitorTest,
         17:test.timestreamMonitorTest_monitorOnly,
+        18:test.tls_array_test
     }
 
 
