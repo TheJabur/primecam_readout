@@ -18,6 +18,11 @@ class TimeStream:
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        # Set socket options to allow address reuse
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        
         self.sock.bind((self.host, self.port))
 
         self.packet_struct = {
