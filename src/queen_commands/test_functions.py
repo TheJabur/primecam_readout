@@ -163,7 +163,6 @@ def tls_array_test():
 
     # startup the timestreams
     _sendComAll("setNCLO", nclo)
-    _sendComAll("startChains")
     _sendComAll("timestreamOn", 1)
 
     # number of steps
