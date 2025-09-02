@@ -234,13 +234,13 @@ def tls_array_test():
             # save timestreams as separate files
             test_name = f"tls_{T}_{P}_"
             packets_tod, packets_I, packets_Q, packets_count, packets_ts, packets_info, packets_chans, packets_ip = packets
-            io.saveToTmp(packets_ip, filename=f'{test_name}_ip', use_timestamp=True)
-            io.saveToTmp(packets_I, filename=f'{test_name}_I', use_timestamp=True)
-            io.saveToTmp(packets_Q, filename=f'{test_name}_Q', use_timestamp=True)
-            io.saveToTmp(packets_info, filename=f'{test_name}_info', use_timestamp=True)
-            io.saveToTmp(packets_count, filename=f'{test_name}_count', use_timestamp=True)
-            io.saveToTmp(packets_chans, filename=f'{test_name}_chans', use_timestamp=True)
-            io.saveToTmp(packets_ts, filename=f'{test_name}_ts',  use_timestamp=True)
+            io.saveToTmp(packets_ip, filename=f'{test_name}_ip_', use_timestamp=True)
+            io.saveToTmp(packets_I, filename=f'{test_name}_I_', use_timestamp=True)
+            io.saveToTmp(packets_Q, filename=f'{test_name}_Q_', use_timestamp=True)
+            io.saveToTmp(packets_info, filename=f'{test_name}_info_', use_timestamp=True)
+            io.saveToTmp(packets_count, filename=f'{test_name}_count_', use_timestamp=True)
+            io.saveToTmp(packets_chans, filename=f'{test_name}_chans_', use_timestamp=True)
+            io.saveToTmp(packets_ts, filename=f'{test_name}_ts_',  use_timestamp=True)
             
             _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
 
