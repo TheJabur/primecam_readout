@@ -152,11 +152,13 @@ def tls_array_test():
 
     # config
     nclo = 500 # MHz
-    steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
+    # steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
+    steps_temp = [50, 75]
     # steps_tone = [-5, -3, 0, 3, 5] # dB; Note not to exceed DAC max!
-    steps_tone = [-10, -8, -5, -2, 0] # dB
+    # steps_tone = [-10, -8, -5, -2, 0] # dB
+    steps_tone = [-10, -8]
     # t_step = 1800 # s; time spent at each temperature step in total
-    t_step = 180
+    t_step = 300
     # t_stabilize = 1200 # s; time to wait for temp stabilization at each step
     t_stabilize = 30
     t_tod = 60 # s; tod length at each step
