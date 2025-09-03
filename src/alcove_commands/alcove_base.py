@@ -398,24 +398,48 @@ def getNCLO(chan=None):
 
 # ============================================================================ #
 # _setNCLO2
-def _setNCLO2(chan, lofreq):
-    """Sets the fine NCLO frequency for a specified channel for sweeps.
+def _setNCLO2(chan, lofreq, align_to_packets=False):
+    """
+    Set the fine NCO (Numerically Controlled Oscillator) frequency
+    for a specified channel.
 
-    chan: The channel number (1 to 4) to configure.
-    lofreq: The desired local oscillator frequency in MHz.
+    chan: The channel number (1-4) to configure.
+    lofreq: (float) Desired NCO frequency in MHz.
+    align_to_packets: (bool) align to packet sample rate.
     """
 
     import numpy as np
-    
-    try:
-        MHz_per_int = cfg_b.wf_fs/1e6/2**22
-        digi_val = int(np.round(lofreq/MHz_per_int))
-        # actual_freq = digi_val*MHz_per_int
 
-        cfg_b.firmware.mix_freq_set_0.write(4*(chan - 1), digi_val)
+    freq_mhz = lofreq
+
+    try:
+        # Constants
+        fs_hz = cfg_b.wf_fs                # System sample rate (Hz); 512e6 Hz
+        nco_bits = 22                      # Width of NCO phase accumulator
+        freq_resolution_hz = fs_hz / 2**nco_bits  # Frequency step per integer DTW
+
+        # Convert desired frequency (MHz) to Hz
+        freq_hz = freq_mhz * 1e6
+
+        # Optional coherence quantization (align to packet sample rate)
+        if align_to_packets:
+            fft_len = cfg_b.wf_fft_len # 1024
+            num_bins = 1024 # should move to cfg_b
+            packet_rate_hz = fs_hz / (fft_len * num_bins)  # ≈ 488.28125 Hz
+            freq_hz = np.round(freq_hz / packet_rate_hz) * packet_rate_hz
+
+        # Compute digital tuning word (DTW)
+        dtw = int(np.round(freq_hz / freq_resolution_hz))
+
+        # Actual frequency that will be set
+        actual_freq_hz = dtw * freq_resolution_hz
+
+        # Write DTW to firmware register for the given channel
+        register_offset = 4 * (chan - 1)
+        cfg_b.firmware.mix_freq_set_0.write(register_offset, dtw)
 
     except Exception as e:
-        print(f"_setNCLO2 Error: {e}")
+        print(f"set_fine_nco_frequency Error: {e}")
 
 
 # ============================================================================ #
