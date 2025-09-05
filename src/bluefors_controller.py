@@ -487,6 +487,7 @@ class BlueFTController:
         if self._has_mxc:
         
             data = self._get_value_request(self.mixing_chamber_heater, target)
+            print(data)
             try:
                 return self._get_value_from_data_response(
                     data, device=self.mixing_chamber_heater, target=target
@@ -695,7 +696,7 @@ class BlueFTController:
 
         """
         if self._has_mxc:
-            return self.set_mxc_heater_value("Setpoint", temperature / 1000.0)
+            return self.set_mxc_heater_value("setpoint", temperature / 1000.0)
         
         else:
             raise Exception('Mixing chamber channel ID not configured.')
