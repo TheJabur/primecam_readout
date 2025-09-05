@@ -442,7 +442,8 @@ class BlueFTController:
             The resistance of the given channel.
 
         """
-        if self._has_mxc:       
+        if self._has_mxc:
+            print(f"mixing chamber channel id: {self.mixing_chamber_channel_id}")
             return self.get_channel_temperature(self.mixing_chamber_channel_id)
         
         else:
@@ -485,11 +486,7 @@ class BlueFTController:
 
         """
         if self._has_mxc:
-        
-            print(f"mixing chamber heater: {self.mixing_chamber_heater}")
-            print(f"target: {target}")
             data = self._get_value_request(self.mixing_chamber_heater, target)
-            print(data)
             try:
                 return self._get_value_from_data_response(
                     data, device=self.mixing_chamber_heater, target=target
