@@ -147,12 +147,13 @@ def bluefors_test():
         mixing_chamber_channel_id = 6
         )
 
-    active_channels = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    active_channels = [1, 2, 5, 6]
 
     for ch in active_channels:
         print(f"Channel {ch} temp: {controller.get_channel_temperature(ch)} Kelvin")
         print(f"Channel {ch} resistance: {controller.get_channel_resistance(ch)} Ohm")
 
+    print(f"MXC temperature: {controller.get_mxc_temperature()}")
     print(f"MXC heater status: {controller.get_mxc_heater_status()}")
     print(f"MXC heater power: {controller.get_mxc_heater_power()} uW")
     print(f"MXC heater PID: {controller.get_mxc_heater_mode()}")
