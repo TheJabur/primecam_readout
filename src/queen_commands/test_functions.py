@@ -159,7 +159,7 @@ def bluefors_test():
     print(f"MXC heater PID: {controller.get_mxc_heater_mode()}")
     print(f"MXC heater setpoint: {controller.get_mxc_heater_setpoint()} K")
 
-    mxc_setpoint = 0.07
+    mxc_setpoint = 70 # mK
     status = controller.set_mxc_heater_setpoint(mxc_setpoint)
     print(f"SET MXC heater setpoint ({mxc_setpoint} K): {status}")
 
