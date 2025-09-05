@@ -14,6 +14,7 @@ import alcove
 import alcove_commands.alcove_base as alcove_base
 import queen_commands.control_io as io
 from timestream import TimeStream, parsePtpTimestamp
+from bluefors_controller import BlueFTController
 
 
 
@@ -131,6 +132,34 @@ def _progressBar(i, N, msg="", S=10):
 
 
 # ============================================================================ #
+# bluefors_test
+def bluefors_test():
+
+    # avoid warnings if no https connection can be established
+    import requests
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+    controller = BlueFTController(
+        ip   = '192.168.62.210', 
+        port = 49098, 
+        key  = '868c978c-9375-4e74-ae98-512725fe5934', 
+        mixing_chamber_channel_id = 6
+        )
+
+    active_channels = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    for ch in active_channels:
+        print(f"Channel {ch} temp: {controller.get_channel_temperature(ch)} Kelvin")
+        print(f"Channel {ch} resistance: {controller.get_channel_resistance(ch)} Ohm")
+
+    print(f"MXC heater status: {controller.get_mxc_heater_status()}")
+    print(f"MXC heater power: {controller.get_mxc_heater_power()} uW")
+    print(f"MXC heater PID: {controller.get_mxc_heater_mode()}")
+    print(f"MXC heater setpoint: {controller.get_mxc_heater_setpoint()} K")
+
+
+# ============================================================================ #
 # tls_array_test
 def tls_array_test():
     """
@@ -193,7 +222,7 @@ def tls_array_test():
             
             # perform a vna sweep (roughly identfy resonances)
             _sendComAll("writeNewVnaComb")
-            _sendComAll("vnaSweep")
+            _sendComAll("vnaSweep") # ~ 15 s
             _sendComAll("findVnaResonators", 
                         "width_min=5, width_max=100, peak_prom_db=, peak_dis=100")
             # width_min, width_max, peak_prom_db, peak_dis
@@ -201,7 +230,7 @@ def tls_array_test():
 
             # perform a target sweep (higher resolution to find resonance)
             _sendComAll("writeTargCombFromVnaSweep")
-            _sendComAll("targetSweep")
+            _sendComAll("targetSweep") # ~ 15 s
             _sendComAll("findTargResonators")
             _sendComAll("writeTargCombFromTargSweep")
 
@@ -227,12 +256,6 @@ def tls_array_test():
             # take timestreams
             packets = _captureTimestream(N_packets_tod, timestream)
 
-            # save timestream as raw packets in a single file
-            # fname = io.saveToTmp(
-                # packets, 
-                # filename=f'tls_test_{T}_{P}_', 
-                # use_timestamp=True)
-
             # save timestreams as separate files
             test_name = f"tls_{T}_{P}_"
             packets_tod, packets_I, packets_Q, packets_count, packets_ts, packets_info, packets_chans, packets_ip = packets
@@ -256,7 +279,7 @@ def tls_array_test():
 
     print(f"TLS test complete. Elapsed time: {time.time() - t_start:.6f} seconds")
 
-    _sendComAll("timestreamOn", 0)    
+    _sendComAll("timestreamOn", 0)
 
 
 # ============================================================================ #
