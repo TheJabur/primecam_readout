@@ -486,6 +486,8 @@ class BlueFTController:
         """
         if self._has_mxc:
         
+            print(f"mixing chamber heater: {self.mixing_chamber_heater}")
+            print(f"target: {target}")
             data = self._get_value_request(self.mixing_chamber_heater, target)
             print(data)
             try:
