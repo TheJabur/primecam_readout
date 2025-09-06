@@ -252,6 +252,7 @@ class BlueFTController:
         if self.key == None:
             raise PIDConfigException("No key provided for value request.")
         requestPath = f"https://{self.ip}:{self.port}/values/{device.replace('.','/')}/{target}/?prettyprint=1&key={self.key}"
+        print(requestPath)
         self.logger.debug(f"GET: {requestPath}")
         # Let's see if the request was successful, if not, we return a NaN and logg an error
         try:
@@ -684,7 +685,9 @@ class BlueFTController:
 
             def test():
                 import requests
-                url = f'http://{self.ip}/values/mapper/heater_mappings_bftc/device/sample/'
+                url = f'http://{self.ip}:{self.port}/values/mapper/heater_mappings_bftc/device/sample/'
+                # url = f"https://{self.ip}:{self.port}/values/{device.replace('.','/')}/{target}/?prettyprint=1&key={self.key}"
+                # url = f"https://{self.ip}:{self.port}/values/?prettyprint=1&key={self.key}"
                 params = {'api_key': self.key}  # If required
                 response = requests.get(url, params=params)
                 print(response.json())
