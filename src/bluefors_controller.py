@@ -677,6 +677,10 @@ class BlueFTController:
             print(self.get_mxc_heater_value("pid_setpoint"))
             print(self.get_mxc_heater_value("mxc_setpoint"))
             print(self.get_mxc_heater_value("temperature_setpoint"))
+            print(self.get_mxc_heater_value("pid_set_point"))
+            print(self.get_mxc_heater_value("set_point"))
+            print(self.get_mxc_heater_value("target_temperature"))
+            print(self.get_mxc_heater_value("sp"))
 
             return float(self.get_mxc_heater_value("setpoint"))
         
