@@ -673,6 +673,11 @@ class BlueFTController:
 
         """
         if self._has_mxc:
+            print(self.get_mxc_heater_value("setpoint"))
+            print(self.get_mxc_heater_value("pid_setpoint"))
+            print(self.get_mxc_heater_value("mxc_setpoint"))
+            print(self.get_mxc_heater_value("temperature_setpoint"))
+
             return float(self.get_mxc_heater_value("setpoint"))
         
         else:
