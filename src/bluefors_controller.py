@@ -686,7 +686,7 @@ class BlueFTController:
             def test():
                 import requests
                 # url = f'http://{self.ip}:{self.port}/values/mapper/heater_mappings_bftc/device/sample/'
-                requestPath = f"https://{self.ip}:{self.port}/values/mapper/heater_mappings_bftc/device/sample/?prettyprint=1&key={self.key}"
+                requestPath = f"https://{self.ip}:{self.port}/values/mapper/heater_mappings_bftc/device/sample/power/?prettyprint=1&key={self.key}"
                 response = requests.get(requestPath, verify=False)
                 print(response)
                 # url = f"https://{self.ip}:{self.port}/values/?prettyprint=1&key={self.key}"
