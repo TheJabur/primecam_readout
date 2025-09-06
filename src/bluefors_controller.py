@@ -682,6 +682,14 @@ class BlueFTController:
             print(self.get_mxc_heater_value("target_temperature"))
             print(self.get_mxc_heater_value("sp"))
 
+            def test():
+                import requests
+                url = f'http://{self.ip}/values/mapper/heater_mappings_bftc/device/sample/'
+                params = {'api_key': self.key}  # If required
+                response = requests.get(url, params=params)
+                print(response.json())
+            test()
+
             return float(self.get_mxc_heater_value("setpoint"))
         
         else:
