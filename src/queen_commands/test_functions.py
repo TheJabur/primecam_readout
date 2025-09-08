@@ -101,6 +101,28 @@ def _progressBar(i, N, msg="", S=10):
     print(f"{msg} {bar} ({i}/{N})", end=end)
 
 
+# ============================================================================ #
+# _setup_bluefors_controller
+def _setup_bluefors_controller():
+
+    # avoid warnings if no https connection can be established
+    import requests
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+    controller = BlueFTController(
+        ip   = '192.168.62.210', 
+        port = 49098, 
+        key  = '868c978c-9375-4e74-ae98-512725fe5934', 
+        mixing_chamber_channel_id = 6,
+        mixing_chamber_heater_id = 4
+        )
+
+    # active_channels = [1, 2, 5, 6]
+
+    return controller
+
+
 
 
 # ============================================================================ #
@@ -132,40 +154,6 @@ def _progressBar(i, N, msg="", S=10):
 
 
 # ============================================================================ #
-# bluefors_test
-def bluefors_test():
-
-    # avoid warnings if no https connection can be established
-    import requests
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-    controller = BlueFTController(
-        ip   = '192.168.62.210', 
-        port = 49098, 
-        key  = '868c978c-9375-4e74-ae98-512725fe5934', 
-        mixing_chamber_channel_id = 6,
-        mixing_chamber_heater_id = 4
-        )
-
-    active_channels = [1, 2, 5, 6]
-
-    for ch in active_channels:
-        print(f"Channel {ch} temp: {controller.get_channel_temperature(ch)} Kelvin")
-        print(f"Channel {ch} resistance: {controller.get_channel_resistance(ch)} Ohm")
-
-    print(f"MXC temperature: {controller.get_mxc_temperature()}")
-    print(f"MXC heater status: {controller.get_mxc_heater_status()}")
-    print(f"MXC heater power: {controller.get_mxc_heater_power()} uW")
-    print(f"MXC heater PID: {controller.get_mxc_heater_mode()}")
-    print(f"MXC heater setpoint: {controller.get_mxc_heater_setpoint()} K")
-
-    mxc_setpoint = 70 # mK
-    status = controller.set_mxc_heater_setpoint(mxc_setpoint)
-    print(f"SET MXC heater setpoint ({mxc_setpoint} mK): {status}")
-
-
-# ============================================================================ #
 # tls_array_test
 def tls_array_test():
     """
@@ -188,17 +176,18 @@ def tls_array_test():
     # config
     nclo = 500 # MHz
     # steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
-    steps_temp = [50, 75]
+    steps_temp = [100, 150]
     # steps_tone = [-5, -3, 0, 3, 5] # dB; Note not to exceed DAC max!
     # steps_tone = [-10, -8, -5, -2, 0] # dB
-    steps_tone = [-10, -8]
-    # t_step = 1800 # s; time spent at each temperature step in total
-    t_step = 300
-    # t_stabilize = 1200 # s; time to wait for temp stabilization at each step
-    t_stabilize = 30
+    steps_tone = [-2, 0]
+    t_step = 2300 # s; time spent at each temperature step in total
+    t_stabilize = 1800 # s; time to wait for temp stabilization at each step
     t_tod = 60 # s; tod length at each step
     fs = 512e6/1024/1024 # samples per second (~488 Hz) (single drone)
     timestream = TimeStream(host="192.168.3.40", port=4096)
+
+    # setup the bluefors controller
+    controller = _setup_bluefors_controller()
 
     # startup the timestreams
     _sendComAll("setNCLO", nclo)
@@ -220,6 +209,9 @@ def tls_array_test():
 
     for i_T,T in enumerate(steps_temp): # step in temperature
         t_step_start = time.time()
+
+        # set step cryostat temperature
+        status = controller.set_mxc_heater_setpoint(T)
 
         # sleep, to hopefully let cryostat temp stabilize
         time.sleep(t_stabilize)
