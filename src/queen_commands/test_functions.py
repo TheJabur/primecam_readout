@@ -144,7 +144,8 @@ def bluefors_test():
         ip   = '192.168.62.210', 
         port = 49098, 
         key  = '868c978c-9375-4e74-ae98-512725fe5934', 
-        mixing_chamber_channel_id = 6
+        mixing_chamber_channel_id = 6,
+        mixing_chamber_heater_id = 4
         )
 
     active_channels = [1, 2, 5, 6]
