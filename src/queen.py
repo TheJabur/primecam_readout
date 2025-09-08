@@ -63,7 +63,7 @@ def _com():
         16:test.timestreamMonitorTest,
         17:test.timestreamMonitorTest_monitorOnly,
         18:test.tls_array_test,
-        19:test.bluefors_test,
+        # 19:test.bluefors_test,
     }
 
 
