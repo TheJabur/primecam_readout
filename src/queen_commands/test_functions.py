@@ -175,11 +175,11 @@ def tls_array_test():
 
     # config
     nclo = 500 # MHz
-    # steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
-    steps_temp = [50, 100]
+    steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
+    # steps_temp = [50, 100]
     # steps_tone = [-5, -3, 0, 3, 5] # dB; Note not to exceed DAC max!
-    # steps_tone = [-10, -8, -5, -2, 0] # dB
-    steps_tone = [-10, 0]
+    steps_tone = [-10, -8, -5, -2, 0] # dB
+    # steps_tone = [-10, 0]
     t_step = 4000 # s; time spent at each temperature step in total
     t_stabilize = 3600 # s; time to wait for temp stabilization at each step
     t_tod = 60 # s; tod length at each step
@@ -221,8 +221,7 @@ def tls_array_test():
             # perform a vna sweep (roughly identfy resonances)
             _sendComAll("writeNewVnaComb")
             _sendComAll("vnaSweep") # ~ 15 s
-            _sendComAll("findVnaResonators", 
-                        "width_min=5, width_max=100, peak_prom_db=, peak_dis=100")
+            _sendComAll("findVnaResonators")
             # width_min, width_max, peak_prom_db, peak_dis
             # min width: 5 bins. 1 bin is 500 MHz / (1000 tones * 500 steps) = 5 kHz
 

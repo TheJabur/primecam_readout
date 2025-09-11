@@ -66,11 +66,17 @@ def _stitchS21m(S21m, bw=500, sw=100):
 # _findResonators_alt
 def _findResonators_alt(
         f, Z, 
-        peak_prom_std=10, peak_prom_db=0, 
-        peak_dis=100, width_min=5, width_max=100,
-        stitch=True, stitch_sw=100, 
-        remove_cont=True, continuum_wn=300, 
-        remove_noise=True, noise_wn=30_000,
+        peak_prom_std=15, 
+        peak_prom_db=0, 
+        peak_dis=500, 
+        width_min=5, 
+        width_max=1000,
+        stitch=True, 
+        stitch_sw=100, 
+        remove_cont=True, 
+        continuum_wn=300, 
+        remove_noise=True, 
+        noise_wn=30_000,
         stitch_bw=None
     ):
     '''
