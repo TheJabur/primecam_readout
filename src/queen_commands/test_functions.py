@@ -297,6 +297,8 @@ def loopbackCapture():
     # _sendComAll("writeNewVnaComb")     # gen. tone comb
     # _sendComAll("timestreamOn", 1)     # start streaming
 
+    N_packets = 1
+
     start = time.time()
     packets = _captureTimestream(N_packets)    # capture tods
     print(f"Elapsed time: {time.time() - start:.6f} seconds")
