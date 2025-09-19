@@ -291,7 +291,8 @@ def loopbackCapture():
     # packet_per_second = 976
     t_obs = 60 # s, ~1 GB @ 488 Hz
     # t_obs = 30 # s, ~1 GB @ 976 Hz
-    N_packets = 4*packet_per_second*t_obs
+    # N_packets = 4*packet_per_second*t_obs
+    N_packets = packet_per_second*t_obs
     # N_packets = 4096*4 # 4096 samples ~ 8.4 s
     # N_packets = 10
 
