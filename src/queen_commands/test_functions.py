@@ -287,21 +287,21 @@ def loopbackCapture():
 
     packet_per_second = 488 # 512e6/2**20
     # packet_per_second = 976
-    # t_obs = 60 # s, ~1 GB @ 488 Hz
-    t_obs = 30 # s, ~1 GB @ 976 Hz
+    t_obs = 60 # s, ~1 GB @ 488 Hz
+    # t_obs = 30 # s, ~1 GB @ 976 Hz
     N_packets = 4*packet_per_second*t_obs
     # N_packets = 4096*4 # 4096 samples ~ 8.4 s
     # N_packets = 10
 
     # _sendCom(bid, drid, "setNCLO", 600)        # set LO
-    _sendComAll("writeNewVnaComb")     # gen. tone comb
-    _sendComAll("timestreamOn", 1)     # start streaming
+    # _sendComAll("writeNewVnaComb")     # gen. tone comb
+    # _sendComAll("timestreamOn", 1)     # start streaming
 
     start = time.time()
     packets = _captureTimestream(N_packets)    # capture tods
     print(f"Elapsed time: {time.time() - start:.6f} seconds")
 
-    _sendComAll("timestreamOn", 0)     # stop streaming
+    # _sendComAll("timestreamOn", 0)     # stop streaming
 
     timestream, II, QQ, packet_counts, ptp_timestamps, packet_infos, channel_counts, packet_ips = packets
 
