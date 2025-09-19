@@ -43,6 +43,8 @@ class TimeStream:
         """
         """
 
+        print(f"capturing {N} packets")
+
         buffer_size = 9000
         rcv = [self.sock.recvfrom(buffer_size) for _ in range(N)]
         self.packets = np.array([bytearray(data) for data,_ in rcv])
