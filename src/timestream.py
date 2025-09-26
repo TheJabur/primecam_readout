@@ -20,8 +20,8 @@ class TimeStream:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # Set socket options to allow address reuse
-        # self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         
         self.sock.bind((self.host, self.port))
 
@@ -47,7 +47,13 @@ class TimeStream:
 
         buffer_size = 9000
 
-        rcv = [self.sock.recvfrom(buffer_size) for _ in range(N)]
+        # rcv = [self.sock.recvfrom(buffer_size) for _ in range(N)]
+        rcv = []
+        for _ in range(N):
+            print(f"packet {_}")
+            d = self.sock.recvfrom(buffer_size)
+            rcv.append(d)
+            print(d)
 
         self.packets = np.array([bytearray(data) for data,_ in rcv])
         self.addresses = np.array([addr[0] for _,addr in rcv])
