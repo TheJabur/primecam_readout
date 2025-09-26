@@ -23,7 +23,8 @@ class TimeStream:
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         
-        self.sock.bind((self.host, self.port))
+        # self.sock.bind((self.host, self.port))
+        self.sock.bind(("", self.port))
 
         self.packet_struct = {
             "data payload":             (0,    8191),
