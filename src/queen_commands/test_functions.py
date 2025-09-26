@@ -55,7 +55,7 @@ def _captureTimestream(N_packets, timestream=None):
 
         timestream = TimeStream(host=ip, port=port)
 
-    print(timestream)
+    # print(timestream)
 
     # capture an N packets timestream
     timestream.capturePackets(N_packets) 
