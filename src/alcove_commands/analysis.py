@@ -150,6 +150,133 @@ def _findResonators_alt(
 
 
 # ============================================================================ #
+# _findResonatorsVna
+def _findResonatorsVna(
+        f, Z, 
+        peak_prom_std  = 15, 
+        peak_prom_db   = 0, 
+        peak_dis       = 500, 
+        width_min      = 2, 
+        width_max      = 1000,
+        stitch         = True, 
+        stitch_sw      = 100, 
+        remove_cont    = True, 
+        continuum_wn   = 300, 
+        remove_noise   = True, 
+        noise_wn       = 30_000,
+        stitch_bw      = None,
+        peak_dis_hz    = 0,
+        width_min_hz   = 0,
+        width_max_hz   = 0,
+        peak_prom_auto = False,
+        wlen           = None
+    ):
+    '''
+    f:             (1D array of floats) Frequency of S21 samples.
+    Z:             (1D array of complex) Forward transmission S_21 as complex.
+    peak_prom_std: (float) Peak height from surroundings, in noise std multiples.
+                    Uses larger of peak_prom_db or peak_prom_std.
+    peak_prom_db:  (float) Peak height from surroundings, in Db.
+                    Uses larger of peak_prom_db or peak_prom_std.
+    peak_dis:      (int) Min distance between peaks [bins].
+    width_min      (int) Peak width minimum. [bins]
+    width_max      (int) Peak width maximum. [bins]
+    stitch:        (bool) Whether to stitch (comb discontinuities).
+    stitch_sw:     (int) Discontinuity edge size for alignment [bins].
+    remove_cont:   (bool) Whether to subtract the continuum.
+    continuum_wn:  (int) Continuum filter cutoff frequency [Hz].
+    remove_noise:  (bool) Whether to subtract noise.
+    noise_wn:      (int) Noise filter cutoff frequency [Hz].
+    stitch_bw:     (int) Bins width of the stitch channels.
+    peak_dis_hz:   (float) Min distance between peaks [Hz].
+                    Overrides peak_dis.
+    width_min_hz:  (float) Peak width minimum [Hz].
+                    Overrides width_min.
+    width_max_hz:  (float) Peak width maximum [Hz].
+                    Overrides width_max.
+    peak_prom_auto: (bool) Automatically determine peak prominence.
+                    Overrides both peak_prom_std and peak_prom_db.
+    wlen:           (bool) 
+    '''
+    
+    from scipy.signal import find_peaks
+    import numpy as np
+
+    hz_per_bin = np.abs(f[1] - f[0])
+    
+    # type enforcement
+    peak_prom_std  = float(peak_prom_std)
+    peak_prom_db   = float(peak_prom_db)
+    peak_dis       = int(peak_dis)
+    width_min      = int(width_min)
+    width_max      = int(width_max)
+    stitch         = bool(stitch)
+    stitch_sw      = int(stitch_sw)
+    remove_cont    = bool(remove_cont)
+    continuum_wn   = int(continuum_wn)
+    remove_noise   = bool(remove_noise)
+    noise_wn       = int(noise_wn)
+    stitch_bw      = int(stitch_bw or cfg_b.sweep_steps)
+    peak_dis_hz    = float(peak_dis_hz)
+    width_min_hz   = float(width_min_hz)
+    width_max_hz   = float(width_max_hz)
+    peak_prom_auto = bool(peak_prom_auto)
+    wlen           = None if wlen is None else int(wlen)
+
+    # parameter priorities
+    peak_dis    = peak_dis_hz//hz_per_bin if peak_dis_hz else peak_dis
+    width_min   = width_min_hz//hz_per_bin if width_min_hz else width_min
+    width_max   = width_max_hz//hz_per_bin if width_max_hz else width_max
+    peak_width  = (width_min, width_max)
+
+    # initialize signal for peak finding
+    x = f
+    y = np.abs(Z) # using S_21 magnitude
+    
+    # convert prom from dB to std, choose larger
+    if peak_prom_db > 0:
+        peak_prom_db_std = np.amax(y)*(1 - 10**(-peak_prom_db/20))/noise_std
+        peak_prom_std = max(peak_prom_std, peak_prom_db_std)
+    
+    # stitch discontinuities caused by tone power differences
+    if stitch:
+        y = _stitchS21m(y, bw=stitch_bw, sw=stitch_sw)
+        
+    # remove baseline/continuum
+    if remove_cont:
+        y -= _butterFilter(y, x, 'low', continuum_wn, order=3)
+        
+    # remove noise
+    y_noise = _butterFilter(y, x, 'high', noise_wn, order=3)
+    noise_std = np.std(y_noise)
+    if remove_noise:
+        y -= y_noise
+
+    def find_peaks_prom(prom):
+        i_peaks, peak_properties = find_peaks(
+            x=-y, prominence=prom, distance=peak_dis, width=peak_width, wlen=wlen)
+        return f[i_peaks] # f_res
+
+    # solve for best peak prominence (overrides params)
+    if peak_prom_auto:
+        def bestPeakPromStd(min_shelf_len=1, min_prom=1, max_prom=100):
+            # min_shelf_len: min length in std of stable point ('shelf') to stop at
+            cnt_best = 0 # number of peaks found in current 'shelf'
+            prom_best = 1 # peak_prom_std used at start of 'shelf'
+            for peak_prom_std in np.linspace(min_prom, max_prom, 1000):
+                cnt = len(find_peaks_prom(peak_prom_std*noise_std))
+                if cnt == cnt_best:
+                    if (peak_prom_std - prom_best) > min_shelf_len:
+                        return (peak_prom_std + prom_best)/2 # use middle of shelf value
+                else:
+                    cnt_best = cnt
+                    prom_best = peak_prom_std
+        peak_prom_std = bestPeakPromStd() or peak_prom_std
+
+    return find_peaks_prom(peak_prom_std*noise_std) # f_res
+
+
+# ============================================================================ #
 # _findMins
 def _findMins(f, Z, stitch_bw=None):
     """Find the minimum (resonator peak) in each targ bin.
@@ -190,8 +317,8 @@ def findVnaResonators(**kwargs):
     """
 
     f, Z = io.load(io.file.s21_vna)
-    # f_res = _findResonators(f, Z, **kwargs)
-    f_res = _findResonators_alt(f, Z, **kwargs)
+    # f_res = _findResonators_alt(f, Z, **kwargs)
+    f_res = _findResonatorsVna(f, Z, **kwargs)
 
     io.save(io.file.f_res_vna, f_res)
 
