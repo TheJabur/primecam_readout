@@ -196,7 +196,7 @@ def _findResonatorsVna(
                     Overrides width_max.
     peak_prom_auto: (bool) Automatically determine peak prominence.
                     Overrides both peak_prom_std and peak_prom_db.
-    wlen:           (bool) 
+    wlen:          (int) A window that limits peak finding domain [bins].
     '''
     
     from scipy.signal import find_peaks
