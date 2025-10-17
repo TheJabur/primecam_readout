@@ -169,7 +169,11 @@ def _findResonatorsVna(
         width_min_hz   = 0,
         width_max_hz   = 0,
         peak_prom_auto = False,
-        wlen           = None
+        wlen           = None,
+        min_shelf_len  = 1, 
+        min_prom       = 1, 
+        max_prom       = 100,
+        shelf_thresh   = 1
     ):
     '''
     f:             (1D array of floats) Frequency of S21 samples.
@@ -194,9 +198,17 @@ def _findResonatorsVna(
                     Overrides width_min.
     width_max_hz:  (float) Peak width maximum [Hz].
                     Overrides width_max.
-    peak_prom_auto: (bool) Automatically determine peak prominence.
+    peak_prom_auto:(bool) Automatically determine peak prominence.
                     Overrides both peak_prom_std and peak_prom_db.
     wlen:          (int) A window that limits peak finding domain [bins].
+    min_shelf_len: (float) Only used if peak_prom_auto True.
+                    Required shelf length [std].
+    min_prom:      (float) Only used if peak_prom_auto True.
+                    Starting point in prominence space.
+    max_prom:      (float) Only used if peak_prom_auto True.
+                    Ending point in prominence space.
+                    If not solved by here, defaults back to peak_prom_std.
+    shelf_thresh:  (int) Shelf variability [# peaks].
     '''
     
     from scipy.signal import find_peaks
@@ -222,6 +234,10 @@ def _findResonatorsVna(
     width_max_hz   = float(width_max_hz)
     peak_prom_auto = bool(peak_prom_auto)
     wlen           = None if wlen is None else int(wlen)
+    min_shelf_len  = float(min_shelf_len)
+    min_prom       = float(min_prom)
+    max_prom       = float(max_prom)
+    shelf_thresh   = int(shelf_thresh)
 
     # parameter priorities
     peak_dis    = peak_dis_hz//hz_per_bin if peak_dis_hz else peak_dis
@@ -259,13 +275,14 @@ def _findResonatorsVna(
 
     # solve for best peak prominence (overrides params)
     if peak_prom_auto:
-        def bestPeakPromStd(min_shelf_len=1, min_prom=1, max_prom=100):
-            # min_shelf_len: min length in std of stable point ('shelf') to stop at
-            cnt_best = 0 # number of peaks found in current 'shelf'
+        def bestPeakPromStd(): # uses min_shelf_len, min_prom, max_prom, shelf_thresh
+            cnt_best = None # number of peaks found in current 'shelf'
             prom_best = 1 # peak_prom_std used at start of 'shelf'
             for peak_prom_std in np.linspace(min_prom, max_prom, 1000):
                 cnt = len(find_peaks_prom(peak_prom_std*noise_std))
-                if cnt == cnt_best:
+                cnt_best = cnt if cnt_best is None else cnt_best
+                # if cnt == cnt_best:
+                if (cnt_best - cnt) < shelf_thresh:
                     if (peak_prom_std - prom_best) > min_shelf_len:
                         return (peak_prom_std + prom_best)/2 # use middle of shelf value
                 else:
