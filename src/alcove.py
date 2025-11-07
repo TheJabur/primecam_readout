@@ -14,15 +14,11 @@
 
 import logging
 
-# import alcove_commands.test_functions as test
-# import alcove_commands.board_utilities as utils
-# import alcove_commands.alcove_base as alcove_base
-# import alcove_commands.tones as tones
-# import alcove_commands.sweeps as sweeps
-# import alcove_commands.analysis as analysis
-from alcove_commands import test, utils, alcove_base, tones, sweeps, analysis
+try:
+    from alcove_commands import test, utils, alcove_base, tones, sweeps, analysis
+except:
+    pass
 
-# import alcove_commands.board_io as board_io
 import clean_io
 
 from config import parentDir

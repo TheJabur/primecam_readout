@@ -11,7 +11,6 @@
 # IMPORTS
 # ============================================================================ #
 
-# import sys
 import time
 import redis
 import pickle
@@ -19,6 +18,7 @@ import logging
 from datetime import datetime
 
 from config import queen as cfg
+from config import board as cfg_b
 from config import parentDir
 
 import feeds
@@ -31,10 +31,10 @@ import queen_commands.test_functions as test
 
 
 # ============================================================================ #
-# CONFIG
+# INIT
 # ============================================================================ #
 
-
+# logging
 logging.basicConfig(
     filename=f'{parentDir(__file__)}/logs/queen.log', level=logging.DEBUG,
     style='{', datefmt='%Y-%m-%d %H:%M:%S', 
@@ -43,7 +43,7 @@ logging.basicConfig(
 
 
 # ============================================================================ #
-#  queen commands list
+# com
 def _com():
     return {
         1:alcoveCommand,
@@ -65,6 +65,7 @@ def _com():
         18:test.tls_array_test,
         # 19:test.bluefors_test,
     }
+com = _com
 
 
 
@@ -670,13 +671,3 @@ def _id(bid, drid=None):
         id = None
 
     return id
-
-
-
-
-# ============================================================================ #
-# INIT
-# ============================================================================ #
- 
-
-com = _com()
