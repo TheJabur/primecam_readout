@@ -65,7 +65,7 @@ def _com():
         18:test.tls_array_test,
         # 19:test.bluefors_test,
     }
-com = _com
+com = _com()
 
 
 
