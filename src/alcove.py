@@ -14,11 +14,7 @@
 
 import logging
 
-try:
-    from alcove_commands import test, utils, alcove_base, tones, sweeps, analysis
-except:
-    pass
-
+from alcove_commands import test, utils, alcove_base, tones, sweeps, analysis
 import clean_io
 
 from config import parentDir
