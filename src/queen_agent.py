@@ -564,10 +564,7 @@ class ReadoutAgent:
     def writeCombFromCustomList(self, session, params):
         """writeCombFromCustomList()
 
-        **Task** - Write the comb from custom tone files:
-            alcove_commands/custom_freqs.npy
-            alcove_commands/custom_amps.npy
-            alcove_commands/custom_phis.npy
+        **Task** - Write the comb from custom tone files.
 
         Args
         -------
@@ -658,10 +655,7 @@ class ReadoutAgent:
     def writeTargCombFromCustomList(self, session, params):
         """writeTargCombFromCustomList()
 
-        **Task** - Write the target comb from custom tone files:
-            alcove_commands/custom_freqs.npy
-            alcove_commands/custom_amps.npy
-            alcove_commands/custom_phis.npy
+        **Task** - Write the target comb from custom tone files.
 
         Args
         -------

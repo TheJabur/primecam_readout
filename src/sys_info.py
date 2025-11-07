@@ -10,8 +10,8 @@ import subprocess
 import numpy as np
 from datetime import datetime, timezone
 
-import alcove_commands.board_utilities as utils
-import alcove_commands.board_io as io
+from alcove_commands import utils
+from alcove_commands import board_io as io
 
 try: from config import queen as cfg_q
 except ImportError: cfg_q = None

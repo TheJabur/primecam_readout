@@ -9,6 +9,8 @@ if gateware_version >= 15:
     from . import tones
     from . import sweeps
     from . import analysis
+    from . import board_io
+    from . import transceiver_serialdriver
 
 else:
 
@@ -18,5 +20,6 @@ else:
     from . import tones
     from . import sweeps
     from . import analysis
+    from . import board_io
 
-__all__ = ["test", "utils", "alcove_base", "tones", "sweeps", "analysis"]
+__all__ = ["test", "utils", "alcove_base", "tones", "sweeps", "analysis", "board_io", "transceiver_serialdriver"]
