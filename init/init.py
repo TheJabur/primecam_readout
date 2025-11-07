@@ -28,13 +28,9 @@ try:
 
     # run gateware version appropriate init file
     if gateware_version >= 15:
-        print("init_15")
         import init_15
     else:
-        print("init_14")
         import init_14
 
 except Exception as e:
     print(e)
-
-print("init done.")

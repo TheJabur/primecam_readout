@@ -1,8 +1,10 @@
 
 # ============================================================================ #
-# alcove_base.py
+# alcove_base_15.py
 # Alcove commands common base.
+# Compatible with gateware versions 15+ (gen2).
 # James Burgoyne jburgoyne@phas.ubc.ca 
+# Ruixuan (Matt) Xie  mattxie956@gmail.com
 # Adrian Sinclair aksincla@asu.edu
 # CCAT Prime 2025  
 # ============================================================================ #
