@@ -7,7 +7,7 @@
 # ============================================================================ #
 
 from alcove_commands import alcove_base
-from alcove_base import *
+import alcove_commands.board_io as io
 
 try: from config import board as cfg_b
 except ImportError: cfg_b = None 
@@ -190,7 +190,7 @@ def genAmpsAndPhis(freqs, amp_max=(2**15-1), phase_trials=5):
     
     # waveform peak
     def ampPeak(freqs, amps, phis):
-        x,_,_ = generateWaveDdr4(freqs, amps, phis)
+        x,_,_ = alcove_base.generateWaveDdr4(freqs, amps, phis)
         return np.max(np.abs(x.real + 1j*x.imag))
     
     # sample random phases, choose best
@@ -241,9 +241,9 @@ def _writeComb(chan, freqs, amps, phi):
 
     # freqs *= freqOffsetFixHackFactor() # Fequency offset fix
      # implemented in tones._writeComb and alcove_base._setNCLO
-    wave, dphi, freq_actual = generateWaveDdr4(freqs, amps, phi)
+    wave, dphi, freq_actual = alcove_base.generateWaveDdr4(freqs, amps, phi)
     # write number of channels to 16 bit value in UDP packet
-    writeChannelCount(len(freqs))
+    alcove_base.writeChannelCount(len(freqs))
     #wave_real, wave_imag = _normWave(wave, max_amp=2**15-1)
     wave_real, wave_imag = wave.real.astype("int16"), wave.imag.astype("int16") 
     _waveAmpTest(wave, max_amp=2**15-1)

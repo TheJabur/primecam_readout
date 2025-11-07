@@ -5,7 +5,8 @@
 # CCAT Prime 2023  
 # ============================================================================ #
 
-from alcove_commands.alcove_base import *
+from alcove_commands import alcove_base
+import alcove_commands.board_io as io
 
 try: from config import board as cfg_b
 except ImportError: cfg_b = None 
@@ -147,11 +148,11 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
     flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
 
     def _Z(lofreq, Naccums=N_accums):
-        setFineNCLO(lofreq)
+        alcove_base.setFineNCLO(lofreq)
         sleep(0.003) # 0.003 s optimum to settle freq from testing
-        getSnapData(3, wrap=False) # clear
+        alcove_base.getSnapData(3, wrap=False) # clear
 
-        data = np.array([getSnapData(3, wrap=False) for _ in range(Naccums)])
+        data = np.array([alcove_base.getSnapData(3, wrap=False) for _ in range(Naccums)])
         Is = np.mean(data[:, 0], axis=0)
         Qs = np.mean(data[:, 1], axis=0)
 
@@ -166,7 +167,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
 
     print(f"_sweep time: {time.time() - start_time}")
         
-    setFineNCLO(0) # reset LO
+    alcove_base.setFineNCLO(0) # reset LO
 
     return (f, Z)
 
