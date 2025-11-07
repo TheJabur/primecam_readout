@@ -1,4 +1,5 @@
 import os
+import sys
 
 try:
     gateware_version = int(os.environ.get('PRIMECAM_READOUT_GATEWARE_VERSION'))
@@ -26,4 +27,5 @@ else:
     from . import analysis
     from . import board_io
 
+sys.modules['alcove_commands.alcove_base'] = alcove_base
 __all__ = ["test", "utils", "alcove_base", "tones", "sweeps", "analysis", "board_io", "transceiver_serialdriver"]
