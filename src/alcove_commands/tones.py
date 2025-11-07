@@ -6,7 +6,8 @@
 # CCAT Prime 2025  
 # ============================================================================ #
 
-from alcove_commands.alcove_base import *
+from alcove_commands import alcove_base
+from alcove_base import *
 
 try: from config import board as cfg_b
 except ImportError: cfg_b = None 
