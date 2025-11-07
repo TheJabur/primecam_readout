@@ -65,7 +65,6 @@ def _com():
         18:test.tls_array_test,
         # 19:test.bluefors_test,
     }
-com = _com()
 
 
 
@@ -671,3 +670,9 @@ def _id(bid, drid=None):
         id = None
 
     return id
+
+
+
+
+# create a static list of commands now
+com = _com()
