@@ -8,7 +8,7 @@
 import time
 import shutil
 
-from alcove_commands import utils
+from alcove_commands import board_utilities as utils
 from config import board as cfg_b
 
 

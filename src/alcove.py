@@ -14,7 +14,7 @@
 
 import logging
 
-from alcove_commands import test, utils, alcove_base, tones, sweeps, analysis
+from alcove_commands import alcove_base, tones, sweeps, analysis
 import clean_io
 
 from config import parentDir
