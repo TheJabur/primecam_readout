@@ -15,13 +15,13 @@ except ImportError: cfg_b = None
 
 
 # ============================================================================ #
-# _firmware_chan
-def _firmware_chan(firmware, chan):
+# _gateware_chan
+def _gateware_chan(gateware, chan):
     return {
-        1: firmware.chan1,
-        2: firmware.chan2,
-        3: firmware.chan3,
-        4: firmware.chan4,
+        1: gateware.chan1,
+        2: gateware.chan2,
+        3: gateware.chan3,
+        4: gateware.chan4,
     }[chan]
 
 
@@ -35,7 +35,7 @@ def setAccumLength():
     which controls the clock division and consequently the detector sample rate. 
 
     Note:
-        - The function relies on `cfg_b.firmware`, `cfg_b.drid`, 
+        - The function relies on `cfg_b.gateware`, `cfg_b.drid`, 
           and `cfg_b.accum_len`.
         - The DSP register layout is as follows:
             - 0x00: fft_shift[9:0], load_bins[22:12], lut_counter_rst[11]
@@ -45,7 +45,7 @@ def setAccumLength():
         - The clock source is assumed to be 512 MHz.
     """
 
-    dsp_regs = _firmware_chan(cfg_b.firmware, cfg_b.drid).dsp_regs_0
+    dsp_regs = _gateware_chan(cfg_b.gateware, cfg_b.drid).dsp_regs_0
     dsp_regs.write(0x08, cfg_b.accum_len)
 
 
@@ -58,7 +58,7 @@ def _resetAccumAndSync(chan, freqs):
     freqs (list or numpy.ndarray): A list or array of frequencies, used to determine the FFT shift value.
     '''
 
-    dsp_regs = _firmware_chan(cfg_b.firmware, cfg_b.drid).dsp_regs_0
+    dsp_regs = _gateware_chan(cfg_b.gateware, cfg_b.drid).dsp_regs_0
 
     fft_shift    = 2**9-1 if len(freqs)<400 else 2**5-1
     dsp_regs.write(0x00, fft_shift)
@@ -93,8 +93,8 @@ def _loadBinList(chan, freq_list):
         bin_list[pos_bin_idx] = fft_len - bin_list[pos_bin_idx]
     bin_list = np.abs(bin_list)
 
-    dsp_regs = _firmware_chan(cfg_b.firmware, cfg_b.drid).dsp_regs_0
-    # firmware.chan1.dsp_regs_0
+    dsp_regs = _gateware_chan(cfg_b.gateware, cfg_b.drid).dsp_regs_0
+    # gateware.chan1.dsp_regs_0
 
     # only write tones to bin list
     for addr in range(fft_len):
@@ -139,7 +139,7 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
     data2 = ((np.int32(I2) << 16) + Q2).astype("int32")
     data3 = ((np.int32(I3) << 16) + Q3).astype("int32")
     # write waveform to DDR4 memory
-    ddr4mux = cfg_b.firmware.axi_ddr4_mux
+    ddr4mux = cfg_b.gateware.axi_ddr4_mux
     ddr4mux.write(8,0) # set read valid 
     ddr4mux.write(0,0) # mux switch
     base_addr_ddr4 = 0x4_0000_0000 #0x5_0000_0000

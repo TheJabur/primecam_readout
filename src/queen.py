@@ -18,7 +18,6 @@ import logging
 from datetime import datetime
 
 from config import queen as cfg
-from config import board as cfg_b
 from config import parentDir
 
 import feeds
@@ -269,43 +268,6 @@ def monitorMode():
     while True:
         monitorAction(r)
         time.sleep(cfg.monitor_interval) 
-
-
-'''
-# ============================================================================ #
-#  monitorFeeds
-def monitorFeeds(interval=None, handler=None):
-    """
-
-    interval (int or None): Seconds between polls.
-        If None then only performs once.
-    handler (func(str, dict)): Function to handle feed data on each poll.
-        Format is handler(label, data_dict).
-    """
-
-    # check and cast interval
-    if interval is not None:
-        interval = max(1, int(interval)) # min 1 s
-
-    # hold a Redis connection
-    r,p = _connectRedis() # any problems with holding this for a long time?
-    
-    # define a default handler if none was given
-    if handler is None:
-        def handler(label, data):
-            print(f"{label}: {data}")
-
-    # monitor loop
-    print(f'Starting drone feed monitor mode (polling every {interval} s).') 
-    while True:
-
-        feeds.getFeedSpc(r, p, handler)
-        feeds.getFeedTemps(r, p, handler)
-
-        if interval is None:
-            break # only do one poll
-        time.sleep(interval) # sleep until next poll
-'''
 
 
 # ============================================================================ #

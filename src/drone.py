@@ -56,8 +56,8 @@ def main():
     # setup a drone specific dir in /tmp
     _setupTmpDir()
 
-    # load firmware to config
-    _loadFirmware()
+    # load gateware to config
+    _loadGateware()
 
     # connect to Redis server and establish connection objects
     r,p = connectRedis()
@@ -192,17 +192,17 @@ def _setupTmpDir():
 
 
 # ============================================================================ #
-# _loadFirmware
-def _loadFirmware():
+# _loadGateware
+def _loadGateware():
 
     try:
         from pynq import Overlay # type: ignore
 
-        firmware_file = os.path.join(cfg_b.dir_root, cfg_b.firmware_file)
-        cfg_b.firmware = Overlay(firmware_file, ignore_version=True, download=False)
+        gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
+        cfg_b.gateware = Overlay(gateware_file, ignore_version=True, download=False)
 
     except Exception as e: 
-        firmware = None
+        gateware = None
 
 
 # ============================================================================ #

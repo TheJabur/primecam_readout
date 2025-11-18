@@ -34,7 +34,7 @@ def sys_info_v():
         _getConfigQueen(),           # config: queen
         _getUptime(),                # system uptime
         _getVersPrimecam_readout(),  # primecam_readout version
-        _getVersFirmwareRfsoc(),     # firmware version
+        _getVersGatewareRfsoc(),     # gateware version
         _getVersOs(),                # OS version
         _getVersRedis(),             # Redis version
         _getNetwork(),               # network connections info
@@ -67,7 +67,7 @@ def sys_info():
         _getConfigQueen(),           # config: queen
         _getUptime(),                # system uptime
         _getVersPrimecam_readout(),  # primecam_readout version
-        _getVersFirmwareRfsoc(),     # firmware version
+        _getVersGatewareRfsoc(),     # gateware version
         _getTemps(),                 # board temperature sensors
         # _getRecentAuthLogEvents(),   # recent auth log entries
         # _getRecentSysLogEvents(),    # recent sys log entries
@@ -131,12 +131,12 @@ def _getVersPrimecam_readout():
 
 
 # ============================================================================ #
-# _getVersFirmwareRfsoc
-def _getVersFirmwareRfsoc():
-    '''Dictionary of version string for RFSoC firmware.
+# _getVersGatewareRfsoc
+def _getVersGatewareRfsoc():
+    '''Dictionary of version string for RFSoC gateware.
     Note that this depends on the bit file being the same version as flashed.'''
 
-    filename = cfg_b.firmware_file # e.g. 'tetra_v7p1_impl_5.bit'
+    filename = cfg_b.gateware_file # e.g. 'tetra_v7p1_impl_5.bit'
     # name = os.path.splitext(filename)[0]
     name = os.path.splitext(os.path.basename(filename))[0]
 
