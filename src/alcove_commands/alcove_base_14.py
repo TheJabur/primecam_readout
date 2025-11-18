@@ -65,7 +65,7 @@ def timestreamOn(on=True):
     # input parameter casting
     on = str(on) in {True, 1, '1', 'True', 'true'}
 
-    udp_control = cfg_b.firmware.gpio_udp_info_control
+    udp_control = cfg_b.gateware.gpio_udp_info_control
     
     # current drone channel
     chan = cfg_b.drid
@@ -98,7 +98,7 @@ def userPacketInfo(data):
     data = 0 if data is None else data # fails to 0
     data = data & 0xFFFF # ensure data is 16 bits
 
-    udp_control = cfg_b.firmware.gpio_udp_info_control
+    udp_control = cfg_b.gateware.gpio_udp_info_control
 
     # current drone channel
     chan = cfg_b.drid
@@ -128,7 +128,7 @@ def writeChannelCount(num_chans):
     num_chans = 0 if num_chans is None else num_chans # fails to 0
     num_chans = num_chans & 0xFFFF # ensure data is 16 bits
 
-    udp_control = cfg_b.firmware.gpio_udp_info_control
+    udp_control = cfg_b.gateware.gpio_udp_info_control
 
     # current drone channel
     chan = cfg_b.drid
@@ -213,16 +213,16 @@ def _getSnapData(chan, mux_sel, wrap=False):
 
     # WIDE BRAM
     if chan==1:
-        axi_wide = cfg_b.firmware.chan1.axi_wide_ctrl# 0x0 max count, 0x8 capture rising edge trigger
+        axi_wide = cfg_b.gateware.chan1.axi_wide_ctrl# 0x0 max count, 0x8 capture rising edge trigger
         base_addr_wide = 0x00_A007_0000
     elif chan==2:
-        axi_wide = cfg_b.firmware.chan2.axi_wide_ctrl
+        axi_wide = cfg_b.gateware.chan2.axi_wide_ctrl
         base_addr_wide = 0x00_B000_0000
     elif chan==3:
-        axi_wide = cfg_b.firmware.chan3.axi_wide_ctrl
+        axi_wide = cfg_b.gateware.chan3.axi_wide_ctrl
         base_addr_wide = 0x00_B000_8000
     elif chan==4:
-        axi_wide = cfg_b.firmware.chan4.axi_wide_ctrl
+        axi_wide = cfg_b.gateware.chan4.axi_wide_ctrl
         base_addr_wide = 0x00_8200_0000
     else:
         return "Does not compute"
@@ -319,8 +319,8 @@ def _setNCLO(chan, lofreq):
     # implemented in tones._writeComb and alcove_base._setNCLO
 
     # import xrfdc
-    rf_data_conv = cfg_b.firmware.usp_rf_data_converter_0
-    name = os.path.splitext(os.path.basename(cfg_b.firmware_file))[0]
+    rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
+    name = os.path.splitext(os.path.basename(cfg_b.gateware_file))[0]
     if int(name[7:9]) >= 13:
         tb_indices = {
             1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
@@ -341,7 +341,7 @@ def _setNCLO(chan, lofreq):
 # _getNCLO
 def _getNCLO(chan):
 
-    rf_data_conv = cfg_b.firmware.usp_rf_data_converter_0
+    rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
 
     # adc tiles; adc blocks; dac tiles; dac blocks
     if chan == 1: 
@@ -435,9 +435,9 @@ def _setNCLO2(chan, lofreq, align_to_packets=False):
         # Actual frequency that will be set
         actual_freq_hz = dtw * freq_resolution_hz
 
-        # Write DTW to firmware register for the given channel
+        # Write DTW to gateware register for the given channel
         register_offset = 4 * (chan - 1)
-        cfg_b.firmware.mix_freq_set_0.write(register_offset, dtw)
+        cfg_b.gateware.mix_freq_set_0.write(register_offset, dtw)
 
     except Exception as e:
         print(f"set_fine_nco_frequency Error: {e}")
