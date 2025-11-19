@@ -57,10 +57,10 @@ udp_ori_mac  = 'c0:ff:ee:c0:ff:ee'
 # ============================================================================ #
 # waveform properties
 # edit with extreme caution - changes may have unitended consequences
-wf_fs      = 512e6 # sample clock
-wf_lut_len = 2**20 # look-up table length
-wf_fft_len = 1024  # fft length
-accum_len  = 2**19 - 1 # determines sample rate: wf_fs/((accum_len+1)*2)
+# wf_fs      = 512e6 # sample clock
+# wf_lut_len = 2**20 # look-up table length
+# wf_fft_len = 1024  # fft length
+accum_len  = 2**19 - 1 # determines sample rate: 512e6/((accum_len+1)*2)
 
 
 # ============================================================================ #

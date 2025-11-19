@@ -82,9 +82,9 @@ def _loadBinList(chan, freq_list):
 
     import numpy as np
 
-    fs = cfg_b.wf_fs # 512e6 
-    lut_len = cfg_b.wf_lut_len # 2**20
-    fft_len = cfg_b.wf_fft_len # 1024
+    fs = 512e6 # cfg_b.wf_fs
+    lut_len = 2**20 # cfg_b.wf_lut_len
+    fft_len = 1024 # cfg_b.wf_fft_len
     k = np.int64(np.round(-freq_list/(fs/lut_len)))
     freq_actual = k*(fs/lut_len)
     bin_list = np.int64(np.round(freq_actual / (fs / fft_len)))

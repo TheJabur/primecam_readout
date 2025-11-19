@@ -78,58 +78,6 @@ try:
 
 
 
-
-    # ======================================================================== #
-    # Digital Mixers
-    # ======================================================================== #
-
-    lofreq = 1000.000 # [MHz]
-    rf_data_conv = gateware.usp_rf_data_converter_0
-
-    # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
-    
-    if gateware_version >= 13:
-        tb_indices = {
-            1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-    else:
-        tb_indices = {
-            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-    
-    for chan, ii in tb_indices.items():
-        adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
-        dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
-
-        adc.MixerSettings['Freq'] = lofreq
-        dac.MixerSettings['Freq'] = lofreq
-        adc.UpdateEvent(xrfdc.EVENT_MIXER)
-        dac.UpdateEvent(xrfdc.EVENT_MIXER)
-
-
-
-
-    # ======================================================================== #
-    # Chains
-    # ======================================================================== #
-
-    # set the ADC accumulation length
-    gateware.chan1.dsp_regs_0.write(0x08, cfg_b.accum_len)
-    gateware.chan2.dsp_regs_0.write(0x08, cfg_b.accum_len)
-    gateware.chan3.dsp_regs_0.write(0x08, cfg_b.accum_len)
-    gateware.chan4.dsp_regs_0.write(0x08, cfg_b.accum_len)
-
-    if gateware_version >= 14:
-        # set chain timing gaps
-        accum_start_gap = cfg_b.accum_len//4
-        gateware.receive_timing_gpio1.write(0x00, accum_start_gap - 4)
-        gateware.receive_timing_gpio1.write(0x08, accum_start_gap - 4)
-        gateware.receive_timing_gpio2.write(0x00, accum_start_gap - 4)
-
-        # start chains
-        gateware.receive_timing_gpio2.write(0x08, 1)
-
-
-
-
     # ======================================================================== #
     # Ethernet
     # ======================================================================== #
@@ -153,6 +101,93 @@ try:
     ethRegsPortWrite(gateware.ethWrapPort1, src_ip_2)
     ethRegsPortWrite(gateware.ethWrapPort2, src_ip_3)
     ethRegsPortWrite(gateware.ethWrapPort3, src_ip_4)
+
+    accum_len = 2048/4*1024 # accum_len = cfg_b.accum_len + 1
+    accum_start_gap = accum_len//4
+    gateware.eth_timing_ctrl.write(0x00, int(accum_start_gap - 4))  # the gap in clk cycles in between chan start signal
+
+
+
+# wf_fs      = 512e6 # sample clock
+# wf_fft_len = 1024  # fft length
+# accum_len  = 2**19 - 1 # determines sample rate: wf_fs/((accum_len+1)*2)
+
+
+
+    # ======================================================================== #
+    # Digital Mixers
+    # ======================================================================== #
+
+    lofreq = 1000.000 # [MHz]
+    rf_data_conv = gateware.usp_rf_data_converter_0
+
+    # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
+    
+    # if gateware_version >= 13:
+    #     tb_indices = {
+    #         1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    # else:
+    #     tb_indices = {
+    #         1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+        
+    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    
+    for chan, ii in tb_indices.items():
+        adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
+        dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
+
+        adc.MixerSettings['Freq'] = -lofreq
+        dac.MixerSettings['Freq'] = lofreq
+        adc.UpdateEvent(xrfdc.EVENT_MIXER)
+        dac.UpdateEvent(xrfdc.EVENT_MIXER)
+
+
+
+
+    # ======================================================================== #
+    # Chains
+    # ======================================================================== #
+
+    gateware_chans = [
+        gateware.chan1, 
+        gateware.chan2, 
+        gateware.chan3, 
+        gateware.chan4]
+
+    # TODO: which of these variables need to go in config (or is already in config)?
+
+    # FFT scale
+    gpio_4_slot_2_word = 2016
+    for gwc in gateware_chans:
+        gwc.GPIO.axi_gpio_4.write(0x08, gpio_4_slot_2_word)
+
+    # accum and snap bin len
+    # cfg_b.accum_len = 2**19-1
+    acc_factor = 1024
+    bin_len = 256
+    parallel_factor = 4
+    psb_channel_count = 2048
+    acc_length = int(psb_channel_count/parallel_factor * acc_factor - 4)
+    getAccumChan = int(bin_len - 3)
+    for gwc in gateware_chans:
+        gwc.GPIO.axi_gpio_3.write(0x00, getAccumChan*2**23 + acc_length)
+
+    # PSB scale
+    C = 37170
+    for gwc in gateware_chans:
+        gateware.chan1.GPIO.axi_gpio_5.write(0x00, int(C))
+
+    # not necessary - should be at 0 already
+    # for chan in range(1,5):
+    #     set_fine_nco_frequency(chan, 0)  # MHz
+
+    # must do this before starting channels
+    for chan in range(1,5):
+        clearAllTones(chan)  # Gateware design comes with preloaded parameters, can discuss perfered preload
+
+    # start chan 1 readout
+    gateware.chan1.GPIO.axi_gpio_0.write(0x0,0)
+    gateware.chan1.GPIO.axi_gpio_0.write(0x0,1)
 
 
 

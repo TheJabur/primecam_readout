@@ -164,9 +164,6 @@ def generateWaveDdr4(freqs, amps, phis):
             - x (numpy.ndarray): The generated waveform in the time domain (complex).
             - dphi (numpy.ndarray): An array of phase correction values (float64).
             - freqs_actual (numpy.ndarray): The actual frequencies used after quantization.
-
-    Notes:
-        - The function relies on system constants `cfg_b.wf_fs`, `cfg_b.wf_lut_len`, and `cfg_b.wf_fft_len`.
     '''
     
     import numpy as np
@@ -177,9 +174,9 @@ def generateWaveDdr4(freqs, amps, phis):
     phis  = np.real(phis)
 
     # System constants
-    fs      = cfg_b.wf_fs       # Sampling frequency (Hz), e.g., 512 MHz
-    lut_len = cfg_b.wf_lut_len  # Lookup table length, e.g., 2**20
-    fft_len = cfg_b.wf_fft_len  # FFT length, e.g., 1024
+    fs      = 512e6       # Sampling frequency (Hz). cfg_b.wf_fs
+    lut_len = 2**20  # Lookup table length. cfg_b.wf_lut_len
+    fft_len = 1024  # FFT length. cfg_b.wf_fft_len
 
     # Compute frequency bins
     k            = np.round(freqs/(fs/lut_len)).astype(np.int64)
@@ -416,7 +413,7 @@ def _setNCLO2(chan, lofreq, align_to_packets=False):
 
     try:
         # Constants
-        fs_hz = cfg_b.wf_fs                # System sample rate (Hz); 512e6 Hz
+        fs_hz = 512e6                # System sample rate (Hz). cfg_b.wf_fs
         nco_bits = 22                      # Width of NCO phase accumulator
         freq_resolution_hz = fs_hz / 2**nco_bits  # Frequency step per integer DTW
 
@@ -425,7 +422,7 @@ def _setNCLO2(chan, lofreq, align_to_packets=False):
 
         # Optional coherence quantization (align to packet sample rate)
         if align_to_packets:
-            fft_len = cfg_b.wf_fft_len # 1024
+            fft_len = 1024 # cfg_b.wf_fft_len
             num_bins = 1024 # should move to cfg_b
             packet_rate_hz = fs_hz / (fft_len * num_bins)  # ≈ 488.28125 Hz
             freq_hz = np.round(freq_hz / packet_rate_hz) * packet_rate_hz
