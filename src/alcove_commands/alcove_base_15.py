@@ -318,19 +318,13 @@ def _setNCLO(chan, lofreq):
 
     # import xrfdc
     rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
-    name = os.path.splitext(os.path.basename(cfg_b.gateware_file))[0]
-    if int(name[7:9]) >= 13:
-        tb_indices = {
-            1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-    else:
-        tb_indices = {
-            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
 
     ii = tb_indices[chan]
     adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
     dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
 
-    adc.MixerSettings['Freq'] = lofreq
+    adc.MixerSettings['Freq'] = -lofreq
     dac.MixerSettings['Freq'] = lofreq
     adc.UpdateEvent(xrfdc.EVENT_MIXER)
     dac.UpdateEvent(xrfdc.EVENT_MIXER)

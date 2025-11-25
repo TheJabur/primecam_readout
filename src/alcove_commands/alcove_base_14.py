@@ -317,8 +317,7 @@ def _setNCLO(chan, lofreq):
 
     # import xrfdc
     rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
-    name = os.path.splitext(os.path.basename(cfg_b.gateware_file))[0]
-    if int(name[7:9]) >= 13:
+    if cfg_b.gateware_version >= 13:
         tb_indices = {
             1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
     else:
