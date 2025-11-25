@@ -15,6 +15,7 @@ import xrfdc
 import os
 import re
 import sys
+import numpy as np
 import subprocess
 
 # Determine the directory where the script is located
@@ -108,11 +109,6 @@ try:
 
 
 
-# wf_fs      = 512e6 # sample clock
-# wf_fft_len = 1024  # fft length
-# accum_len  = 2**19 - 1 # determines sample rate: wf_fs/((accum_len+1)*2)
-
-
 
     # ======================================================================== #
     # Digital Mixers
@@ -121,15 +117,7 @@ try:
     lofreq = 1000.000 # [MHz]
     rf_data_conv = gateware.usp_rf_data_converter_0
 
-    # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
-    
-    # if gateware_version >= 13:
-    #     tb_indices = {
-    #         1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-    # else:
-    #     tb_indices = {
-    #         1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-        
+    # chan: [adc tiles, adc blocks, dac tiles, dac blocks]        
     tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
     
     for chan, ii in tb_indices.items():
@@ -148,46 +136,30 @@ try:
     # Chains
     # ======================================================================== #
 
-    gateware_chans = [
-        gateware.chan1, 
-        gateware.chan2, 
-        gateware.chan3, 
-        gateware.chan4]
+    for gwc in [gateware.chan1, gateware.chan2, gateware.chan3, gateware.chan4]:
 
-    # TODO: which of these variables need to go in config (or is already in config)?
+        # FFT scale
+        gwc.GPIO.axi_gpio_4.write(0x08, 2016) 
 
-    # FFT scale
-    gpio_4_slot_2_word = 2016
-    for gwc in gateware_chans:
-        gwc.GPIO.axi_gpio_4.write(0x08, gpio_4_slot_2_word)
+        # accum and snap bin len
+        acc_length = int(2048/4 * cfg_b.acc_factor - 4)
+        gwc.GPIO.axi_gpio_3.write(0x00, 253*2**23 + acc_length)
 
-    # accum and snap bin len
-    # cfg_b.accum_len = 2**19-1
-    acc_factor = 1024
-    bin_len = 256
-    parallel_factor = 4
-    psb_channel_count = 2048
-    acc_length = int(psb_channel_count/parallel_factor * acc_factor - 4)
-    getAccumChan = int(bin_len - 3)
-    for gwc in gateware_chans:
-        gwc.GPIO.axi_gpio_3.write(0x00, getAccumChan*2**23 + acc_length)
+        # PSB scale
+        gateware.chan1.GPIO.axi_gpio_5.write(0x00, 37170)
 
-    # PSB scale
-    C = 37170
-    for gwc in gateware_chans:
-        gateware.chan1.GPIO.axi_gpio_5.write(0x00, int(C))
-
-    # not necessary - should be at 0 already
-    # for chan in range(1,5):
-    #     set_fine_nco_frequency(chan, 0)  # MHz
-
-    # must do this before starting channels
-    for chan in range(1,5):
-        clearAllTones(chan)  # Gateware design comes with preloaded parameters, can discuss perfered preload
+        # clear all tones
+        gwc.GPIO.axi_gpio_2.write(0x00, 0)
+        gwc.GPIO.axi_gpio_2.write(0x08, 0)
+        for addr in range(256):
+            gwc.GPIO.axi_gpio_1.write(0x08, int(addr << 16))
+            for bit in range(8):
+                gwc.GPIO.axi_gpio_1.write(0x00, 1 << bit)
+                gwc.GPIO.axi_gpio_1.write(0x00, 0)
 
     # start chan 1 readout
-    gateware.chan1.GPIO.axi_gpio_0.write(0x0,0)
-    gateware.chan1.GPIO.axi_gpio_0.write(0x0,1)
+    gateware.chan1.GPIO.axi_gpio_0.write(0x0, 0)
+    gateware.chan1.GPIO.axi_gpio_0.write(0x0, 1)
 
 
 
