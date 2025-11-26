@@ -204,6 +204,7 @@ def _loadGateware():
 
         # gateware version
         gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
+        print(gateware_fname)
         gateware_fname_parts = re.search(r'_v(\d+)p(\d+).xsa', gateware_fname)
         cfg_b.gateware_version = int(gateware_fname_parts.group(1)) 
         cfg_b.gateware_version_minor = int(gateware_fname_parts.group(2))
