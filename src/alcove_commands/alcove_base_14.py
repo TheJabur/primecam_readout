@@ -311,20 +311,22 @@ def getADCrms():
 # ============================================================================ #
 # _setNCLO
 def _setNCLO(chan, lofreq):
+    """
+    Set numerically controlled local oscillator (NCLO) frequency for chan.
 
-    # lofreq *= freqOffsetFixHackFactor() # Fequency offset fix
-    # implemented in tones._writeComb and alcove_base._setNCLO
+    Args:
+        chan (int): Channel number (1-4) to configure.
+        lofreq (float): Desired local oscillator frequency in MHz.
+    """
 
-    # import xrfdc
-    rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
-    if cfg_b.gateware_version >= 13:
-        tb_indices = {
-            1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-    else:
-        tb_indices = {
-            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-
+    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    if cfg_b.gateware_version==14 \
+        and cfg_b.gateware_version_minor>=2 \
+        and cfg_b.asu_board:
+        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
     ii = tb_indices[chan]
+
+    rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
     adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
     dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
 

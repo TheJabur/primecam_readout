@@ -105,7 +105,8 @@ try:
 
     accum_len = 2048/4*1024 # accum_len = cfg_b.accum_len + 1
     accum_start_gap = accum_len//4
-    gateware.eth_timing_ctrl.write(0x00, int(accum_start_gap - 4))  # the gap in clk cycles in between chan start signal
+    gateware.eth_timing_ctrl.write(0x00, int(accum_start_gap - 4))
+    # the gap in clk cycles in between chan start signal
 
 
 
@@ -117,10 +118,15 @@ try:
     lofreq = 1000.000 # [MHz]
     rf_data_conv = gateware.usp_rf_data_converter_0
 
-    # chan: [adc tiles, adc blocks, dac tiles, dac blocks]        
-    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-    
+    if cfg_b.asu_board:
+        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+        port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
+    else:
+        tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+        port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
+
     for chan, ii in tb_indices.items():
+
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
         dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
 
@@ -128,6 +134,8 @@ try:
         dac.MixerSettings['Freq'] = lofreq
         adc.UpdateEvent(xrfdc.EVENT_MIXER)
         dac.UpdateEvent(xrfdc.EVENT_MIXER)
+
+    gateware.eth_timing_ctrl.write(0x08, port_mapping) # port mapping
 
 
 

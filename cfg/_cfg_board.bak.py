@@ -73,6 +73,11 @@ target_chan_bw = 1 # target sweep channel bandwidth [MHz]
 # ============================================================================ #
 # attenuator settings
 atten_device = '/dev/ttyACM0' # '/dev/ttyUSB0'
+
+
+# ============================================================================ #
+# coax port mapping
+asu_board = False # only works with gateware v14p2 or greater
     
 
 # ============================================================================ #

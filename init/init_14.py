@@ -38,9 +38,13 @@ try:
     # MUST use *_v[version]p* as gateware filename
     gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
     gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
-    gateware_version = int(re.search(r'_v(\d+)p', gateware_fname).group(1)) 
+    gateware_fname_parts = re.search(r'_v(\d+)p(\d+)', gateware_fname)
+    gateware_version = int(gateware_fname_parts.group(1)) 
+    gateware_version_minor = int(gateware_fname_parts.group(2))
     gateware = Overlay(gateware_file, ignore_version=True)
     os.environ['PRIMECAM_READOUT_GATEWARE_VERSION'] = gateware_version # OS level flag
+
+
 
 
 
@@ -86,13 +90,15 @@ try:
     rf_data_conv = gateware.usp_rf_data_converter_0
 
     # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
-    
-    if gateware_version >= 13:
-        tb_indices = {
-            1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-    else:
-        tb_indices = {
-            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+
+    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    if gateware_version==14 and gateware_version_minor>=2:
+        if cfg_b.asu_board:
+            tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+            port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
+        else:
+            port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
+        gateware.gpio_chan2DC_mapping.write(0x00, port_mapping)
     
     for chan, ii in tb_indices.items():
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
