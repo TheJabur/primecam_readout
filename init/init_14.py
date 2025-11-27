@@ -61,23 +61,25 @@ try:
     # PTP
     # ======================================================================== #
 
-    # Bring up the PTP interface
-    subprocess.run(["ifconfig", 
-                    cfg_b.ptp_interface, 
-                    cfg_b.ptp_ip_address, 
-                    "up"])
+    if cfg_b.ptp_enabled:
+        
+        # Bring up the PTP interface
+        subprocess.run(["ifconfig", 
+                        cfg_b.ptp_interface, 
+                        cfg_b.ptp_ip_address, 
+                        "up"])
 
-    # Pass the MAC address and interface to the PTP and PHC scripts
-    run_ptp4l_path = os.path.join(script_dir, 'run_ptp4l.sh')
-    subprocess.run([run_ptp4l_path, 
-                    cfg_b.ptp_interface, 
-                    cfg_b.ptp_mac_address, 
-                    "gPTP_board.cfg"])
-    run_phc2sys_path = os.path.join(script_dir, 'run_phc2sys.sh')
-    subprocess.run([run_phc2sys_path, 
-                    cfg_b.ptp_interface])
+        # Pass the MAC address and interface to the PTP and PHC scripts
+        run_ptp4l_path = os.path.join(script_dir, 'run_ptp4l.sh')
+        subprocess.run([run_ptp4l_path, 
+                        cfg_b.ptp_interface, 
+                        cfg_b.ptp_mac_address, 
+                        "gPTP_board.cfg"])
+        run_phc2sys_path = os.path.join(script_dir, 'run_phc2sys.sh')
+        subprocess.run([run_phc2sys_path, 
+                        cfg_b.ptp_interface])
 
-    print("PTP configured")
+        print("PTP configured")
 
 
 
