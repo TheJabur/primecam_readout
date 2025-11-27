@@ -29,7 +29,6 @@ try:
     gateware_version_minor = int(gateware_fname_parts.group(2))
 
     # run gateware version appropriate init file
-    print(gateware_version)
     if gateware_version >= 15:
         import init_15
     else:
