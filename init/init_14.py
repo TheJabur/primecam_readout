@@ -61,7 +61,7 @@ xrfclk.set_all_ref_clks(clksrc)
 # PTP
 # ======================================================================== #
 
-if cfg_b.ptp_enabled:
+if cfg_b.ptp_enable:
 
     # Bring up the PTP interface
     subprocess.run(["ifconfig", 
