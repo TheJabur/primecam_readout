@@ -40,9 +40,11 @@ try:
     # MUST use *_v[version]p* as gateware filename
     gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
     gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
-    gateware_version = int(re.search(r'_v(\d+)p', gateware_fname).group(1)) 
+    gateware_fname_parts = re.search(r'_v(\d+)p(\d+)', gateware_fname)
+    gateware_version = int(gateware_fname_parts.group(1)) 
+    gateware_version_minor = int(gateware_fname_parts.group(2))
     gateware = Overlay(gateware_file, ignore_version=True)
-    os.environ['PRIMECAM_READOUT_GATEWARE_VERSION'] = gateware_version # OS level flag
+    # os.environ['PRIMECAM_READOUT_GATEWARE_VERSION'] = gateware_version # OS level flag
 
 
 
