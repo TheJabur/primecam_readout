@@ -35,9 +35,14 @@ except ImportError: xrfdc = None
 
 
 # ============================================================================ #
-# freqOffsetFixHackFactor
-# def freqOffsetFixHackFactor():
-#     return 1.00009707 # need to check this
+# _gateware_chan
+def _gateware_chan(gateware, chan):
+    return {
+        1: gateware.chan1,
+        2: gateware.chan2,
+        3: gateware.chan3,
+        4: gateware.chan4,
+    }[chan]
 
 
 # ============================================================================ #
@@ -394,48 +399,38 @@ def getNCLO(chan=None):
 
 # ============================================================================ #
 # _setNCLO2
-def _setNCLO2(chan, lofreq, align_to_packets=False):
+def _setNCLO2(chan, lofreq):
     """
     Set the fine NCO (Numerically Controlled Oscillator) frequency
     for a specified channel.
 
     chan: The channel number (1-4) to configure.
     lofreq: (float) Desired NCO frequency in MHz.
-    align_to_packets: (bool) align to packet sample rate.
     """
 
     import numpy as np
 
     freq_mhz = lofreq
 
-    try:
-        # Constants
-        fs_hz = 512e6                # System sample rate (Hz). cfg_b.wf_fs
-        nco_bits = 22                      # Width of NCO phase accumulator
-        freq_resolution_hz = fs_hz / 2**nco_bits  # Frequency step per integer DTW
+    try: # we don't want to kill the drone in normal operation
 
-        # Convert desired frequency (MHz) to Hz
-        freq_hz = freq_mhz * 1e6
+        fs_hz = 1024e6
+        nco_bits = 22
+        freq_resolution_hz = fs_hz / 2**nco_bits
+        freq_hz = freq_mhz * 1e6 # Hz
 
-        # Optional coherence quantization (align to packet sample rate)
-        if align_to_packets:
-            fft_len = 1024 # cfg_b.wf_fft_len
-            num_bins = 1024 # should move to cfg_b
-            packet_rate_hz = fs_hz / (fft_len * num_bins)  # ≈ 488.28125 Hz
-            freq_hz = np.round(freq_hz / packet_rate_hz) * packet_rate_hz
-
-        # Compute digital tuning word (DTW)
+        # Compute digital tuning word
         dtw = int(np.round(freq_hz / freq_resolution_hz))
 
         # Actual frequency that will be set
-        actual_freq_hz = dtw * freq_resolution_hz
+        # actual_freq_hz = dtw * freq_resolution_hz
 
-        # Write DTW to gateware register for the given channel
-        register_offset = 4 * (chan - 1)
-        cfg_b.gateware.mix_freq_set_0.write(register_offset, dtw)
+        # Write DTW to firmware register for the given channel
+        chan_access = _gateware_chan(cfg_b.gateware, chan)
+        chan_access.GPIO.axi_gpio_10.write(0x00, dtw)
 
     except Exception as e:
-        print(f"set_fine_nco_frequency Error: {e}")
+        print(f"_setNCLO2 error: {e}")
 
 
 # ============================================================================ #
