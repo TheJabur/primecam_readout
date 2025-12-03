@@ -338,28 +338,25 @@ def _setNCLO(chan, lofreq):
 # ============================================================================ #
 # _getNCLO
 def _getNCLO(chan):
+    """
+    Get numerically controlled local oscillator (NCLO) frequency for chan.
+
+    Args:
+        chan (int): Channel number (1-4) to configure.
+
+    Returns: (float): Desired local oscillator frequency in MHz.
+    """
+
+    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    if cfg_b.asu_board:
+        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    ii = tb_indices[chan]
 
     rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
+    adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
+    dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
 
-    # adc tiles; adc blocks; dac tiles; dac blocks
-    if chan == 1: 
-        i = [0,0,1,3]
-    elif chan == 2:
-        i = [0,1,1,2]
-    elif chan == 3:
-        i = [1,0,1,1]
-    elif chan == 4:
-        i = [1,1,1,0]
-    else:
-        print("_getNCLO: Invalid chan!")
-        return
-
-    adc = rf_data_conv.adc_tiles[i[0]].blocks[i[1]]
-    dac = rf_data_conv.dac_tiles[i[2]].blocks[i[3]]
-
-    f_lo = adc.MixerSettings['Freq']
-
-    return f_lo
+    return adc.MixerSettings['Freq']
 
 
 # ============================================================================ #
