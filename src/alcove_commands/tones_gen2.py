@@ -541,6 +541,9 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     '''
     '''
 
+    # TODO:
+    print("_writeComb")
+
     freqs = get_safe_frequencies(freqs)
 
     f_step = cfg_b.fs/cfg_b.lut_len
@@ -606,6 +609,9 @@ def _writeComb(chan, freqs, amps, phi, save=True):
                 beat_dphi_map[transmit_bin_count] = beat_dphi_2048[i]
                 transmit_bin_count += 1
 
+    # TODO:
+    print("_loadBinMap next")
+
     _loadBinMap(chan, bin_map)
     _loadBeatDphiMap(chan, beat_dphi_map)
     
@@ -616,6 +622,9 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     # write number of channels to 16 bit value in UDP packet
     # alcove_base.writeChannelCount(len(freqs))
     
+    # TODO:
+    print("save next")
+
     if save:
         f_center   = io.load(io.file.f_center_vna) # 
         freqs_rf_actual = freqs_actual + f_center

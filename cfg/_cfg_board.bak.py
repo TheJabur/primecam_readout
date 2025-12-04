@@ -21,7 +21,7 @@ log_backup_count = 5   # number of log files
 
 # ============================================================================ #
 # gateware
-gateware_file = 'init/tetra_v13p11.xsa'
+gateware_file = 'init/tetra_v15p1.xsa'
 
 
 # ============================================================================ #
