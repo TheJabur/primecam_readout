@@ -1,6 +1,6 @@
 
 # ============================================================================ #
-# alcove_base_14.py
+# alcove_base_gen1.py
 # Alcove commands common base.
 # Compatible with gateware version 14 and less (gen1).
 # James Burgoyne jburgoyne@phas.ubc.ca 

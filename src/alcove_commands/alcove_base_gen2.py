@@ -1,6 +1,6 @@
 
 # ============================================================================ #
-# alcove_base_15.py
+# alcove_base_gen2.py
 # Alcove commands common base.
 # Compatible with gateware versions 15+ (gen2).
 # James Burgoyne jburgoyne@phas.ubc.ca 
@@ -410,20 +410,13 @@ def _setNCLO2(chan, lofreq):
 
     import numpy as np
 
-    freq_mhz = lofreq
-
     try: # we don't want to kill the drone in normal operation
 
-        fs_hz = 1024e6
-        nco_bits = 22
-        freq_resolution_hz = fs_hz / 2**nco_bits
-        freq_hz = freq_mhz * 1e6 # Hz
-
         # Compute digital tuning word
-        dtw = int(np.round(freq_hz / freq_resolution_hz))
+        dtw = int(np.round(lofreq*1e6 / cfg_b.freq_resolution))
 
         # Actual frequency that will be set
-        # actual_freq_hz = dtw * freq_resolution_hz
+        # actual_freq_hz = dtw * cfg_b.freq_resolution
 
         # Write DTW to firmware register for the given channel
         chan_access = _gateware_chan(cfg_b.gateware, chan)
