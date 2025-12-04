@@ -606,16 +606,14 @@ def _writeComb(chan, freqs, amps, phi, save=True):
                 beat_dphi_map[transmit_bin_count] = beat_dphi_2048[i]
                 transmit_bin_count += 1
 
-    # TODO:
-    print(f"_loadBinMap next")
-    print(f"bin_map = {bin_map}")
-    print(f"beat_dphi_map = {beat_dphi_map}")
-
     _loadBinMap(chan, bin_map)
     _loadBeatDphiMap(chan, beat_dphi_map)
     
     Z = amps*np.exp(1.j*phi)
-    print(f"Z={Z}")
+    
+    # TODO:
+    print(f"_loadAllTones next")
+
     _loadAllTones(chan, bin_num, dphi, Z.real, Z.imag)
 
     # TODO:
