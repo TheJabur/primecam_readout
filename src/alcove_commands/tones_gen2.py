@@ -541,9 +541,6 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     '''
     '''
 
-    # TODO:
-    print("_writeComb")
-
     freqs = get_safe_frequencies(freqs)
 
     f_step = cfg_b.fs/cfg_b.lut_len
@@ -610,12 +607,15 @@ def _writeComb(chan, freqs, amps, phi, save=True):
                 transmit_bin_count += 1
 
     # TODO:
-    print("_loadBinMap next")
+    print(f"_loadBinMap next")
+    print(f"bin_map = {bin_map}")
+    print(f"beat_dphi_map = {beat_dphi_map}")
 
     _loadBinMap(chan, bin_map)
     _loadBeatDphiMap(chan, beat_dphi_map)
     
     Z = amps*np.exp(1.j*phi)
+    print(f"Z={Z}")
     _loadAllTones(chan, bin_num, dphi, Z.real, Z.imag)
 
     # TODO:
