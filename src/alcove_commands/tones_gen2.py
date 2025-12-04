@@ -538,6 +538,7 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     # TODO:
     print(f"writes next next")
     print(f"word = {word}")
+    print(f"Type of word: {type(word)}")
     
     chan_access.GPIO.axi_gpio_1.write(0x08, word)
 
