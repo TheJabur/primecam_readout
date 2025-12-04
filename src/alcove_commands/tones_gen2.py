@@ -514,6 +514,9 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     Writes one tone defined by its frequency (dphi) and initial vector (init_re, init_im).
     """
 
+    # TODO:
+    print(f"_writeTone")
+
     if not (0 <= mem <= 7):
         return
 
@@ -522,6 +525,9 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     chan_access.GPIO.axi_gpio_2.write(0x00, int(round(init_re*(1 << 16))) & 0x3FFFF)
     chan_access.GPIO.axi_gpio_2.write(0x08, int(round(init_im*(1 << 16))) & 0x3FFFF)
 
+    # TODO:
+    print(f"_wrap_angle next")
+
     if mem & 1:  # mem odd: add π
         dphi = _wrap_angle(dphi + np.pi)
     dphi_int, _ = _rad2int(dphi)
@@ -529,9 +535,15 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     word = (addr << 16) | dphi_int
     bit_value = [1,16,2,32,4,64,8,128][mem]
 
+    # TODO:
+    print(f"writes next next")
+
     chan_access.GPIO.axi_gpio_1.write(0x08, word)
     chan_access.GPIO.axi_gpio_1.write(0x00, bit_value)
     chan_access.GPIO.axi_gpio_1.write(0x00, 0)
+
+    # TODO:
+    print(f"_writeTone done")
 
 
 
@@ -610,18 +622,12 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     _loadBeatDphiMap(chan, beat_dphi_map)
     
     Z = amps*np.exp(1.j*phi)
-    
-    # TODO:
-    print(f"_loadAllTones next")
 
     _loadAllTones(chan, bin_num, dphi, Z.real, Z.imag)
 
     # TODO:
     # write number of channels to 16 bit value in UDP packet
     # alcove_base.writeChannelCount(len(freqs))
-    
-    # TODO:
-    print("save next")
 
     if save:
         f_center   = io.load(io.file.f_center_vna) # 
