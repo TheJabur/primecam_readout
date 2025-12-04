@@ -532,7 +532,8 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
         dphi = _wrap_angle(dphi + np.pi)
     dphi_int, _ = _rad2int(dphi)
 
-    word = (addr << 16) | dphi_int
+    # word = (addr << 16) | dphi_int
+    word = int((addr << 16) + dphi_write)
     bit_value = [1,16,2,32,4,64,8,128][mem]
 
     # TODO:
