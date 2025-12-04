@@ -514,9 +514,6 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     Writes one tone defined by its frequency (dphi) and initial vector (init_re, init_im).
     """
 
-    # TODO:
-    print(f"_writeTone")
-
     if not (0 <= mem <= 7):
         return
 
@@ -525,33 +522,16 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     chan_access.GPIO.axi_gpio_2.write(0x00, int(round(init_re*(1 << 16))) & 0x3FFFF)
     chan_access.GPIO.axi_gpio_2.write(0x08, int(round(init_im*(1 << 16))) & 0x3FFFF)
 
-    # TODO:
-    print(f"_wrap_angle next")
-
     if mem & 1:  # mem odd: add π
         dphi = _wrap_angle(dphi + np.pi)
     dphi_int, _ = _rad2int(dphi)
 
-    # word = (addr << 16) | dphi_int
     word = int((addr << 16) + dphi_int)
     bit_value = [1,16,2,32,4,64,8,128][mem]
-
-    # TODO:
-    print(f"writes next next")
-    print(f"word = {word}")
-    print(f"Type of word: {type(word)}")
     
     chan_access.GPIO.axi_gpio_1.write(0x08, word)
-
-    # TODO:
-    print(f"bit_value = {bit_value}")
-
     chan_access.GPIO.axi_gpio_1.write(0x00, bit_value)
     chan_access.GPIO.axi_gpio_1.write(0x00, 0)
-
-    # TODO:
-    print(f"_writeTone done")
-
 
 
 # ============================================================================ #
