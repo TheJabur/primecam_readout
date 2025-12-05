@@ -71,7 +71,7 @@ def timestreamOn(on=True):
     # input parameter casting
     on = str(on) in {True, 1, '1', 'True', 'true'}
 
-    udp_control = cfg_b.gateware.gpio_udp_info_control
+    udp_control = cfg_b.gateware.udp_control.gpio_udp_info_control
     
     # current drone channel
     chan = cfg_b.drid
@@ -104,7 +104,7 @@ def userPacketInfo(data):
     data = 0 if data is None else data # fails to 0
     data = data & 0xFFFF # ensure data is 16 bits
 
-    udp_control = cfg_b.gateware.gpio_udp_info_control
+    udp_control = cfg_b.gateware.udp_control.gpio_udp_info_control
 
     # current drone channel
     chan = cfg_b.drid
@@ -134,7 +134,7 @@ def writeChannelCount(num_chans):
     num_chans = 0 if num_chans is None else num_chans # fails to 0
     num_chans = num_chans & 0xFFFF # ensure data is 16 bits
 
-    udp_control = cfg_b.gateware.gpio_udp_info_control
+    udp_control = cfg_b.gateware.udp_control.gpio_udp_info_control
 
     # current drone channel
     chan = cfg_b.drid
