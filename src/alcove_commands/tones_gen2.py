@@ -160,6 +160,7 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
     return
 
 
+"""
 # ============================================================================ #
 # genAmpsAndPhis
 def genAmpsAndPhis(
@@ -186,7 +187,7 @@ def genPhis(
     phase_mode="schroeder",      # "random" | "schroeder" | "best_of_both"
     phase_trials=5,              # only used in "random" or "best_of_both"
     ):
-    """
+    '''
     Generate amplitudes and low-crest-factor phases for a multitone signal.
 
     Args:
@@ -202,7 +203,7 @@ def genPhis(
     Returns:
         amps (np.ndarray 1D array): Scaled amplitudes (all equal unless you modify later)
         best_phis (np.ndarray): Phases in radians that give the lowest peak
-    """
+    '''
 
     freqs = np.asarray(freqs, dtype=float)
     if freqs.ndim != 1:
@@ -272,6 +273,55 @@ def genPhis(
     amps_original_order = amps_scaled[unsort]  # (still equal, just reordered)
 
     return amps_original_order, final_phi_original_order
+"""
+
+def genAmpsAndPhis(freqs, amp_max=1, phase_trials=5):  
+    '''
+    Generates amplitudes and optimized phases for a set of frequencies to minimize waveform peak.
+
+    This function calculates amplitudes and phases for a set of sinusoidal components with given frequencies, aiming to reduce the peak amplitude of the resulting composite waveform. It initializes amplitudes with equal values and then iteratively searches for optimal phases by randomly sampling and evaluating
+    the waveform's peak.
+
+    Args:
+        freqs (numpy.ndarray): An array of frequencies (Hz) for the sinusoidal components.
+        amp_max (int, optional): The maximum allowed amplitude for the waveform. Defaults to (2**15-1).
+        phase_trials (int, optional): The number of random phase sets to try. Defaults to 5.
+
+    Returns:
+        tuple: A tuple containing:
+            - amps (numpy.ndarray): An array of calculated amplitudes.
+            - best_phis (numpy.ndarray): An array of optimized phases (radians).
+
+    Notes:
+        - Phases are randomly sampled within the range [-pi, pi].
+    '''
+
+    import numpy as np
+    
+    # number of tones
+    N = len(freqs) 
+
+    # assuming equal amplitudes
+    amps = np.ones(N)*(amp_max/np.sqrt(N))
+    
+    # waveform peak
+    def ampPeak(freqs, amps, phis):
+        x,_,_ = alcove_base.generateWaveDdr4(freqs, amps, phis)
+        return np.max(np.abs(x.real + 1j*x.imag))
+    
+    # sample random phases, choose best
+    best_peak = float('inf')
+    best_phis = None
+    for _ in range(phase_trials):
+        phis = np.random.uniform(-np.pi, np.pi, N)
+        peak = ampPeak(freqs, amps, phis)
+        if peak < best_peak:
+            best_peak = peak
+            best_phis = phis
+            
+    # scale amps with best phase solution so less than amp_max
+    amps *= (amp_max/best_peak)
+    return amps, best_phis
 
 
 # ============================================================================ #
