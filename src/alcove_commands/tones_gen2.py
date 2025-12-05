@@ -325,6 +325,19 @@ def genAmpsAndPhis(freqs, amp_max=1, phase_trials=5):
 
 
 # ============================================================================ #
+# genVariedAmpsAndPhis
+def genVariedAmpsAndPhis(freqs, amp_max=(2**15-1)):
+    """Generate lists of (varied) amplitudes and phases.
+    Varied means that each tone has a unique amplitude.
+
+    freqs: 1D float array of resonator frequencies.
+    amp_max: Maximum allowable time stream amplitude.
+    """
+
+    return genAmpsAndPhis(freqs, amp_max=amp_max)
+
+
+# ============================================================================ #
 # _waveAmpTest
 def _waveAmpTest(wave, max_amp=1):
     import numpy as np
