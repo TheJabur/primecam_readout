@@ -162,71 +162,121 @@ def _loadDdr4(chan, wave_real, wave_imag, dphi):
 
 # ============================================================================ #
 # genAmpsAndPhis
-def genAmpsAndPhis(freqs, amp_max=(2**15-1), phase_trials=5):  
-    '''
-    Generates amplitudes and optimized phases for a set of frequencies to minimize waveform peak.
-
-    This function calculates amplitudes and phases for a set of sinusoidal components with given frequencies, aiming to reduce the peak amplitude of the resulting composite waveform. It initializes amplitudes with equal values and then iteratively searches for optimal phases by randomly sampling and evaluating
-    the waveform's peak.
-
-    Args:
-        freqs (numpy.ndarray): An array of frequencies (Hz) for the sinusoidal components.
-        amp_max (int, optional): The maximum allowed amplitude for the waveform. Defaults to (2**15-1).
-        phase_trials (int, optional): The number of random phase sets to try. Defaults to 5.
-
-    Returns:
-        tuple: A tuple containing:
-            - amps (numpy.ndarray): An array of calculated amplitudes.
-            - best_phis (numpy.ndarray): An array of optimized phases (radians).
-
-    Notes:
-        - Phases are randomly sampled within the range [-pi, pi].
-    '''
-
-    import numpy as np
+def genAmpsAndPhis(
+    freqs,
+    amp_max=1.0,
+    phase_mode="schroeder",      # "random" | "schroeder" | "best_of_both"
+    phase_trials=5,              # only used in "random" or "best_of_both"
+    ):
     
-    # number of tones
-    N = len(freqs) 
+    N = len(freqs)
 
-    # assuming equal amplitudes
-    amps = np.ones(N)*(amp_max/np.sqrt(N))
-    
-    # waveform peak
-    def ampPeak(freqs, amps, phis):
-        x,_,_ = alcove_base.generateWaveDdr4(freqs, amps, phis)
-        return np.max(np.abs(x.real + 1j*x.imag))
-    
-    # sample random phases, choose best
-    best_peak = float('inf')
-    best_phis = None
-    for _ in range(phase_trials):
-        phis = np.random.uniform(-np.pi, np.pi, N)
-        peak = ampPeak(freqs, amps, phis)
-        if peak < best_peak:
-            best_peak = peak
-            best_phis = phis
-            
-    # scale amps with best phase solution so less than amp_max
-    amps *= (amp_max/best_peak)
-    return amps, best_phis
+    # Start with equal amplitude per tone
+    amps_base = np.ones(N) / np.sqrt(N)   # unit RMS when summed incoherently
+
+    return genPhis(freqs, amps_base, amp_max, phase_mode, phase_trials)
 
 
 # ============================================================================ #
-# genVariedAmpsAndPhis
-def genVariedAmpsAndPhis(freqs, amp_max=(2**15-1)):
-    """Generate lists of (varied) amplitudes and phases.
-    Varied means that each tone has a unique amplitude.
+# genPhis
+def genPhis(
+    freqs,
+    amps_base,
+    amp_max=1.0,
+    phase_mode="schroeder",      # "random" | "schroeder" | "best_of_both"
+    phase_trials=5,              # only used in "random" or "best_of_both"
+    ):
+    """
+    Generate amplitudes and low-crest-factor phases for a multitone signal.
 
-    freqs: 1D float array of resonator frequencies.
-    amp_max: Maximum allowable time stream amplitude.
+    Args:
+        freqs (np.ndarray): 1D array of tone frequencies (must be sorted ascending for Schroeder)
+        amps_base (np.ndarray): 1D array of tone amplitudes.
+        amp_max (float): Desired peak amplitude of final waveform (default 1.0)
+        phase_mode (str):
+            "random"      → try several random phase sets (your old method)
+            "schroeder"   → use generalized Schroeder phases (fast & excellent)
+            "best_of_both"→ run both and keep the winner (recommended)
+        phase_trials (int): Number of random trials when random mode is used
+
+    Returns:
+        amps (np.ndarray 1D array): Scaled amplitudes (all equal unless you modify later)
+        best_phis (np.ndarray): Phases in radians that give the lowest peak
     """
 
-    return genAmpsAndPhis(freqs, amp_max=amp_max)
+    freqs = np.asarray(freqs, dtype=float)
+    if freqs.ndim != 1:
+        raise ValueError("freqs must be a 1D array")
+    N = len(freqs)
+
+    # Ensure frequencies are sorted (Schroeder assumes ascending order)
+    sort_idx = np.argsort(freqs)
+    freqs_sorted = freqs[sort_idx]
+
+    # Helper: evaluate true peak on a dense time grid
+    def evaluate_peak(phis):
+        # phis must be in same order as freqs_sorted
+        x, _, _ = alcove_base.generateWaveDdr4(freqs_sorted, amps_base, phis)
+        return np.max(np.abs(x.real + 1j * x.imag))
+
+    # Generalized Schroeder phases (very fast, usually excellent)
+    def schroeder_phases():
+        # Cumulative power weighting (generalized for unequal amplitudes)
+        power = amps_base**2
+        cum_power = np.cumsum(power)
+        total_power = cum_power[-1]
+
+        # Schroeder formula: phase ∝ -2π × (cumulative power up to previous tone)
+        phi = np.zeros(N)
+        phi[1:] = -2 * np.pi * np.cumsum(power[:-1]) / total_power
+        return phi
+
+    schroeder_phi = schroeder_phases()
+    peak_schroeder = evaluate_peak(schroeder_phi)
+
+    # Random phase search (your old method)
+    if phase_mode == "random" or phase_mode == "best_of_both":
+        best_random_phi = None
+        best_random_peak = float('inf')
+
+        for _ in range(phase_trials):
+            phi_trial = np.random.uniform(-np.pi, np.pi, N)
+            peak = evaluate_peak(phi_trial)
+            if peak < best_random_peak:
+                best_random_peak = peak
+                best_random_phi = phi_trial
+
+    # Choose winner
+    if phase_mode == "random":
+        final_phi_sorted = best_random_phi
+        final_peak = best_random_peak
+    elif phase_mode == "schroeder":
+        final_phi_sorted = schroeder_phi
+        final_peak = peak_schroeder
+    else:  # best_of_both or anything else
+        if peak_schroeder <= best_random_peak:
+            final_phi_sorted = schroeder_phi
+            final_peak = peak_schroeder
+            # print("Schroeder won")
+        else:
+            final_phi_sorted = best_random_phi
+            final_peak = best_random_peak
+            # print("Random won")
+
+    # Scale amplitudes so that actual peak == amp_max
+    amps_scaled = amps_base * (amp_max / final_peak)
+
+    # Return amplitudes and phases in the ORIGINAL frequency order
+    unsort = np.argsort(sort_idx)  # inverse permutation
+    final_phi_original_order = final_phi_sorted[unsort]
+    amps_original_order = amps_scaled[unsort]  # (still equal, just reordered)
+
+    return amps_original_order, final_phi_original_order
 
 
 # ============================================================================ #
 # _waveAmpTest
-def _waveAmpTest(wave, max_amp=2**15-1):
+def _waveAmpTest(wave, max_amp=1):
     import numpy as np
     maximum = np.max(np.abs(wave))
     print(f"max amplitude {maximum:.10f}")
