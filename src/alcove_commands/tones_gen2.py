@@ -662,7 +662,7 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     bin_num = np.round(freqs_actual/bin_step).astype(np.int64)
     
     # dphi/2pi ratio corresponds to the channel bandwidth of PSB which is 2*fs/2048
-    dphi = _wrap_angle(np.pi*(freqs_actual/bin_step - bin_num))
+    dphi = _wrap_angle(np.pi*(freqs_actual/bin_step - bin_num)) 
     beat_dphi = _wrap_angle(-2*dphi)  # Careful with different sampling frequency
 
     bin_num[bin_num < 0] += cfg_b.psb_channel_count # all positive
@@ -730,6 +730,7 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     # alcove_base.writeChannelCount(len(freqs))
 
     if save:
+        print("_writeComb: Saving comb.")
         f_center   = io.load(io.file.f_center_vna) # 
         freqs_rf_actual = freqs_actual + f_center
 
