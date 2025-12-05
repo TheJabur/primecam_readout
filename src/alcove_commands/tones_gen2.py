@@ -756,7 +756,8 @@ def writeNewVnaComb(freq_noise=0):
     
     chan = cfg_b.drid # drone (chan) id is from config
 
-    freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    # freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    freqs_bb = np.array(np.arange(-256e6, 256e6, 500e3))
 
     # add some frequency noise (could be useful for evenly spaced tones)
     if freq_noise:
