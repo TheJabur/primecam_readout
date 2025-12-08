@@ -43,9 +43,9 @@ def cleanDir(dname, ftype=None, olderThanDate=None, olderThanDaysAgo=None, large
     testing: (bool) Whether to actually delete files or not.
     """
 
-    if olderThanDate is None and olderThanDaysAgo is None and largerThanMB is None:
-        print("At least one of the filter options is required.")
-        return
+    # if olderThanDate is None and olderThanDaysAgo is None and largerThanMB is None:
+    #     print("At least one of the filter options is required.")
+    #     return
 
     # warning
     if confirm:
