@@ -32,7 +32,7 @@ def main():
 
 # ============================================================================ #
 # cleanDir
-def cleanDir(dname, ftype=None, olderThanDate=None, olderThanDaysAgo=None, largerThanMB=None, confirm=True, testing=True):
+def cleanDir(dname, ftype=None, olderThanDate=None, olderThanDaysAgo=None, largerThanMB=None, confirm=True, testing=False):
     """Delete files in given dir which matches filters.
 
     ftype: (str) File extension to match.
