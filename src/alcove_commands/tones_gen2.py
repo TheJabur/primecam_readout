@@ -29,345 +29,84 @@ def _gateware_chan(gateware, chan):
 
 
 # ============================================================================ #
-# setAccumLength
-def setAccumLength():
-    """
-    Sets the accumulation length in the DSP registers, determining sample rate.
-
-    This function configures the `accum_len` register within the DSP registers, 
-    which controls the clock division and consequently the detector sample rate. 
-
-    Note:
-        - The function relies on `cfg_b.gateware`, `cfg_b.drid`, 
-          and `cfg_b.accum_len`.
-        - The DSP register layout is as follows:
-            - 0x00: fft_shift[9:0], load_bins[22:12], lut_counter_rst[11]
-            - 0x04: bin_num[9:0]
-            - 0x08: accum_len[23:0], accum_rst[24], sync_in[26] (start dac)
-            - 0x0c: dds_shift[8:0]
-        - The clock source is assumed to be 512 MHz.
-    """
-
-    dsp_regs = _gateware_chan(cfg_b.gateware, cfg_b.drid).dsp_regs_0
-    dsp_regs.write(0x08, cfg_b.accum_len)
-
-
-# ============================================================================ #
-# _resetAccumAndSync
-def _resetAccumAndSync(chan, freqs):
-    '''Resets the accumulator and synchronizes the DAC.
-
-    chan: The channel identifier (not used anymore - backwards compatible).
-    freqs (list or numpy.ndarray): A list or array of frequencies, used to determine the FFT shift value.
-    '''
-
-    dsp_regs = _gateware_chan(cfg_b.gateware, cfg_b.drid).dsp_regs_0
-
-    fft_shift    = 2**9-1 if len(freqs)<400 else 2**5-1
-    dsp_regs.write(0x00, fft_shift)
-
-    # TODO: the following unused in v>=14?
-    sync_in      = 2**26
-    accum_length = cfg_b.accum_len # e.g. 2**19-1
-    dsp_regs.write(0x08, accum_length)
-    dsp_regs.write(0x08, accum_length | sync_in)
-
-    # accum_rst = 2**24  # (active rising edge)
-    # dsp_regs.write(0x08, accum_length | accum_rst | sync_in)
-
-    # DDS shift
-    dsp_regs.write(0x0c, 180) # 260)
-
-
-# ============================================================================ #
-# _loadBinList
-def _loadBinList(chan, freq_list):
-
-    import numpy as np
-
-    fs = 512e6 # cfg_b.wf_fs
-    lut_len = 2**20 # cfg_b.wf_lut_len
-    fft_len = 1024 # cfg_b.wf_fft_len
-    k = np.int64(np.round(-freq_list/(fs/lut_len)))
-    freq_actual = k*(fs/lut_len)
-    bin_list = np.int64(np.round(freq_actual / (fs / fft_len)))
-    pos_bin_idx = np.where(bin_list > 0)
-    if np.size(pos_bin_idx) > 0:
-        bin_list[pos_bin_idx] = fft_len - bin_list[pos_bin_idx]
-    bin_list = np.abs(bin_list)
-
-    dsp_regs = _gateware_chan(cfg_b.gateware, cfg_b.drid).dsp_regs_0
-    # gateware.chan1.dsp_regs_0
-
-    # only write tones to bin list
-    for addr in range(fft_len):
-        if addr<(np.size(bin_list)):
-            #print("addr = {}, bin# = {}".format(addr, bin_list[addr]))
-            dsp_regs.write(0x04,int(bin_list[addr]))
-            dsp_regs.write(0x00, ((addr<<1)+1)<<12)
-            dsp_regs.write(0x00, 0)
-        else:
-            dsp_regs.write(0x04, 0)
-            dsp_regs.write(0x00, ((addr<<1)+1)<<12)
-            dsp_regs.write(0x00, 0)
-    return
-
-
-# ============================================================================ #
-# _loadDdr4
-def _loadDdr4(chan, wave_real, wave_imag, dphi):
-
-    import numpy as np
-    from pynq import MMIO
-
-    base_addr_dphis = {
-        1: 0xa004c000,
-        2: 0xa0040000,
-        3: 0xa0042000,
-        4: 0xa004e000,
-    }[chan]
-    
-    # write dphi to bram
-    dphi_16b = dphi.astype("uint16")
-    dphi_stacked = ((np.uint32(dphi_16b[1::2]) << 16) + dphi_16b[0::2]).astype("uint32")
-    mem_size = 512 * 4 # 32 bit address slots
-    mmio_bram_phis = MMIO(base_addr_dphis, mem_size)
-    mmio_bram_phis.array[0:512] = dphi_stacked[0:512] # the [0:512] indexing is necessary on .array
-    
-    # slice waveform for uploading to ddr4
-    I0, I1, I2, I3 = wave_imag[0::4], wave_imag[1::4], wave_imag[2::4], wave_imag[3::4]
-    Q0, Q1, Q2, Q3 = wave_real[0::4], wave_real[1::4], wave_real[2::4], wave_real[3::4]
-    data0 = ((np.int32(I0) << 16) + Q0).astype("int32")
-    data1 = ((np.int32(I1) << 16) + Q1).astype("int32")
-    data2 = ((np.int32(I2) << 16) + Q2).astype("int32")
-    data3 = ((np.int32(I3) << 16) + Q3).astype("int32")
-    # write waveform to DDR4 memory
-    ddr4mux = cfg_b.gateware.axi_ddr4_mux
-    ddr4mux.write(8,0) # set read valid 
-    ddr4mux.write(0,0) # mux switch
-    base_addr_ddr4 = 0x4_0000_0000 #0x5_0000_0000
-    depth_ddr4 = 2**32
-    mmio_ddr4 = MMIO(base_addr_ddr4, depth_ddr4)
-        
-    mmio_ddr4.array[0:4194304][0 + (chan-1)*4::16] = data0
-    mmio_ddr4.array[0:4194304][1 + (chan-1)*4::16] = data1
-    mmio_ddr4.array[0:4194304][2 + (chan-1)*4::16] = data2
-    mmio_ddr4.array[0:4194304][3 + (chan-1)*4::16] = data3
-
-    ddr4mux.write(8,1) # set read valid 
-    ddr4mux.write(0,1) # mux switch
-
-    return
-
-
-"""
-# ============================================================================ #
-# genAmpsAndPhis
-def genAmpsAndPhis(
-    freqs,
-    amp_max=1.0,
-    phase_mode="schroeder",      # "random" | "schroeder" | "best_of_both"
-    phase_trials=5,              # only used in "random" or "best_of_both"
-    ):
-    
-    N = len(freqs)
-
-    # Start with equal amplitude per tone
-    amps_base = np.ones(N) / np.sqrt(N)   # unit RMS when summed incoherently
-
-    return genPhis(freqs, amps_base, amp_max, phase_mode, phase_trials)
-
-
-# ============================================================================ #
 # genPhis
-def genPhis(
-    freqs,
-    amps_base,
-    amp_max=1.0,
-    phase_mode="schroeder",      # "random" | "schroeder" | "best_of_both"
-    phase_trials=5,              # only used in "random" or "best_of_both"
-    ):
+def genPhis(freqs, amps_rel, amp_max=1., phase_trials=5):
     '''
-    Generate amplitudes and low-crest-factor phases for a multitone signal.
+    Generates optimized phases for a tone comb to minimize waveform peak.
 
     Args:
-        freqs (np.ndarray): 1D array of tone frequencies (must be sorted ascending for Schroeder)
-        amps_base (np.ndarray): 1D array of tone amplitudes.
-        amp_max (float): Desired peak amplitude of final waveform (default 1.0)
-        phase_mode (str):
-            "random"      → try several random phase sets (your old method)
-            "schroeder"   → use generalized Schroeder phases (fast & excellent)
-            "best_of_both"→ run both and keep the winner (recommended)
-        phase_trials (int): Number of random trials when random mode is used
-
-    Returns:
-        amps (np.ndarray 1D array): Scaled amplitudes (all equal unless you modify later)
-        best_phis (np.ndarray): Phases in radians that give the lowest peak
-    '''
-
-    freqs = np.asarray(freqs, dtype=float)
-    if freqs.ndim != 1:
-        raise ValueError("freqs must be a 1D array")
-    N = len(freqs)
-
-    # Ensure frequencies are sorted (Schroeder assumes ascending order)
-    sort_idx = np.argsort(freqs)
-    freqs_sorted = freqs[sort_idx]
-
-    # Helper: evaluate true peak on a dense time grid
-    def evaluate_peak(phis):
-        # phis must be in same order as freqs_sorted
-        x, _, _ = alcove_base.generateWaveDdr4(freqs_sorted, amps_base, phis)
-        return np.max(np.abs(x.real + 1j * x.imag))
-
-    # Generalized Schroeder phases (very fast, usually excellent)
-    def schroeder_phases():
-        # Cumulative power weighting (generalized for unequal amplitudes)
-        power = amps_base**2
-        cum_power = np.cumsum(power)
-        total_power = cum_power[-1]
-
-        # Schroeder formula: phase ∝ -2π × (cumulative power up to previous tone)
-        phi = np.zeros(N)
-        phi[1:] = -2 * np.pi * np.cumsum(power[:-1]) / total_power
-        return phi
-
-    schroeder_phi = schroeder_phases()
-    peak_schroeder = evaluate_peak(schroeder_phi)
-
-    # Random phase search (your old method)
-    if phase_mode == "random" or phase_mode == "best_of_both":
-        best_random_phi = None
-        best_random_peak = float('inf')
-
-        for _ in range(phase_trials):
-            phi_trial = np.random.uniform(-np.pi, np.pi, N)
-            peak = evaluate_peak(phi_trial)
-            if peak < best_random_peak:
-                best_random_peak = peak
-                best_random_phi = phi_trial
-
-    # Choose winner
-    if phase_mode == "random":
-        final_phi_sorted = best_random_phi
-        final_peak = best_random_peak
-    elif phase_mode == "schroeder":
-        final_phi_sorted = schroeder_phi
-        final_peak = peak_schroeder
-    else:  # best_of_both or anything else
-        if peak_schroeder <= best_random_peak:
-            final_phi_sorted = schroeder_phi
-            final_peak = peak_schroeder
-            # print("Schroeder won")
-        else:
-            final_phi_sorted = best_random_phi
-            final_peak = best_random_peak
-            # print("Random won")
-
-    # Scale amplitudes so that actual peak == amp_max
-    amps_scaled = amps_base * (amp_max / final_peak)
-
-    # Return amplitudes and phases in the ORIGINAL frequency order
-    unsort = np.argsort(sort_idx)  # inverse permutation
-    final_phi_original_order = final_phi_sorted[unsort]
-    amps_original_order = amps_scaled[unsort]  # (still equal, just reordered)
-
-    return amps_original_order, final_phi_original_order
-"""
-
-def genAmpsAndPhis(freqs, amp_max=1, phase_trials=5):  
-    '''
-    Generates amplitudes and optimized phases for a set of frequencies to minimize waveform peak.
-
-    This function calculates amplitudes and phases for a set of sinusoidal components with given frequencies, aiming to reduce the peak amplitude of the resulting composite waveform. It initializes amplitudes with equal values and then iteratively searches for optimal phases by randomly sampling and evaluating
-    the waveform's peak.
-
-    Args:
-        freqs (numpy.ndarray): An array of frequencies (Hz) for the sinusoidal components.
-        amp_max (int, optional): The maximum allowed amplitude for the waveform. Defaults to (2**15-1).
-        phase_trials (int, optional): The number of random phase sets to try. Defaults to 5.
+        freqs (array): Frequencies of the tones. [Hz]
+        amps_rel: (array) Relative amplitudes of the tones. 
+            These will be scaled so largest = amp_max.
+        amp_max (float, default=1): Largest tone amplitude.
+            In gen2, amp_max=1 scales the waveform to DAC max.
+        phase_trials (int, default=5): The number of random phase sets to try.
 
     Returns:
         tuple: A tuple containing:
-            - amps (numpy.ndarray): An array of calculated amplitudes.
-            - best_phis (numpy.ndarray): An array of optimized phases (radians).
-
-    Notes:
-        - Phases are randomly sampled within the range [-pi, pi].
+            - amps (array): An real array of scaled amplitudes.
+            - phis (array): An real array of optimized phases.
+                In radians, [-pi, pi).
     '''
-
     import numpy as np
-    
-    # number of tones
-    N = len(freqs) 
+    from math import gcd
+    from functools import reduce
+    from scipy.fft import ifft
 
-    # assuming equal amplitudes
-    amps = np.ones(N)*(amp_max/np.sqrt(N))
-    
-    # waveform peak
-    def ampPeak(freqs, amps, phis):
-        x,_,_ = alcove_base.generateWaveDdr4(freqs, amps, phis)
-        return np.max(np.abs(x.real + 1j*x.imag))
-    
-    # sample random phases, choose best
-    best_peak = float('inf')
+    freqs = np.asarray(freqs, float)
+    amps_rel  = np.asarray(amps_rel, float)
+
+    N = len(freqs)
+
+    # Map frequencies to bins of the full LUT FFT
+    k_full = np.round(freqs * cfg_b.lut_len / cfg_b.fs).astype(np.int64)
+
+    # Compute maximum downsampling factor g = gcd(k_full)
+    g = reduce(gcd, k_full)
+    if g <= 0:
+        # Degenerate cases: at least one bin index is zero
+        g = reduce(gcd, k_full[k_full != 0]) if np.any(k_full != 0) else 1
+
+    # Reduced FFT length and bin sizes
+    L = cfg_b.lut_len // g
+    k = (k_full // g).astype(np.int64)
+    unique_k = np.unique(k)
+
+    X = np.zeros(L, dtype=np.complex128) # Preallocate FFT buffer
+    best_peak = np.inf
     best_phis = None
     for _ in range(phase_trials):
+        # Clear only relevant bins
+        X[unique_k] = 0.0
+
+        # Random phases
         phis = np.random.uniform(-np.pi, np.pi, N)
-        peak = ampPeak(freqs, amps, phis)
+
+        # Populate spectrum
+        X[k] = amps_rel * np.exp(-1j * phis)
+
+        # IFFT at reduced length
+        x = L * ifft(X, norm="backward", workers=-1)
+
+        # Peak amplitude
+        peak = np.max(np.abs(x))
+
         if peak < best_peak:
             best_peak = peak
             best_phis = phis
-            
-    # scale amps with best phase solution so less than amp_max
-    amps *= (amp_max/best_peak)
-    return amps, best_phis
+    
+    return amp_max*amps_rel/amps_rel.max(), best_phis
 
 
 # ============================================================================ #
-# genVariedAmpsAndPhis
-def genVariedAmpsAndPhis(freqs, amp_max=(2**15-1)):
-    """Generate lists of (varied) amplitudes and phases.
-    Varied means that each tone has a unique amplitude.
+# genAmpsAndPhis
+def genAmpsAndPhis(freqs, amp_max=1.0, phase_trials=5):
+    '''See genPhis(...)'''
 
-    freqs: 1D float array of resonator frequencies.
-    amp_max: Maximum allowable time stream amplitude.
-    """
+    # equal amplitude tones
+    amps = amp_max*np.ones(len(freqs))
 
-    return genAmpsAndPhis(freqs, amp_max=amp_max)
-
-
-# ============================================================================ #
-# _waveAmpTest
-def _waveAmpTest(wave, max_amp=1):
-    import numpy as np
-    maximum = np.max(np.abs(wave))
-    print(f"max amplitude {maximum:.10f}")
-
-
-def _genWave(freqs, amps, phis, fs=1.024e9, lut_len=2**21):
-    '''
-    Generates a waveform based on requested frequencies, magnitudes, and phases, using np.fft.ifft
-    
-    Notes:
-        Since 2-octave firmware use PSB to synthesize wave, this is only used for genAmpsAndPhis.
-    '''
-    freqs = np.real(freqs)
-    amps  = np.real(amps)
-    phis  = np.real(phis)
-    
-    # Compute frequency bins
-    bin_num      = np.round(freqs/(fs/lut_len)).astype(np.int64)
-    freqs_actual = bin_num*(fs/lut_len)
-    
-    # Vectorized X assignment (frequency space)
-    X    = np.zeros(lut_len, dtype=np.complex128)
-    X[bin_num] = np.exp(-1j*phis)*amps
-    
-    # Compute IFFT
-    x = np.fft.ifft(X, norm='backward')*lut_len
-    
-    return x, freqs_actual
+    return genPhis(freqs, amps, amp_max, phase_trials)
 
 
 def _wrap_angle(angle):
@@ -730,7 +469,6 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     # alcove_base.writeChannelCount(len(freqs))
 
     if save:
-        print("_writeComb: Saving comb.")
         f_center   = io.load(io.file.f_center_vna) # 
         freqs_rf_actual = freqs_actual + f_center
 
