@@ -208,98 +208,85 @@ def generateWaveDdr4(freqs, amps, phis):
 
 # ============================================================================ #
 # _getSnapData
-# capture data from ADC
-def _getSnapData(chan, mux_sel, wrap=False):
-
+def _getSnapData(chan, mux_sel, wait=0.02):
+    '''
+    Fetch data from gateware DSP.
+    
+    Args:
+        chan (int): 
+            Channel index (1-4) specifying which readout chain to access.
+        mux_sel:
+            0: ADC outputs
+            1: PSB outputs (DAC inputs)
+            3: Receive outputs (time stream data)
+    Returns:
+        I, Q (numpy.ndarray):
+            for data converter data, I and q are flat,
+            for time stream data, I and Q have shape (n, bin)
+    '''
     import numpy as np
-    from pynq import MMIO # type: ignore
+    import time
+    from pynq import MMIO
+    
+    # reset snap
+    chan_access = _gateware_chan(cfg_b.gateware, chan)
 
-    # WIDE BRAM
-    if chan==1:
-        axi_wide = cfg_b.gateware.chan1.axi_wide_ctrl# 0x0 max count, 0x8 capture rising edge trigger
-        base_addr_wide = 0x00_A007_0000
-    elif chan==2:
-        axi_wide = cfg_b.gateware.chan2.axi_wide_ctrl
-        base_addr_wide = 0x00_B000_0000
-    elif chan==3:
-        axi_wide = cfg_b.gateware.chan3.axi_wide_ctrl
-        base_addr_wide = 0x00_B000_8000
-    elif chan==4:
-        axi_wide = cfg_b.gateware.chan4.axi_wide_ctrl
-        base_addr_wide = 0x00_8200_0000
-    else:
-        return "Does not compute"
-    max_count = 32768
-    axi_wide.write(0x08, mux_sel<<1) # mux select 0-adc, 1-pfb, 2-ddc, 3-accum
-    axi_wide.write(0x00, max_count - 16) # -4 to account for extra delay in write counter state machine
-    axi_wide.write(0x08, mux_sel<<1 | 0)
-    axi_wide.write(0x08, mux_sel<<1 | 1)
-    axi_wide.write(0x08, mux_sel<<1 | 0)
-    mmio_wide_bram = MMIO(base_addr_wide,max_count)
-    wide_data = mmio_wide_bram.array[0:8192]# max/4, bram depth*word_bits/32bits
-    if mux_sel==0:
-        #adc parsing
-        up0, lw0 = np.int16(wide_data[0::4] >> 16), np.int16(wide_data[0::4] & 0x0000ffff)
-        up1, lw1 = np.int16(wide_data[1::4] >> 16), np.int16(wide_data[1::4] & 0x0000ffff)
-        I = np.zeros(4096)
-        Q = np.zeros(4096)
-        Q[0::2] = lw0
-        Q[1::2] = up0
-        I[0::2] = lw1
-        I[1::2] = up1
-    elif mux_sel==1:
-        # pfb
-        chunk0 = (np.uint64(wide_data[1::4]) << np.uint64(32)) + np.uint64(wide_data[0::4])
-        chunk1 = (np.uint64(wide_data[2::4]) << np.uint64(32)) + np.uint64(wide_data[1::4])
-        q0 = np.int64((chunk0 & 0x000000000003ffff)<<np.uint64(46))/2**32
-        i0 = np.int64(((chunk0>>18) & 0x000000000003ffff)<<np.uint64(46))/2**32
-        q1 = np.int64(((chunk1>>4)  & 0x000000000003ffff)<<np.uint64(46))/2**32
-        i1 = np.int64(((chunk1>>22)  & 0x000000000003ffff)<<np.uint64(46))/2**32
-        I = np.zeros(4096)
-        Q = np.zeros(4096)
-        Q[0::2] = q0/2**14
-        Q[1::2] = q1/2**14
-        I[0::2] = i0/2**14
-        I[1::2] = i1/2**14
-    elif mux_sel==2:
-        # ddc
-        chunk0 = (np.uint64(wide_data[1::4]) << np.uint64(32)) + np.uint64(wide_data[0::4])
-        chunk1 = (np.uint64(wide_data[2::4]) << np.uint64(32)) + np.uint64(wide_data[1::4])
-        q0 = np.int64((chunk0 & 0x00000000000fffff)<<np.uint64(45))/2**32
-        i0 = np.int64(((chunk0>>19) & 0x00000000000fffff)<<np.uint64(45))/2**32
-        q1 = np.int64(((chunk1>>6)  & 0x00000000000fffff)<<np.uint64(45))/2**32
-        i1 = np.int64(((chunk1>>25)  & 0x00000000000fffff)<<np.uint64(45))/2**32
-        I = np.zeros(4096)
-        Q = np.zeros(4096)
-        Q[0::2] = q0/2**13
-        Q[1::2] = q1/2**13
-        I[0::2] = i0/2**13
-        I[1::2] = i1/2**13
-    elif mux_sel==3:
-        # accum
-        q0 = (np.int32(wide_data[1::4])).astype("float")
-        i0 = (np.int32(wide_data[0::4])).astype("float")
-        q1 = (np.int32(wide_data[3::4])).astype("float")
-        i1 = (np.int32(wide_data[2::4])).astype("float")
-        I = np.zeros(4096)
-        Q = np.zeros(4096)
-        Q[0::2] = q0
-        Q[1::2] = q1
-        I[0::2] = i0
-        I[1::2] = i1
-        I, Q = I[4:], Q[4:]
+    chan_access.write(0x08, 3)
+    chan_access.write(0x08, 0)
+    time.sleep(wait)
+    
+    base_addr_wide = {
+        (1,0): 0x00_A001_0000, (1,1): 0x00_A001_0000, (1,3): 0x00_A002_0000,
+        (2,0): 0x00_A003_0000, (2,1): 0x00_A003_0000, (2,3): 0x00_A004_0000,
+        (3,0): 0x00_A005_0000, (3,1): 0x00_A005_0000, (3,3): 0x00_A006_0000,
+        (4,0): 0x00_A007_0000, (4,1): 0x00_A007_0000, (4,3): 0x00_A008_0000,
+    }[(chan, mux_sel)]
+                    
+    max_count = 65536  # 32x2048 = 65536
+    mmio_wide_bram = MMIO(base_addr_wide , max_count)
+    wide_data = mmio_wide_bram.array[0:16384]  # max/4, bram depth*word_bits/32bits
+    
+    I = np.zeros(8192)
+    Q = np.zeros(8192)
 
-    if wrap:
-        return io.returnWrapper(io.file.IQ_generic, (I,Q))
-    else:
-        return I, Q
+    if mux_sel == 0:
+        I[0::4] = np.int16(wide_data[4::8] & 0x0000ffff)
+        Q[0::4] = np.int16(wide_data[6::8] & 0x0000ffff)
+        I[1::4] = np.int16(wide_data[4::8] >> 16)
+        Q[1::4] = np.int16(wide_data[6::8] >> 16)
+        I[2::4] = np.int16(wide_data[5::8] & 0x0000ffff)
+        Q[2::4] = np.int16(wide_data[7::8] & 0x0000ffff)
+        I[3::4] = np.int16(wide_data[5::8] >> 16)
+        Q[3::4] = np.int16(wide_data[7::8] >> 16)
+
+    elif mux_sel == 1:
+        I[0::4] = np.int16(wide_data[0::8] & 0x0000ffff)
+        Q[0::4] = np.int16(wide_data[0::8] >> 16)
+        I[1::4] = np.int16(wide_data[1::8] & 0x0000ffff)
+        Q[1::4] = np.int16(wide_data[1::8] >> 16)
+        I[2::4] = np.int16(wide_data[2::8] & 0x0000ffff)
+        Q[2::4] = np.int16(wide_data[2::8] >> 16)
+        I[3::4] = np.int16(wide_data[3::8] & 0x0000ffff)
+        Q[3::4] = np.int16(wide_data[3::8] >> 16)
+
+    elif mux_sel == 3:
+        I[0::4] = (np.int32(wide_data[0::8])).astype("float")
+        Q[0::4] = (np.int32(wide_data[2::8])).astype("float")
+        I[1::4] = (np.int32(wide_data[3::8])).astype("float")
+        Q[1::4] = (np.int32(wide_data[4::8])).astype("float")
+        I[2::4] = (np.int32(wide_data[5::8])).astype("float")
+        Q[2::4] = (np.int32(wide_data[6::8])).astype("float")
+        I[3::4] = (np.int32(wide_data[7::8])).astype("float")
+        Q[3::4] = (np.int32(wide_data[8::8])).astype("float") 
+            
+    return I, Q
 
 
 # ============================================================================ #
 # getSnapData
-def getSnapData(mux_sel, wrap=True):
+def getSnapData(mux_sel):
     chan = cfg_b.drid
-    return _getSnapData(chan, int(mux_sel), wrap=wrap)
+    return _getSnapData(chan, int(mux_sel))
 
 
 # ============================================================================ #
