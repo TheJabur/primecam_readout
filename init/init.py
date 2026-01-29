@@ -29,7 +29,7 @@ try:
     gateware_version_minor = int(gateware_fname_parts.group(2))
 
     # TODO:
-    gateware_version = 14
+    gateware_version = 15
 
     # run gateware version appropriate init file
     if gateware_version >= 15:

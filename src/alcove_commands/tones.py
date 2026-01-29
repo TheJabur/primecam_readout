@@ -6,7 +6,7 @@ except:
     gateware_version = 15 # default, mostly for control computer
     
 # TODO:
-gateware_version = 14
+gateware_version = 15
 
 if gateware_version >= 15:
     from alcove_commands.tones_gen2 import *
