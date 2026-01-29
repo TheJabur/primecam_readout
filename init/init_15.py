@@ -44,7 +44,7 @@ try:
     gateware_version = int(gateware_fname_parts.group(1)) 
     gateware_version_minor = int(gateware_fname_parts.group(2))
     gateware = Overlay(gateware_file, ignore_version=True)
-    # os.environ['PRIMECAM_READOUT_GATEWARE_VERSION'] = gateware_version # OS level flag
+    os.environ['PRIMECAM_READOUT_GATEWARE_VERSION'] = gateware_version # OS level flag
 
 
 
