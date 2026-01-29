@@ -62,6 +62,8 @@ def safe_cast_to_int(data_str):
 def timestreamOn(on=True):
     '''Turn the UDP timestream on (or off) for the current drone.'''
 
+    print("using alcove_base_gen1")
+
     # input parameter casting
     on = str(on) in {True, 1, '1', 'True', 'true'}
 
