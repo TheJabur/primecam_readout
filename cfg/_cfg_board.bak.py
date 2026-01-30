@@ -99,6 +99,8 @@ freq_resolution = fs / 2**nco_bits
 lut_len = 2**21
 psb_channel_count = 2048
 
+# gen2 caches
+defaultToneSelMap = None
 
 root_dir = ''
 drone_dir = ''
