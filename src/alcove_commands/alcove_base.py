@@ -17,8 +17,6 @@ try:
         gatewareInfoFromBoardCfg(cfg_b)
 except:
     gateware_version = 15 # default, mostly for control computer
-    
-print(f"gateware: {gateware_version}")
 
 if gateware_version >= 15:
     from alcove_commands.alcove_base_gen2 import *

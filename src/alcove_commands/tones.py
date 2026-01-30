@@ -17,8 +17,6 @@ try:
 except:
     gateware_version = 15 # default, mostly for control computer
 
-print(f"gateware: {gateware_version}")
-
 if gateware_version >= 15:
     from alcove_commands.tones_gen2 import *
 else:

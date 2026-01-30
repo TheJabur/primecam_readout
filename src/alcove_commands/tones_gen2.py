@@ -29,229 +29,214 @@ def _gateware_chan(gateware, chan):
 
 
 # ============================================================================ #
-# genPhis
-def genPhis(freqs, amps_rel, amp_max=1., phase_trials=5):
-    '''
-    Generates optimized phases for a tone comb to minimize waveform peak.
+# _wrap_to_pi
+def _wrap_to_pi(angle):
+    """Wrap an angle in radians to the principal interval [-pi, pi].
 
-    Args:
-        freqs (array): Frequencies of the tones. [Hz]
-        amps_rel: (array) Relative amplitudes of the tones. 
-            These will be scaled so largest = amp_max.
-        amp_max (float, default=1): Largest tone amplitude.
-            In gen2, amp_max=1 scales the waveform to DAC max.
-        phase_trials (int, default=5): The number of random phase sets to try.
+    Parameters:
+    angle : float or array-like
+        Angle(s) in radians.
 
     Returns:
-        tuple: A tuple containing:
-            - amps (array): An real array of scaled amplitudes.
-            - phis (array): An real array of optimized phases.
-                In radians, [-pi, pi).
-    '''
-    import numpy as np
-    from math import gcd
-    from functools import reduce
-    from scipy.fft import ifft
-
-    freqs = np.asarray(freqs, float)
-    amps_rel  = np.asarray(amps_rel, float)
-
-    N = len(freqs)
-
-    # Map frequencies to bins of the full LUT FFT
-    k_full = np.round(freqs * cfg_b.lut_len / cfg_b.fs).astype(np.int64)
-
-    # Compute maximum downsampling factor g = gcd(k_full)
-    g = reduce(gcd, k_full)
-    if g <= 0:
-        # Degenerate cases: at least one bin index is zero
-        g = reduce(gcd, k_full[k_full != 0]) if np.any(k_full != 0) else 1
-
-    # Reduced FFT length and bin sizes
-    L = cfg_b.lut_len // g
-    k = (k_full // g).astype(np.int64)
-    unique_k = np.unique(k)
-
-    X = np.zeros(L, dtype=np.complex128) # Preallocate FFT buffer
-    best_peak = np.inf
-    best_phis = None
-    for _ in range(phase_trials):
-        # Clear only relevant bins
-        X[unique_k] = 0.0
-
-        # Random phases
-        phis = np.random.uniform(-np.pi, np.pi, N)
-
-        # Populate spectrum
-        X[k] = amps_rel * np.exp(-1j * phis)
-
-        # IFFT at reduced length
-        x = L * ifft(X, norm="backward", workers=-1)
-
-        # Peak amplitude
-        peak = np.max(np.abs(x))
-
-        if peak < best_peak:
-            best_peak = peak
-            best_phis = phis
-    
-    return amp_max*amps_rel/amps_rel.max(), best_phis
-
-
-# ============================================================================ #
-# genAmpsAndPhis
-def genAmpsAndPhis(freqs, amp_max=1.0, phase_trials=5):
-    '''See genPhis(...)'''
-
-    # equal amplitude tones
-    amps = amp_max*np.ones(len(freqs))
-
-    return genPhis(freqs, amps, amp_max, phase_trials)
-
-
-def _wrap_angle(angle):
-    '''
-    Args:
-        angle (float):
-            An angle in [rad].
-    Returns:
-        (float):
-            An equavalent angle within the range [-pi,pi].
-    '''
+    float or ndarray
+        Angle(s) wrapped to the interval [-pi, pi].
+    """
     return np.arctan2(np.sin(angle), np.cos(angle))
 
 
+# ============================================================================ #
+# _rad2int
 def _rad2int(angle_rad):
-    '''
-    Convert any angle in rad to the uint16 representation in unit [pi rad]
-    '''
-    wrap = _wrap_angle(angle_rad)
+    """Quantize an angle in radians to a uint16 with π-radian units.
+
+    The angle is first wrapped to [-π, π], then scaled such that ±π maps to
+    ±2^15 in signed int16. The returned uint16 is the raw two's-complement
+    representation. The corresponding quantized angle in radians is also
+    returned.
+
+    Args:
+        angle_rad (float or array-like): Angle to quantize. [rad]
+
+    Returns:
+        code (uint16 or array): u16int encoding of modified angle.
+        angle_q (float or ndarray): Modified angle. [rad]
+    """
+    wrap = _wrap_to_pi(angle_rad)
     i16 = np.int16(np.round((wrap / np.pi) * 2**15))
     actual = i16 * (np.pi / 2**15)
     return i16.astype(np.uint16), actual
 
 
-def get_safe_frequencies(freqs):
-    freqs = np.asarray(freqs)
-
-    # Filter range
-    freqs = freqs[(freqs >= -cfg_b.fs/2) & (freqs <= cfg_b.fs/2)]
-
-    # nothing in range, end early
-    if freqs.size == 0:
-        return freqs
-
-    # bin_size = 5e5
-    bin_size = cfg_b.fs/cfg_b.psb_channel_count
-
-    # Bin index + sort by bin
-    bins = np.floor((freqs + bin_size/2) / bin_size).astype(np.int64)
-    order = np.argsort(bins)
-    freqs = freqs[order]
-    bins  = bins[order]
-
-    # Find start of each new bin
-    starts = np.r_[0, np.flatnonzero(bins[1:] != bins[:-1]) + 1]
-
-    # Corresponding ends (inclusive)
-    ends = np.r_[starts[1:] - 1, freqs.size - 1]
-    idxs = np.unique(np.r_[starts, ends]) # avoid duplicates
-
-    return freqs[idxs]
-
-
-def _writeToneSelect(chan, addr, data):
-    '''
-    Updates toneSelect parameter memory at one address
+# ============================================================================ #
+# _getSafeFrequencies
+def _getSafeFrequencies(freqs, min_spacing=None, snap=True):
+    """Filter and select frequencies safely for PSB channels.
     
     Args:
-        chan (int): 
-            Channel index (1–4) specifying which readout chain to access.
-        addr (uint): 
-            The address of the write operation.
-        data (ufix_12):
-            The data of the write operation.
-    '''
+        freqs (array_like): Input frequencies. [Hz]
+        min_spacing (float or None): Min allowed spacing between tones. [Hz]
+        snap (bool): Force the frequencies to snap to output fs.
+            (Default is multiples of 488.28125 Hz).
+    
+    Returns:
+        (array): Filtered and sorted frequency array.
+
+    Notes:
+        - Filter to Nyquist range [-fs/2, fs/2].
+        - Sort ascending.
+        - Remove frequencies that are too close together (optional).
+        - Limit to at most 2 tones per bin.
+    """
+
+    fs = cfg_b.fs # 1024e6
+    psb_channel_count = cfg_b.psb_channel_count # 2048
+    acc_factor = cfg_b.acc_factor # 1024
+    bin_size = fs / psb_channel_count
+    nyquist = fs / 2
+    fs_out = bin_size/acc_factor
+    
+    freqs = np.asarray(freqs, dtype=np.float64)
+    
+    # Filter to Nyquist range [-fs/2, fs/2]
+    freqs = freqs[(freqs >= -nyquist) & (freqs <= nyquist)]
+    
+    if len(freqs) == 0: # early exit if no tones (left)
+        return np.array([], dtype=np.float64)
+
+    # Sort ascending
+    freqs = np.sort(freqs) 
+
+    # snap to fft bin centers
+    if snap:
+        freqs = np.round(freqs/fs_out).astype(np.int64)*fs_out
+    
+    # Remove frequencies that are too close together
+    if len(freqs) > 1 and min_spacing:
+        diffs = np.diff(freqs)
+        # Keep first frequency, then only keep frequencies with sufficient spacing
+        keep_mask = np.ones(len(freqs), dtype=bool)
+        keep_mask[1:] = diffs >= min_spacing
+        freqs = freqs[keep_mask]
+    
+    # Limit to at most 2 (middle) frequencies per bin
+    bin_indices = np.floor((freqs + nyquist) / bin_size).astype(np.int32)
+    max_bin = bin_indices[-1] + 1
+    bin_counts = np.bincount(bin_indices, minlength=max_bin)
+    overcrowded_bins = np.where(bin_counts > 2)[0]
+    if len(overcrowded_bins) > 0:
+        keep_mask = np.ones(len(freqs), dtype=bool)
+        for bin_idx in overcrowded_bins:
+            bin_freq_indices = np.where(bin_indices == bin_idx)[0]
+            n_in_bin = len(bin_freq_indices)
+            start_idx = (n_in_bin - 2) // 2 # middle 1
+            end_idx = start_idx + 2         # middle 2
+            bin_keep = np.zeros(n_in_bin, dtype=bool)
+            bin_keep[start_idx:end_idx] = True
+            keep_mask[bin_freq_indices[~bin_keep]] = False
+        freqs = freqs[keep_mask]
+    
+    return freqs
+
+
+# ============================================================================ #
+# _writeToneSelect
+def _writeToneSelect(chan, addr, data):
+    """Updates toneSelect parameter memory at one address
+    
+    Args:
+        chan (int): Readout RF channel.
+        addr (uint): The address of the write operation.
+        data (ufix_12): The data of the write operation.
+    """
     chan_access = _gateware_chan(cfg_b.gateware, chan)
     
-    gpio_6_slot_2_word = int(addr)
-    chan_access.GPIO.axi_gpio_6.write(0x08,gpio_6_slot_2_word)
+    chan_access.GPIO.axi_gpio_6.write(0x08, int(addr))
     
-    gpio_7_slot_1_word = int((data[1] << 12) + data[0])
-    chan_access.GPIO.axi_gpio_7.write(0x00,gpio_7_slot_1_word)
-    gpio_7_slot_2_word = int((data[3] << 12) + data[2])
-    chan_access.GPIO.axi_gpio_7.write(0x08,gpio_7_slot_2_word)
-    gpio_8_slot_1_word = int((data[5] << 12) + data[4])
-    chan_access.GPIO.axi_gpio_8.write(0x00,gpio_8_slot_1_word)
-    gpio_8_slot_2_word = int((data[7] << 12) + data[6])
-    chan_access.GPIO.axi_gpio_8.write(0x08,gpio_8_slot_2_word)
+    chan_access.GPIO.axi_gpio_7.write(0x00, int((data[1] << 12) + data[0]))
+    chan_access.GPIO.axi_gpio_7.write(0x08, int((data[3] << 12) + data[2]))
+    chan_access.GPIO.axi_gpio_8.write(0x00, int((data[5] << 12) + data[4]))
+    chan_access.GPIO.axi_gpio_8.write(0x08, int((data[7] << 12) + data[6]))
     
     chan_access.GPIO.axi_gpio_6.write(0x00,0)
     chan_access.GPIO.axi_gpio_6.write(0x00,1)
     chan_access.GPIO.axi_gpio_6.write(0x00,0)
 
 
+# ============================================================================ #
+# _writeToneSelectAll
 def _writeToneSelectAll(chan, ToneSelMap):
-    '''
-    Updates the entire toneSelect LUT from ToneSelMap
+    """Updates the entire toneSelect LUT from ToneSelMap
     
     Args:
-        chan (int): 
-            Channel index (1-4) specifying which readout chain to access.
-        ToneSelMap (numpy.ndarray):
-            The toneSelect LUT.
-    '''
+        chan (int): Readout RF channel.
+        ToneSelMap (numpy.ndarray): The toneSelect LUT.
+    """
     for i in range(256):
         _writeToneSelect(chan, i, ToneSelMap[i])
 
 
-def genInitToneSelMap():
-    '''
-    Generate a default tone select mapping LUT for initialization/reset.
-    
+# ============================================================================ #
+# _genDefaultToneSelMap
+def _genDefaultToneSelMap():
+    """Generate a default tone select mapping LUT for initialization/reset.
+    Caches instead of regenerating for performance.
+
     Returns:
-        toneSelectMap (numpy.ndarray)
-    '''
-    toneSelectMap = np.arange(2048, dtype=np.uint16).reshape((256,8))
-    for i in range(8):
-        addr = np.arange(256, dtype=np.uint16)
-        para = np.ones(256, dtype=np.uint16) * i
-        onoff = np.ones(256, dtype=np.uint16)
-        toneSelectMap[:, i] = addr << 4 | para << 1 | onoff
-    return toneSelectMap
+        toneSelectMap (array)
+
+    Notes:
+        Optimization: Cache output (in cfg file).
+    """
+
+    if cfg_b.defaultToneSelMap is None:
+
+        addr = np.arange(256, dtype=np.uint16)[:, None]
+        para = np.arange(8, dtype=np.uint16)[None, :]
+        onoff = np.uint16(1)
+        cfg_b.defaultToneSelMap = (addr << 4) | (para << 1) | onoff
+
+    return cfg_b.defaultToneSelMap
 
 
+# ============================================================================ #
+# _updateToneSelMap
 def _updateToneSelMap(chan, toneSelectInfo, turn_off_unused_bin=True):
+    """Update toneSelMap based on 2-tone bin reuse mapping.
+
+    Args:
+        chan (int): Readout RF channel.
+        toneSelectInfo (array): Integer bin-index mapping.
+            Row 0 contains the destination (2-tone) bin indices.
+            Row 1 contains the source (unused) bin indices whose tone-select
+        turn_off_unused_bin (bool): Disable source bins.
     """
-    Update toneSelMap based on 2-tone bin reuse mapping.
-    """
-    toneSelectMap = genInitToneSelMap()
+
+    toneSelectMap = _genDefaultToneSelMap() # should cache
+
     twoTone_bins, unused_bins = toneSelectInfo
-    r_tw, c_tw = divmod(twoTone_bins, 8)
-    r_un, c_un = divmod(unused_bins, 8)
-    toneSelectMap[r_tw, c_tw] = toneSelectMap[r_un, c_un]
+
+    flat = toneSelectMap.ravel()
+    flat[twoTone_bins] = flat[unused_bins]
 
     if turn_off_unused_bin:
-        toneSelectMap[r_un, c_un] = 0
+        flat[unused_bins] = 0
 
     _writeToneSelectAll(chan, toneSelectMap)
 
 
+# ============================================================================ #
+# _writeBinMap
 def _writeBinMap(chan, addr, data):
-    '''
-    Write to firmware registers via GPIO.
+    '''Write to firmware registers via GPIO.
     Updates the bin select mapping (LUT) in the receive.
     
     Args:
-        chan (int): 
-            Channel index (1–4) specifying which readout chain to access.
-        addr (uint): 
-            The address of the write operation.
-        data (ufix_22):
-            The data of the write operation.
+        chan (int): Readout RF channel.
+        addr (uint): The address of the write operation.
+        data (ufix_22): The data of the write operation.
             
     Notes:
-        The bin map RAM are accecced 2 addrs at a time, 
+        The bin map RAM are accessed 2 addrs at a time, 
         only the first addr need to be supplied, each addr take two values
         each 11 bits concatenated.
         For example, if addr=n, then 
@@ -271,99 +256,70 @@ def _writeBinMap(chan, addr, data):
     chan_access.GPIO.axi_gpio_9.write(0x08, gpio_9_slot_2_word)
 
 
+# ============================================================================ #
+# _loadBinMap
 def _loadBinMap(chan, bin_map):
-    '''
-    Updates the bin select mapping (LUT) in the receive.
+    '''Updates the bin select mapping (LUT) in the receive.
     
     Args:
-        chan (int): 
-            Channel index (1–4) specifying which readout chain to access.
-        bin_map (numpy.ndarray):
-            Array of bin select mapping LUT.
+        chan (int): Readout RF channel.
+        bin_map (numpy.ndarray): Array of bin select mapping LUT.
     '''
+
     bin_map_reshape = bin_map.reshape((512, 4))
     for i in range(512):
         _writeBinMap(chan, 2*i, bin_map_reshape[i])
 
 
-def _writeBeatDphi(chan, mem, addr, beatDphi):
-    '''
-    Write to firmware registers via GPIO.
-    Updates the beat frequencies corresponding to each tone, 
+# ============================================================================ #
+# _loadBeatDphiMap
+def _loadBeatDphiMap(chan, beat_dphi_map):
+    '''Updates the beat frequencies corresponding to each tone, 
     for the digital down conversion (DDC) in receive.
     
     Args:
-        chan (int): 
-            Channel index (1–4) specifying which readout chain to access.
-        mem (int {0,1,2,3}):
-            An index that maps to one of the 4 BRAMs on 4 parallel paths.
-        addr (uint): 
-            The address of the write operation.
-        beatDphi (float):
-            The step in phase that defines the beat frequency, in unit [rad].     
+        chan (int): Readout RF channel.
+        beat_dphi_map (array): beat dphi LUT values.
     '''
     chan_access = _gateware_chan(cfg_b.gateware, chan)
-    
-    beatDphi_write,_ = _rad2int(beatDphi)
-    gpio_4_slot_1_word = int((addr << 20) + (beatDphi_write << 4))
-    
-    chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word)
-    if mem == 0:
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word + 2**0)
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word)
-    elif mem == 1:
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word + 2**1)
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word)
-    elif mem == 2:
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word + 2**2)
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word)
-    elif mem == 3:
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word + 2**3)
-        chan_access.GPIO.axi_gpio_4.write(0x00,gpio_4_slot_1_word)
 
-
-def _loadBeatDphiMap(chan, beat_dphi_map):
-    '''
-    Updates the beat frequencies corresponding to each tone, 
-    for the digital down conversion (DDC) in receive.
-    
-    Args:
-        chan (int): 
-            Channel index (1–4) specifying which readout chain to access.
-        beat_dphi_map (numpy.ndarray):
-            beat dphi LUT values.
-    '''
-    beat_dphi_map_reshape = beat_dphi_map.reshape((512, 4))
+    dphi_i16, _ = _rad2int(beat_dphi_map)
+    dphi_i16 = dphi_i16.reshape(512, 4)
     for addr in range(512):
+        base = addr << 20
+        row = dphi_i16[addr]
         for mem in range(4):
-            _writeBeatDphi(chan, mem, addr, beat_dphi_map_reshape[addr, mem])
+            word = base | (int(row[mem]) << 4)
+            chan_access.GPIO.axi_gpio_4.write(0x00, word)
+            chan_access.GPIO.axi_gpio_4.write(0x00, word | (1 << mem))
+            chan_access.GPIO.axi_gpio_4.write(0x00, word)
 
 
-def _loadAllTones(chan, bin_num, dphi, init_re, init_im):
-    '''
-    Writes all tones listed in 1darrays
-    
-    Args:
-        chan (int): 
-            Channel index (1–4) specifying which readout chain to access.
-        bin_num (int);
-            The FFT bin number of which the tone is in.
-        dphi (float): 
-            The step in phase which defines the frequency of the tone from bin center.
-            Note: In unit [rad]
-        init_re (float),
-        init_im (float): 
-            The real and imarinary parts of the initial vector.
-            Note: The maximum magnitude of the initial vector is 1.
-    
-    '''
-    for i in range(bin_num.size):
-        _writeTone(chan, bin_num[i]%8, bin_num[i]//8, dphi[i], init_re[i], init_im[i])
-
-
+# ============================================================================ #
+# _writeTone
 def _writeTone(chan, mem, addr, dphi, init_re, init_im):
-    """
-    Writes one tone defined by its frequency (dphi) and initial vector (init_re, init_im).
+    """Writes one tone.
+
+    The function converts physical units (radians, floating-point vectors) into 
+    the fixed-point integers required by the gateware. It also handles 18-bit 
+    signed vector components and packs address/frequency data into a single 32-bit word.
+
+    Args:
+        chan (int): The hardware channel index to access.
+        mem (int): The memory slot index (0-7). Determines the trigger bit in 
+            the control register and applies a phase shift if odd.
+        addr (int): The destination address within the tone selection map.
+        dphi (float): The phase increment (frequency) in radians.
+        init_re (float): Real component of the initial starting vector. 
+            Converted to 18-bit fixed point (Q2.16).
+        init_im (float): Imaginary component of the initial starting vector. 
+            Converted to 18-bit fixed point (Q2.16).
+
+    Note:
+        - If `mem` is odd, a $\pi$ phase shift is automatically applied to `dphi`.
+        - `axi_gpio_2` handles the initial vector (I/Q) components.
+        - `axi_gpio_1` handles the packed (Address + Frequency) word and the 
+          strobe/trigger bit defined by `mem`.
     """
 
     if not (0 <= mem <= 7):
@@ -375,7 +331,7 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     chan_access.GPIO.axi_gpio_2.write(0x08, int(round(init_im*(1 << 16))) & 0x3FFFF)
 
     if mem & 1:  # mem odd: add π
-        dphi = _wrap_angle(dphi + np.pi)
+        dphi = _wrap_to_pi(dphi + np.pi)
     dphi_int, _ = _rad2int(dphi)
 
     word = int((addr << 16) + dphi_int)
@@ -387,12 +343,33 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
 
 
 # ============================================================================ #
+# _writeAllTones
+def _writeAllTones(chan, bin_num, dphi, init_re, init_im):
+    '''Writes all tones listed in 1darrays
+    
+    Args:
+        chan (int): Readout RF channel.
+        bin_num (int): The FFT bin number of which the tone is in.
+        dphi (float): The step in phase which defines the frequency 
+            of the tone from bin center. In unit [rad].
+        init_re (float),
+        init_im (float): 
+            The real and imaginary parts of the initial vector.
+            Note: The maximum magnitude of the initial vector is 1.
+    
+    '''
+    for i in range(bin_num.size):
+        _writeTone(chan, bin_num[i]%8, bin_num[i]//8, 
+                   dphi[i], init_re[i], init_im[i])
+
+
+# ============================================================================ #
 # _writeComb
 def _writeComb(chan, freqs, amps, phi, save=True):
     '''
     '''
 
-    freqs = get_safe_frequencies(freqs)
+    freqs = _getSafeFrequencies(freqs)
 
     f_step = cfg_b.fs/cfg_b.lut_len
     freqs_actual = np.round(freqs / (f_step)) * f_step
@@ -401,8 +378,8 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     bin_num = np.round(freqs_actual/bin_step).astype(np.int64)
     
     # dphi/2pi ratio corresponds to the channel bandwidth of PSB which is 2*fs/2048
-    dphi = _wrap_angle(np.pi*(freqs_actual/bin_step - bin_num)) 
-    beat_dphi = _wrap_angle(-2*dphi)  # Careful with different sampling frequency
+    dphi = _wrap_to_pi(np.pi*(freqs_actual/bin_step - bin_num)) 
+    beat_dphi = _wrap_to_pi(-2*dphi)  # Careful with different sampling frequency
 
     bin_num[bin_num < 0] += cfg_b.psb_channel_count # all positive
     
@@ -447,7 +424,7 @@ def _writeComb(chan, freqs, amps, phi, save=True):
                 transmit_bin_count += 1
     else:
         secondTone_flag = False
-        _writeToneSelectAll(chan, genInitToneSelMap())
+        _writeToneSelectAll(chan, _genDefaultToneSelMap())
         
         beat_dphi_2048[bin_num] = beat_dphi
         transmit_bin_count = 0
@@ -462,7 +439,7 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     
     Z = amps*np.exp(1.j*phi)
 
-    _loadAllTones(chan, bin_num, dphi, Z.real, Z.imag)
+    _writeAllTones(chan, bin_num, dphi, Z.real, Z.imag)
 
     # TODO:
     # write number of channels to 16 bit value in UDP packet
@@ -478,53 +455,6 @@ def _writeComb(chan, freqs, amps, phi, save=True):
 
     return freqs_actual
     # return freqs_actual, bin_map, transmit_bin_count, secondTone_flag
-
-
-# ============================================================================ #
-# writeTestTone
-def writeTestTone():
-
-    import numpy as np
-    
-    chan = cfg_b.drid # drone (chan) id is from config
-    freqs = np.array(np.linspace(50e6, 255.00e6, 1))
-    amps = np.ones(1)*(2**15 - 1)
-    phi=np.array([np.pi])
-    freq_actual = _writeComb(chan, freqs, amps, phi)
-
-
-# ============================================================================ #
-# writeNewVnaComb
-def writeNewVnaComb(freq_noise=0):
-    """Create and write the vna sweep tone comb.
-
-    freq_noise: (float) Frequency noise to add to the tone placement.
-        This uses a uniform distribution of noise. [Hz]
-    """
-
-    import numpy as np
-
-    freq_noise = float(freq_noise)
-    
-    chan = cfg_b.drid # drone (chan) id is from config
-
-    # freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    freqs_bb = np.array(np.arange(-256e6, 256e6, 500e3))
-
-    # add some frequency noise (could be useful for evenly spaced tones)
-    if freq_noise:
-        freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
-
-    amps, phis = genAmpsAndPhis(freqs_bb)
-    freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
-    
-    io.save(io.file.freqs_vna, freqs_bb_actual)
-    io.save(io.file.amps_vna, amps)
-    io.save(io.file.phis_vna, phis)
-
-    return io.returnWrapperMultiple(
-        [io.file.freqs_vna, io.file.amps_vna, io.file.phis_vna], 
-        [freqs_bb_actual, amps, phis])
 
 
 # ============================================================================ #
@@ -556,12 +486,164 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         phis = None
 
     if amps is None or phis is None:
-        amps, phis = genVariedAmpsAndPhis(freqs_bb)
+        amps, phis = genAmpsAndPhis(freqs_bb)
 
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_actual = freqs_bb_actual + f_center 
 
     return freqs_rf_actual, amps, phis
+
+
+# ============================================================================ #
+# genPhis
+def genPhis(freqs, amps_rel, amp_max=1., phase_trials=5):
+    """Generates optimized phases for a tone comb to minimize waveform peak.
+
+    Args:
+        freqs (array): Frequencies of the tones. [Hz]
+        amps_rel: (array) Relative amplitudes of the tones. 
+            These will be scaled so largest = amp_max.
+        amp_max (float, default=1): Largest tone amplitude.
+            In gen2, amp_max=1 scales the waveform to DAC max.
+        phase_trials (int, default=5): The number of random phase sets to try.
+
+    Returns:
+        tuple: A tuple containing:
+            - amps (array): An real array of scaled amplitudes.
+            - phis (array): An real array of optimized phases.
+                In radians, [-pi, pi).
+    """
+    import numpy as np
+    from math import gcd
+    from functools import reduce
+    from scipy.fft import ifft
+
+    freqs = np.asarray(freqs, float)
+    amps_rel  = np.asarray(amps_rel, float)
+
+    N = len(freqs)
+
+    # Map frequencies to bins of the full LUT FFT
+    k_full = np.round(freqs * cfg_b.lut_len / cfg_b.fs).astype(np.int64)
+
+    # Compute maximum downsampling factor g = gcd(k_full)
+    g = reduce(gcd, k_full)
+    if g <= 0:
+        # Degenerate cases: at least one bin index is zero
+        g = reduce(gcd, k_full[k_full != 0]) if np.any(k_full != 0) else 1
+
+    # Reduced FFT length and bin sizes
+    L = cfg_b.lut_len // g
+    k = (k_full // g).astype(np.int64)
+    unique_k = np.unique(k)
+
+    X = np.zeros(L, dtype=np.complex128) # Preallocate FFT buffer
+    best_peak = np.inf
+    best_phis = None
+    for _ in range(phase_trials):
+        # Clear only relevant bins
+        X[unique_k] = 0.0
+
+        # Random phases
+        phis = np.random.uniform(-np.pi, np.pi, N) 
+
+        # Populate spectrum
+        X[k] = amps_rel * np.exp(-1j * phis)
+
+        # IFFT at reduced length
+        x = L * ifft(X, norm="backward", workers=-1)
+
+        # Peak amplitude
+        peak = np.max(np.abs(x))
+
+        if peak < best_peak:
+            best_peak = peak
+            best_phis = phis
+    
+    return amp_max*amps_rel/amps_rel.max(), best_phis
+
+
+# ============================================================================ #
+# genAmpsAndPhis
+def genAmpsAndPhis(freqs, amp_max=1.0, phase_trials=5):
+    """See genPhis(...)"""
+
+    # equal amplitude tones
+    amps = amp_max*np.ones(len(freqs))
+
+    return genPhis(freqs, amps, amp_max, phase_trials)
+
+
+# ============================================================================ #
+# writeTestTone
+def writeTestTone(freq=50e6):
+    """Write a single tone.
+
+    Args:
+        freq (float): Tone frequency, base band. [Hz]
+
+    Returns:
+        (float): The actual frequency written.
+    """
+    
+    chan = cfg_b.drid
+
+    freqs = np.array([freq])
+    amps = np.array([1.])
+    phis = np.array([np.pi])
+
+    freq_actual = _writeComb(chan, freqs, amps, phis)
+
+    return freq_actual
+
+
+# =========================================================================== #
+# gatewareInfoFromBoardCfg
+def gatewareInfoFromBoardCfg(cfg_b):
+    # MUST use *_v[version]p* as gateware filename
+    gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
+    gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
+    gateware_fname_parts = re.search(r'_v(\d+)p(\d+)', gateware_fname)
+    gateware_version = int(gateware_fname_parts.group(1)) 
+    gateware_version_minor = int(gateware_fname_parts.group(2))
+    return gateware_file, gateware_version, gateware_version_minor
+
+
+# ============================================================================ #
+# writeNewVnaComb
+def writeNewVnaComb(freq_noise=0):
+    """Create and write the vna sweep tone comb.
+
+    freq_noise: (float) Frequency noise to add to the tone placement.
+        This uses a uniform distribution of noise. [Hz]
+    """
+
+    gateware_file, gateware_version, gateware_version_minor = \
+        gatewareInfoFromBoardCfg(cfg_b)
+    print(f"gateware: {gateware_version}")
+
+
+    freq_noise = float(freq_noise)
+    
+    chan = cfg_b.drid # drone (chan) id is from config
+
+    # freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
+    freqs_bb = np.array(np.arange(-256e6, 256e6, 500e3))
+
+    # add some frequency noise (could be useful for evenly spaced tones)
+    if freq_noise:
+        freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
+
+    amps, phis = genAmpsAndPhis(freqs_bb)
+    freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
+    
+    io.save(io.file.freqs_vna, freqs_bb_actual)
+    io.save(io.file.amps_vna, amps)
+    io.save(io.file.phis_vna, phis)
+
+    return io.returnWrapperMultiple(
+        [io.file.freqs_vna, io.file.amps_vna, io.file.phis_vna], 
+        [freqs_bb_actual, amps, phis])
 
 
 # ============================================================================ #
@@ -582,7 +664,7 @@ def writeTargCombFromVnaSweep(cal_tones=False):
     freqs_rf = io.load(io.file.f_res_vna).real
     freqs_bb = freqs_rf - f_center
 
-    amps, phis = genVariedAmpsAndPhis(freqs_bb)
+    amps, phis = genAmpsAndPhis(freqs_bb)
 
     io.save(io.file.f_res_targ, freqs_rf)
     io.save(io.file.a_res_targ, amps)
