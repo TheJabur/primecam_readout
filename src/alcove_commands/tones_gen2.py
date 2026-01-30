@@ -600,6 +600,7 @@ def writeTestTone(freq=50e6):
 # =========================================================================== #
 # gatewareInfoFromBoardCfg
 def gatewareInfoFromBoardCfg(cfg_b):
+    import os
     # MUST use *_v[version]p* as gateware filename
     gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
     gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
