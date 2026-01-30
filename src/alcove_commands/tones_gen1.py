@@ -276,6 +276,19 @@ def writeTestTone():
     freq_actual = _writeComb(chan, freqs, amps, phi)
 
 
+# =========================================================================== #
+# gatewareInfoFromBoardCfg
+def gatewareInfoFromBoardCfg(cfg_b):
+    import os, re
+    # MUST use *_v[version]p* as gateware filename
+    gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
+    gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
+    gateware_fname_parts = re.search(r'_v(\d+)p(\d+)', gateware_fname)
+    gateware_version = int(gateware_fname_parts.group(1)) 
+    gateware_version_minor = int(gateware_fname_parts.group(2))
+    return gateware_file, gateware_version, gateware_version_minor
+
+
 # ============================================================================ #
 # writeNewVnaComb
 def writeNewVnaComb(freq_noise=0):
@@ -284,6 +297,10 @@ def writeNewVnaComb(freq_noise=0):
     freq_noise: (float) Frequency noise to add to the tone placement.
         This uses a uniform distribution of noise. [Hz]
     """
+
+    gateware_file, gateware_version, gateware_version_minor = \
+        gatewareInfoFromBoardCfg(cfg_b)
+    print(f"gateware: {gateware_version}")
 
     import numpy as np
 
