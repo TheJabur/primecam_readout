@@ -127,15 +127,18 @@ try:
     lofreq = 1000.000 # [MHz]
     rf_data_conv = gateware.usp_rf_data_converter_0
 
-    if cfg_b.asu_board:
-        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-        port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
-    else:
-        tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-        port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
+    # if cfg_b.asu_board:
+    #     tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    #     port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
+    # else:
+    #     tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    #     port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
+    # TODO:
+    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
 
     for chan, ii in tb_indices.items():
-
+        
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
         dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
 

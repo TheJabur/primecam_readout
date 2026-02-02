@@ -34,7 +34,9 @@ def gatewareInfoFromBoardCfg(cfg_b):
 gateware_file, gateware_version, gateware_version_minor = \
     gatewareInfoFromBoardCfg(cfg_b)
 
-if gateware_version >= 15:
-    import init_15
-else:
-    import init_14
+# if gateware_version >= 15:
+#     import init_15
+# else:
+#     import init_14
+# TODO:
+import init_15
