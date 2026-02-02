@@ -48,6 +48,8 @@ try:
 
     gateware_file, gateware_version, gateware_version_minor = \
         gatewareInfoFromBoardCfg(cfg_b)
+    # TODO:
+    print(f"load gateware: {gateware_file}")
     gateware = Overlay(gateware_file, ignore_version=True)
 
 
@@ -66,6 +68,8 @@ try:
     # PTP
     # ======================================================================== #
 
+    # TODO:
+    print(f"cfg_b.ptp_enable: {cfg_b.ptp_enable}")
     if cfg_b.ptp_enable:
 
         # Bring up the PTP interface
@@ -138,6 +142,9 @@ try:
     # port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
     port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
 
+    # TODO:
+    print(f"port_mapping: {port_mapping}")
+
     for chan, ii in tb_indices.items():
 
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
@@ -181,6 +188,9 @@ try:
     # start chan 1 readout
     gateware.chan1.GPIO.axi_gpio_0.write(0x0, 0)
     gateware.chan1.GPIO.axi_gpio_0.write(0x0, 1)
+
+    # TODO:
+    print(f"init done")
 
 
 
