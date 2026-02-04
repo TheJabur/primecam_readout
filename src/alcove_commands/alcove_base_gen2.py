@@ -71,8 +71,6 @@ def timestreamOn(on=True):
     # input parameter casting
     on = str(on) in {True, 1, '1', 'True', 'true'}
 
-    print("using alcove_base_gen2")
-
     udp_control = cfg_b.gateware.udp_control.gpio_udp_info_control
     
     # current drone channel

@@ -62,13 +62,10 @@ def safe_cast_to_int(data_str):
 def timestreamOn(on=True):
     '''Turn the UDP timestream on (or off) for the current drone.'''
 
-    print("using alcove_base_gen1")
-
     # input parameter casting
     on = str(on) in {True, 1, '1', 'True', 'true'}
 
     udp_control = cfg_b.gateware.gpio_udp_info_control
-    # udp_control = cfg_b.gateware.udp_control.gpio_udp_info_control
     
     # current drone channel
     chan = cfg_b.drid
