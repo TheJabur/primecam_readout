@@ -38,4 +38,6 @@ def board_temps():
         'pl_fabric': calc_temp(pl_temp_raw)
     }
 
+    print(temp_dict)
+    
     return temp_dict

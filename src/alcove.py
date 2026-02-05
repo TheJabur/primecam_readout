@@ -15,6 +15,7 @@
 import logging
 
 from alcove_commands import alcove_base, tones, sweeps, analysis
+from alcove_commands import board_utilities as utils
 import clean_io
 
 from config import parentDir
@@ -58,6 +59,7 @@ def _com():
         55:analysis.findCalTones,
         60:sys_info.sys_info,
         61:sys_info.sys_info_v,
+        62:utils.board_temps,
         65:clean_io.cleanBoardDroneDirs,
         70:alcove_base.timestreamOn,
         71:alcove_base.userPacketInfo,
