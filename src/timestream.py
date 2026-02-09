@@ -22,7 +22,10 @@ class TimeStream:
         # Set socket options to allow address reuse
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
         
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 2**20) # 1MB buffer
+
         self.sock.bind((self.host, self.port))
         # self.sock.bind(("", self.port))
 
@@ -44,17 +47,15 @@ class TimeStream:
         """
         """
 
-        # print(f"capturing {N} packets...")
-
         buffer_size = 9000
 
-        # rcv = [self.sock.recvfrom(buffer_size) for _ in range(N)]
-        rcv = []
-        for _ in range(N):
-            print(f"packet {_}")
-            d = self.sock.recvfrom(buffer_size)
-            rcv.append(d)
-            print(d)
+        rcv = [self.sock.recvfrom(buffer_size) for _ in range(N)]
+        # rcv = []
+        # for _ in range(N):
+        #     print(f"packet {_}")
+        #     d = self.sock.recvfrom(buffer_size)
+        #     rcv.append(d)
+        #     print(d)
 
         self.packets = np.array([bytearray(data) for data,_ in rcv])
         self.addresses = np.array([addr[0] for _,addr in rcv])
