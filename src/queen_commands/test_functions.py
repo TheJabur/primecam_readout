@@ -8,6 +8,7 @@
 import numpy as np
 import time
 import traceback
+from collections import deque
 
 import queen
 import alcove
@@ -104,8 +105,8 @@ def _progressBar(i, N, msg="", S=10):
 
 
 # ============================================================================ #
-# _setup_bluefors_controller
-def _setup_bluefors_controller():
+# _setupBlueforsController
+def _setupBlueforsController():
 
     # avoid warnings if no https connection can be established
     import requests
@@ -123,6 +124,53 @@ def _setup_bluefors_controller():
     # active_channels = [1, 2, 5, 6]
 
     return controller
+
+
+# ============================================================================ #
+# _waitForBlueforsTemperatureStable
+def _waitForBlueforsTemperatureStable(
+    controller,
+    setpoint,
+    sample_period=60.0,          # seconds
+    window_size=15,              # number of samples
+    tol_mean=0.002,              # K
+    tol_slope=1e-4,              # K / minute
+    tol_std=0.001,               # K
+    timeout=None                 # seconds, or None
+):
+    """
+    Blocks until temperature is stable according to slope + variance criteria.
+    """
+
+    temps = deque(maxlen=window_size)
+    times = deque(maxlen=window_size)
+    t_start = time.time()
+    while True:
+        temps.append(controller.get_mxc_temperature())
+        times.append(time.time())
+
+        if len(temps) == window_size: # wait for enough samples
+            T_arr = np.array(temps)
+            t_arr = np.array(times)
+
+            # Mean & std
+            T_mean = T_arr.mean()
+            T_std = T_arr.std()
+
+            # Linear slope (K / minute)
+            t_min = (t_arr - t_arr[0]) / 60.0
+            slope, _ = np.polyfit(t_min, T_arr, 1)
+
+            if (abs(T_mean - setpoint) < tol_mean and
+                abs(slope) < tol_slope and
+                T_std < tol_std):
+                return True
+
+        if (timeout is not None and
+            (times[-1] - t_start) > timeout):
+            return False
+
+        time.sleep(sample_period)
 
 
 
@@ -172,24 +220,21 @@ def tls_array_test():
 
     print("TLS test starting.")
     
-
     t_start = time.time()
 
     # config
     nclo = 500 # MHz
-    steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
-    # steps_temp = [50, 100]
-    # steps_tone = [-5, -3, 0, 3, 5] # dB; Note not to exceed DAC max!
-    steps_tone = [-10, -8, -5, -2, 0] # dB
-    # steps_tone = [-10, 0]
-    t_step = 4000 # s; time spent at each temperature step in total
-    t_stabilize = 3600 # s; time to wait for temp stabilization at each step
-    t_tod = 60 # s; tod length at each step
     fs = 512e6/1024/1024 # samples per second (~488 Hz) (single drone)
     timestream = TimeStream(host="192.168.3.40", port=4096)
-
+    
+    # test params
+    steps_temp = [50, 75, 100, 125, 150, 175, 200, 300, 400, 500] # mK
+    t_stabilize_max = 2*60*60 # max seconds trying to stabilize T before giving up
+    steps_tone = [-10, -8, -5, -2, 0] # dB
+    t_tod = 60 # s; tod length at each step
+    
     # setup the bluefors controller
-    controller = _setup_bluefors_controller()
+    controller = _setupBlueforsController()
 
     # startup the timestreams
     _sendComAll("setNCLO", nclo)
@@ -206,17 +251,17 @@ def tls_array_test():
     N_packets_total = N_packets_tod*N_steps
 
     i_T = i_P = 0
-    msg = f"Running: ({N_steps_T*t_step} s; {N_packets_total} packets):"
+    msg = f"Running: (max {N_steps_T*t_stabilize_max} s; {N_packets_total} packets):"
     _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
 
     for i_T,T in enumerate(steps_temp): # step in temperature
-        t_step_start = time.time()
-
+        
         # set step cryostat temperature
         status = controller.set_mxc_heater_setpoint(T)
-
-        # sleep, to hopefully let cryostat temp stabilize
-        time.sleep(t_stabilize)
+        T_stablized = _waitForBlueforsTemperatureStable(
+            controller, T, timeout=t_stabilize_max)
+        if not T_stablized: 
+            break # T didn't stabilise, end test
 
         for i_P,P in enumerate(steps_tone): # step in probe tone power
             
@@ -268,14 +313,6 @@ def tls_array_test():
             
             _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
 
-        # wait for the next temperature step to start
-        t_wait = t_step - time.time() + t_step_start
-        if t_wait > 0:
-            time.sleep(t_wait)
-        else:
-            # oops, we went over alotted time!
-            print("Temperature step time exceeded!")
-
     print(f"TLS test complete. Elapsed time: {time.time() - t_start:.6f} seconds")
 
     _sendComAll("timestreamOn", 0)
@@ -303,8 +340,16 @@ def loopbackCapture():
     # N_packets = 1
 
     start = time.time()
+
+    print(f" Assumed packet rate = {packet_per_second} /s")
+    print(f" Expected number of packets = {N_packets}")
+    print(f" Obs. length = {t_obs} s")
+    print(f" Start time = {start}")
+
+    print(f" Attempting to capture packets...", end='')
     packets = _captureTimestream(N_packets)    # capture tods
-    print(f"Elapsed time: {time.time() - start:.6f} seconds")
+    print(f"success!")
+    print(f" Elapsed time: {time.time() - start:.6f} seconds")
 
     # _sendComAll("timestreamOn", 0)     # stop streaming
 
