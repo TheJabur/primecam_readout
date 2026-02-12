@@ -16,8 +16,11 @@ import re
 import sys
 import subprocess
 
+print(f"Running init_15.py...")
+
 # Determine the directory where the script is located
 script_dir = os.path.dirname(os.path.realpath(__file__))
+print(f"Script directory: {script_dir}")
 
 # add src/ to path (where most of the other scripts live)
 sys.path.insert(1, os.path.join(os.path.dirname(script_dir), 'src'))
@@ -46,6 +49,7 @@ try:
 
     gateware_file, gateware_version, gateware_version_minor = \
         gatewareInfoFromBoardCfg(cfg_b)
+    print(f"Loading gateware: {gateware_file}")
     gateware = Overlay(gateware_file, ignore_version=True)
 
 
@@ -56,6 +60,7 @@ try:
     # ======================================================================== #
 
     clksrc = 409.6 # MHz
+    print(f"Setting clocks: {clksrc}")
     xrfclk.set_all_ref_clks(clksrc)
 
 
@@ -64,6 +69,7 @@ try:
     # PTP
     # ======================================================================== #
 
+    print(f"PTP enabled: {cfg_b.ptp_enable}")
     if cfg_b.ptp_enable:
 
         # Bring up the PTP interface
@@ -91,11 +97,14 @@ try:
     # Digital Mixers
     # ======================================================================== #
 
+    print(f"Setting up digital mixers.")
+
     lofreq = 1000.000 # [MHz]
+    print(f"NCLO = {lofreq} MHz.")
     rf_data_conv = gateware.usp_rf_data_converter_0
 
     # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
-
+    print(f"ASU port mapping: {cfg_b.asu_board}")
     tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
     if gateware_version==14 and gateware_version_minor>=2:
         if cfg_b.asu_board:
@@ -121,6 +130,8 @@ try:
     # Chains
     # ======================================================================== #
 
+    print("Setting up chains.")
+    
     # set the ADC accumulation length
     gateware.chan1.dsp_regs_0.write(0x08, cfg_b.accum_len)
     gateware.chan2.dsp_regs_0.write(0x08, cfg_b.accum_len)
@@ -143,6 +154,8 @@ try:
     # ======================================================================== #
     # Ethernet
     # ======================================================================== #
+
+    print(f"Setting up TOD streaming system.")
 
     dest_ip = ip_addr.tIP_destination(sep='', asHex=True)
     dest_mac = ip_addr.mac_destination(sep='')

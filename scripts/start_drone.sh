@@ -6,7 +6,7 @@ DRONE_NUMBER=$1
 sudo bash <<EOF
 
 # Source the environment
-source /home/xilinx/xilinx/activate
+source activate
 
 # Change to the directory containing drone.py for PATH issues
 cd /home/xilinx/primecam_readout/src
