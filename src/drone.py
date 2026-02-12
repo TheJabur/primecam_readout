@@ -196,6 +196,8 @@ def _setupTmpDir():
 # _loadGateware
 def _loadGateware():
 
+    #TODO: fix this to use extant function
+
     try:
         from pynq import Overlay # type: ignore
 

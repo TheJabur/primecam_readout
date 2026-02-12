@@ -323,6 +323,8 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
 
     import numpy as np
 
+    print("Using tones_gen1: _writeTargComb")
+
     if not isinstance(cal_tones, bool):
         cal_tones = cal_tones == "True" # force to bool; Redis args are strings
 
@@ -340,6 +342,7 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
     if amps is None or phis is None:
         amps, phis = genVariedAmpsAndPhis(freqs_bb)
 
+    print("_writeComb...")
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_actual = freqs_bb_actual + f_center 
 
