@@ -1,6 +1,9 @@
 import os
 import re
 
+try: from config import board as cfg_b
+except ImportError: cfg_b = None 
+
 # =========================================================================== #
 # gatewareInfoFromBoardCfg
 def gatewareInfoFromBoardCfg(cfg_b):
