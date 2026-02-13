@@ -369,6 +369,8 @@ def _writeComb(chan, freqs, amps, phi, save=True):
     '''
     '''
 
+    print("Using tones_gen2: _writeTargComb")
+
     freqs = _getSafeFrequencies(freqs)
 
     f_step = cfg_b.fs/cfg_b.lut_len
