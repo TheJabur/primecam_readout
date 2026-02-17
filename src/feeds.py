@@ -106,7 +106,7 @@ def getFeedTemps(r, handler):
     pl = programmable logic
     """
 
-    pre = _wilds()['temp'][:-1]
+    pre = _wilds()['temp']
 
     # in keyVals in Redis
     keyVals = _getKeyValsMatching(r, pre)
@@ -119,7 +119,7 @@ def getFeedTemps(r, handler):
 
         # find keyVals for just this board
         boardVals = {k:v for k,v in keyVals.items() 
-                     if k.startswith(f'{pre}_{bid}_')}
+                     if k.startswith(f'{pre[:-1]}{bid}_')}
         
         # generate expected dict for handler
         data = {'timestamp': time.time(),
@@ -136,7 +136,7 @@ def getFeedSpc(r, handler):
     """Get all drones feeds: Free space remaining, in GB.
     """
 
-    pre = _wilds()['spc'][:-1]
+    pre = _wilds()['spc']
 
     # in keyVals in Redis
     keyVals = _getKeyValsMatching(r, pre)
@@ -157,7 +157,7 @@ def getFeedSpc(r, handler):
 
         # find keyVals for just this board
         boardVals = {k:v for k,v in keyVals.items() 
-                     if k.startswith(f'{pre}_{bid}_')}
+                     if k.startswith(f'{pre[:-1]}{bid}_')}
         
         # generate expected dict for handler
         data = {'timestamp': time.time(),
