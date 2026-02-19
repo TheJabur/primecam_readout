@@ -68,6 +68,7 @@ try:
     # ======================================================================== #
     # PTP
     # ======================================================================== #
+    # This can also be moved into system services instead. See relevant scripts.
 
     print(f"PTP enabled: {cfg_b.ptp_enable}")
     if cfg_b.ptp_enable:
