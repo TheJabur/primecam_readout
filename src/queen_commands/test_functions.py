@@ -157,6 +157,10 @@ def _waitForBlueforsTemperatureStable(
     times = deque(maxlen=window_size)
     t_start = time.time()
     while True:
+
+        print(f"temps={temps}")
+        print(f"times={times}")
+
         temps.append(controller.get_mxc_temperature())
         times.append(time.time())
 
@@ -269,7 +273,7 @@ def tls_array_test():
 
     i_T = i_P = 0
     msg = f"Running: (max {N_steps_T*t_stabilize_max} s; {N_packets_total} packets):"
-    _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
+    # _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
 
     status = controller.toggle_mxc_heater('on')
 
