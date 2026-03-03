@@ -143,7 +143,7 @@ def _waitForBlueforsTemperatureStable(
     controller,
     setpoint,
     sample_period=60.0,          # seconds
-    window_size=10,              # number of samples
+    window_size=5,              # number of samples
     tol_mean=0.002,              # K
     tol_slope=1e-4,              # K / minute
     tol_std=0.001,               # K
@@ -175,6 +175,8 @@ def _waitForBlueforsTemperatureStable(
             # Linear slope (K / minute)
             t_min = (t_arr - t_arr[0]) / 60.0
             slope, _ = np.polyfit(t_min, T_arr, 1)
+
+            print(T_mean - setpoint, T_std, slope)
 
             if (abs(T_mean - setpoint) < tol_mean and
                 abs(slope) < tol_slope and
