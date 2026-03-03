@@ -126,6 +126,16 @@ def _setupBlueforsController():
 
     return controller
 
+# Base – 300 mK:
+# In this temperature region, the DR can be operated normally. Simply set the desired value to the PID controller and let it do the job. The PID parameters: P=0.001, I=50, D=0.
+# Just in case, set the maximum allowed heater value to 1 mW.
+
+# 300 – 800 mK:
+# Still heating should be switched off, parameter P = 0.01, and I = 250 to make it faster to reach the desired temperature. The maximum allowed heater value can be set to 100 mW.
+
+# 800 mK – 4 K:
+# The turbo pump should be switched off. At some point above 1 K, the pressure p4 will increase above 1 bar, and the overpressure protection valve BPV3 will allow the mixture back into the tanks. When this happens, valve V13 can be opened to set the system in safe circulation mode. Since the main source of cooling power is changing from mixing 3He to 4He to evaporating the mixture, it will take a longer time for the system to reach the setpoint temperature. The maximum allowed heater value can be set to 1 W.
+
 
 # ============================================================================ #
 # _waitForBlueforsTemperatureStable
@@ -133,7 +143,7 @@ def _waitForBlueforsTemperatureStable(
     controller,
     setpoint,
     sample_period=60.0,          # seconds
-    window_size=15,              # number of samples
+    window_size=10,              # number of samples
     tol_mean=0.002,              # K
     tol_slope=1e-4,              # K / minute
     tol_std=0.001,               # K
