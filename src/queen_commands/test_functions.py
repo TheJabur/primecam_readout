@@ -225,7 +225,7 @@ def tls_array_test():
     t_start = time.time()
 
     # config
-    nclo = 500 # MHz
+    nclo = 600 # MHz
     fs = 512e6/1024/1024 # samples per second (~488 Hz) (single drone)
     timestream = TimeStream(host="192.168.3.40", port=4096)
     bid = 1
@@ -259,6 +259,8 @@ def tls_array_test():
     i_T = i_P = 0
     msg = f"Running: (max {N_steps_T*t_stabilize_max} s; {N_packets_total} packets):"
     _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
+
+    status = controller.toggle_mxc_heater('on')
 
     for i_T,T in enumerate(steps_temp): # step in temperature
         
@@ -318,6 +320,8 @@ def tls_array_test():
             io.saveToTmp(packets_ts, filename=f'{test_name}_ts_',  use_timestamp=True)
             
             _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
+
+    status = controller.toggle_mxc_heater('off')
 
     if not T_stablized:
         print(f"Test ended prematurely: (T={T} didn't stabilise).")
