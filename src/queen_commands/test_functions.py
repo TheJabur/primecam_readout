@@ -114,7 +114,8 @@ def _setupBlueforsController():
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     controller = BlueFTController(
-        ip   = '192.168.62.210', 
+        # ip   = '192.168.62.210', 
+        ip   = '192.168.0.168', 
         port = 49098, 
         key  = '868c978c-9375-4e74-ae98-512725fe5934', 
         mixing_chamber_channel_id = 6,
