@@ -141,9 +141,9 @@ def _setupBlueforsController():
 # _waitForBlueforsTemperatureStable
 def _waitForBlueforsTemperatureStable(
     controller,
-    setpoint,
+    setpoint,                    # K not mK!
     sample_period=60.0,          # seconds
-    window_size=5,              # number of samples
+    window_size=5,               # number of samples
     tol_mean=0.002,              # K
     tol_slope=1e-4,              # K / minute
     tol_std=0.001,               # K
@@ -283,8 +283,8 @@ def tls_array_test():
         
         # set step cryostat temperature
         status = controller.set_mxc_heater_setpoint(T)
-        T_stablized = _waitForBlueforsTemperatureStable( # TODO: check this func
-            controller, T, timeout=t_stabilize_max)
+        T_stablized = _waitForBlueforsTemperatureStable(
+            controller, T*1e-3, timeout=t_stabilize_max)
         if not T_stablized: 
             break # T didn't stabilise, end test
 
