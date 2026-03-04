@@ -461,6 +461,8 @@ def writeCombFromCustomList():
     alcove_commands/custom_phis.npy
     """
 
+    import numpy as np
+
     chan = cfg_b.drid
 
     f_center   = io.load(io.file.f_center_vna)
@@ -469,6 +471,17 @@ def writeCombFromCustomList():
     phis = io.load(io.file.p_tones_comb_cust)
 
     freqs_bb = freqs_rf - f_center
+
+    # hack to deal with amps file w/ different # of tones but const. amps
+    if len(amps) != len(freqs_rf):
+        if np.allclose(amps, amps[0]):
+            amps = np.ones(len(freqs_rf))*amps[0]
+        else:
+            print("len(amps) != len(freqs)")
+            return
+    if len(phis) != len(freqs_rf):
+        print("len(phis) != len(freqs)")
+        return
         
     freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_comb = freqs_bb_comb + f_center

@@ -176,7 +176,7 @@ def _waitForBlueforsTemperatureStable(
             t_min = (t_arr - t_arr[0]) / 60.0
             slope, _ = np.polyfit(t_min, T_arr, 1)
 
-            print(T_mean - setpoint, T_std, slope)
+            # print(T_mean - setpoint, T_std, slope)
 
             if (abs(T_mean - setpoint) < tol_mean and
                 abs(slope) < tol_slope and
