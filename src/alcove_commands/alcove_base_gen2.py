@@ -232,8 +232,8 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
     chan_access = _gateware_chan(cfg_b.gateware, chan)
 
     print('1')
-    chan_access.write(0x08, 3)
-    chan_access.write(0x08, 0)
+    chan_access.GPIO.axi_gpio_3.write(0x08, 3)
+    chan_access.GPIO.axi_gpio_3.write(0x08, 0)
     time.sleep(wait)
     print('2')
     base_addr_wide = {
