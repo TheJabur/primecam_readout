@@ -140,8 +140,7 @@ def vnaSweep(sweep_steps=None):
         sweep_steps = cfg_b.sweep_steps
 
     S21 = np.array(_sweep( # =(f,Z)
-        chan, f_center/1e6, freqs_bb, sweep_steps, 
-        N_accums=cfg_b.sweep_accums)) # f, Z
+        chan, f_center/1e6, freqs_bb, sweep_steps)) # f, Z
 
     io.save(io.file.s21_vna, S21)
     # io.save(io.file.f_center_vna, f_center)
