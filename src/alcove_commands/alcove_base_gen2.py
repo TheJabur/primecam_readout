@@ -230,26 +230,24 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
     
     # reset snap
     chan_access = _gateware_chan(cfg_b.gateware, chan)
-
-    print('1')
     chan_access.GPIO.axi_gpio_3.write(0x08, 3)
     chan_access.GPIO.axi_gpio_3.write(0x08, 0)
     time.sleep(wait)
-    print('2')
+
     base_addr_wide = {
         (1,0): 0x00_A001_0000, (1,1): 0x00_A001_0000, (1,3): 0x00_A002_0000,
         (2,0): 0x00_A003_0000, (2,1): 0x00_A003_0000, (2,3): 0x00_A004_0000,
         (3,0): 0x00_A005_0000, (3,1): 0x00_A005_0000, (3,3): 0x00_A006_0000,
         (4,0): 0x00_A007_0000, (4,1): 0x00_A007_0000, (4,3): 0x00_A008_0000,
     }[(chan, mux_sel)]
-    print('3')        
+
     max_count = 65536  # 32x2048 = 65536
     mmio_wide_bram = MMIO(base_addr_wide , max_count)
     wide_data = mmio_wide_bram.array[0:16384]  # max/4, bram depth*word_bits/32bits
-    print('4')
+
     I = np.zeros(8192)
     Q = np.zeros(8192)
-    print('5')
+
     if mux_sel == 0:
         I[0::4] = np.int16(wide_data[4::8] & 0x0000ffff)
         Q[0::4] = np.int16(wide_data[6::8] & 0x0000ffff)
