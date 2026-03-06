@@ -287,7 +287,7 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
 
 # ============================================================================ #
 # getSnapData
-def getSnapData(mux_sel, wrap=True):
+def getSnapData(mux_sel, wrap=True, wait=0.02):
     chan = cfg_b.drid
     return _getSnapData(chan, int(mux_sel), wrap=wrap)
 

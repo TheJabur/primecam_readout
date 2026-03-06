@@ -95,7 +95,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     def _Z(lofreq):
         alcove_base.setFineNCLO(lofreq)
         time.sleep(wait1) # 0.003 s optimum to settle freq from testing
-        Is, Qs = alcove_base.getSnapData(chan, 3, wrap=False, wait=wait2)
+        Is, Qs = alcove_base.getSnapData(3, wrap=False, wait=wait2)
+        # Is, Qs = alcove_base.getSnapData(chan, 3, wrap=False, wait=wait2)
         data = (Is + 1.j * Qs)  # convert I and Q to complex
         data = data.reshape((-1, 1024))
         Z = np.mean(data, axis=0)
@@ -105,7 +106,6 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     start_time = time.time()
 
     # loop over each LO freq and flatten Z and f
-    print('using sweeps_gen2')
     Z = (np.array([_Z(lofreq-f_center) for lofreq in flos]).T).flatten()
     # print("freqs = ", freqs)
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
