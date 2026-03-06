@@ -129,7 +129,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
     import numpy as np
     from time import sleep
     import time
-
+    print('1')
     N_steps  = max(1, int(N_steps)) # minimum 1 step
     f_center = float(f_center)
     N_accums = int(N_accums)
@@ -139,14 +139,14 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
         # target find resonators uses min in tone channel
         # so two resonators in same tone channel will lead to duplicates
     freqs = np.unique(freqs)
-
+    print('2')
     # build LO steps
     if chan_bandwidth: # LO bandwidth given
         bw = float(chan_bandwidth) # MHz
     else:              # use tone difference
         bw = np.diff(freqs)[0]/1e6 # MHz
     flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
-
+    print('3')
     def _Z(lofreq, Naccums=N_accums):
         alcove_base.setFineNCLO(lofreq)
         sleep(0.003) # 0.003 s optimum to settle freq from testing
@@ -160,13 +160,13 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
         return Z[0:len(freqs)] # only return relevant slice
     
     start_time = time.time()
-
+    print('4')
     # loop over each LO freq and flatten Z and f
     Z = (np.array([_Z(lofreq-f_center) for lofreq in flos]).T).flatten()
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
 
     print(f"_sweep time: {time.time() - start_time}")
-        
+    print('5')
     alcove_base.setFineNCLO(0) # reset LO
 
     return (f, Z)
