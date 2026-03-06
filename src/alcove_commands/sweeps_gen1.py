@@ -1,8 +1,8 @@
 # ============================================================================ #
-# sweeps.py
+# sweeps_gen1.py
 # Sweep functions and commands.
 # James Burgoyne jburgoyne@phas.ubc.ca 
-# CCAT Prime 2023  
+# CCAT Prime 2026
 # ============================================================================ #
 
 from alcove_commands import alcove_base

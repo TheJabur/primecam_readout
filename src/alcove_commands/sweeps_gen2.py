@@ -1,8 +1,8 @@
 # ============================================================================ #
-# sweeps.py
+# sweeps_gen2.py
 # Sweep functions and commands.
 # James Burgoyne jburgoyne@phas.ubc.ca 
-# CCAT Prime 2023  
+# CCAT Prime 2026
 # ============================================================================ #
 
 from alcove_commands import alcove_base
@@ -105,7 +105,7 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     start_time = time.time()
 
     # loop over each LO freq and flatten Z and f
-    print(flos)
+    print('using sweeps_gen2')
     Z = (np.array([_Z(lofreq-f_center) for lofreq in flos]).T).flatten()
     # print("freqs = ", freqs)
     f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
@@ -113,64 +113,6 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     print(f"_sweep time: {time.time() - start_time}")
         
     alcove_base.setFineNCLO(0) # reset LO 
-
-    return (f, Z)
-
-
-def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
-    """
-    Perform a stepped LO frequency sweep with existing comb centered at f_center.
-    
-    INPUTS
-    f_center:        (float) Center LO frequency for sweep [MHz].
-    freqs:           (1D array of floats) Comb frequencies [Hz].
-    N_steps:         (int) Number of LO frequencies to divide each channel into.
-    chan_bandwidth:  (float) Bandwidth of each channel [MHz].
-    
-    RETURN: tuple(f, S21)
-    f:               (1D array of floats) Central frequency for each bin.
-    Z:               (1D array of complex) S_21 complex I+jQ for each bin.
-    """
-
-    import numpy as np
-    from time import sleep
-    import time
-    
-    N_steps  = max(1, int(N_steps)) # minimum 1 step
-    f_center = float(f_center)
-    N_accums = int(N_accums)
-
-    # sort ascending and remove exact duplicates
-    # for example:
-        # target find resonators uses min in tone channel
-        # so two resonators in same tone channel will lead to duplicates
-    freqs = np.unique(freqs)
-    
-    # build LO steps
-    if chan_bandwidth: # LO bandwidth given
-        bw = float(chan_bandwidth) # MHz
-    else:              # use tone difference
-        bw = np.diff(freqs)[0]/1e6 # MHz
-    flos = np.linspace(f_center-bw/2., f_center+bw/2., N_steps)
-    
-    def _Z(lofreq, Naccums=N_accums):
-        alcove_base.setFineNCLO(lofreq)
-        sleep(0.003) # 0.003 s optimum to settle freq from testing
-        alcove_base.getSnapData(3, wrap=False) # clear
-        data = np.array([alcove_base.getSnapData(3, wrap=False) for _ in range(Naccums)])
-        Is = np.mean(data[:, 0], axis=0)
-        Qs = np.mean(data[:, 1], axis=0)
-        Z = Is + 1j*Qs     # convert I and Q to complex
-        return Z[0:len(freqs)] # only return relevant slice
-    
-    start_time = time.time()
-    # loop over each LO freq and flatten Z and f
-    Z = (np.array([_Z(lofreq-f_center) for lofreq in flos]).T).flatten()
-    f = np.array([flos*1e6 + ftone for ftone in freqs]).flatten()
-
-    print(f"_sweep time: {time.time() - start_time}")
-
-    alcove_base.setFineNCLO(0) # reset LO
 
     return (f, Z)
 
