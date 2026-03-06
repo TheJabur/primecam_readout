@@ -229,7 +229,9 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
     from pynq import MMIO
     
     # reset snap
+    print('chan_access BEFORE')
     chan_access = _gateware_chan(cfg_b.gateware, chan)
+    print('chan_access PAST')
 
     chan_access.write(0x08, 3)
     chan_access.write(0x08, 0)
