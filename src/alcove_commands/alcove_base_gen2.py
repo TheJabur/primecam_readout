@@ -269,7 +269,9 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
         Q[3::4] = np.int16(wide_data[3::8] >> 16)
 
     elif mux_sel == 3:
+        print('   10')
         I[0::4] = (np.int32(wide_data[0::8])).astype("float")
+        print('   11')
         Q[0::4] = (np.int32(wide_data[2::8])).astype("float")
         I[1::4] = (np.int32(wide_data[3::8])).astype("float")
         Q[1::4] = (np.int32(wide_data[4::8])).astype("float")
