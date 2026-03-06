@@ -227,24 +227,24 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
     import numpy as np
     import time
     from pynq import MMIO
-    
+    print('  q')
     # reset snap
     chan_access = _gateware_chan(cfg_b.gateware, chan)
     chan_access.GPIO.axi_gpio_3.write(0x08, 3)
     chan_access.GPIO.axi_gpio_3.write(0x08, 0)
     time.sleep(wait)
-
+    print('  r')
     base_addr_wide = {
         (1,0): 0x00_A001_0000, (1,1): 0x00_A001_0000, (1,3): 0x00_A002_0000,
         (2,0): 0x00_A003_0000, (2,1): 0x00_A003_0000, (2,3): 0x00_A004_0000,
         (3,0): 0x00_A005_0000, (3,1): 0x00_A005_0000, (3,3): 0x00_A006_0000,
         (4,0): 0x00_A007_0000, (4,1): 0x00_A007_0000, (4,3): 0x00_A008_0000,
     }[(chan, mux_sel)]
-
+    print('  s')
     max_count = 65536  # 32x2048 = 65536
     mmio_wide_bram = MMIO(base_addr_wide , max_count)
     wide_data = mmio_wide_bram.array[0:16384]  # max/4, bram depth*word_bits/32bits
-
+    print('  t')
     I = np.zeros(8192)
     Q = np.zeros(8192)
 
@@ -279,7 +279,7 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
         Q[3::4] = (np.int32(wide_data[8::8])).astype("float") 
             
     # return I, Q
-
+    print('  u')
     if wrap:
         return io.returnWrapper(io.file.IQ_generic, (I,Q))
     else:

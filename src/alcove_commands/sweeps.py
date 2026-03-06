@@ -150,15 +150,16 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
     def _Z(lofreq, Naccums=N_accums):
         print(' a')
         alcove_base.setFineNCLO(lofreq)
+        print(' b')
         sleep(0.003) # 0.003 s optimum to settle freq from testing
         alcove_base.getSnapData(3, wrap=False) # clear
-        print(' b')
+        print(' c')
         data = np.array([alcove_base.getSnapData(3, wrap=False) for _ in range(Naccums)])
         Is = np.mean(data[:, 0], axis=0)
         Qs = np.mean(data[:, 1], axis=0)
-        print(' c')
-        Z = Is + 1j*Qs     # convert I and Q to complex
         print(' d')
+        Z = Is + 1j*Qs     # convert I and Q to complex
+        print(' e')
         return Z[0:len(freqs)] # only return relevant slice
     
     start_time = time.time()
