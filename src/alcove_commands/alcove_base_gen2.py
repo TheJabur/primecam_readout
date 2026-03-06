@@ -208,7 +208,7 @@ def generateWaveDdr4(freqs, amps, phis):
 
 # ============================================================================ #
 # _getSnapData
-def _getSnapData(chan, mux_sel, wait=0.02):
+def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
     '''
     Fetch data from gateware DSP.
     
@@ -279,14 +279,19 @@ def _getSnapData(chan, mux_sel, wait=0.02):
         I[3::4] = (np.int32(wide_data[7::8])).astype("float")
         Q[3::4] = (np.int32(wide_data[8::8])).astype("float") 
             
-    return I, Q
+    # return I, Q
+
+    if wrap:
+        return io.returnWrapper(io.file.IQ_generic, (I,Q))
+    else:
+        return I, Q
 
 
 # ============================================================================ #
 # getSnapData
-def getSnapData(mux_sel):
+def getSnapData(mux_sel, wrap=True):
     chan = cfg_b.drid
-    return _getSnapData(chan, int(mux_sel))
+    return _getSnapData(chan, int(mux_sel), wrap=wrap)
 
 
 # ============================================================================ #
