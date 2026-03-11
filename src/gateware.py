@@ -64,7 +64,7 @@ def info():
 
 # =========================================================================== #
 # loadGateware
-def loadGateware():
+def loadGateware(download=False):
     '''Load the gateware into Overlay.
     '''
 
@@ -74,8 +74,10 @@ def loadGateware():
     
     from pynq import Overlay # type: ignore
     gateware_file,_,_ = info()
-    gateware = Overlay(gateware_file, ignore_version=True, download=False)
+    gateware = Overlay(gateware_file, ignore_version=True, download=download)
     cfg_b.gateware = gateware
+
+    return gateware
 
 
 # =========================================================================== #

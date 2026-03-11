@@ -19,12 +19,10 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, os.path.join(os.path.dirname(script_dir), 'src'))
 
 from config import board as cfg_b
-import gateware
+import gateware as gw
 
 
-if gateware.isGen2():
-    # import init_15
-    print("gen2")
+if gw.isGen2():
+    import init_gen2
 else:
-    # import init_14
-    print("gen1")
+    import init_gen1

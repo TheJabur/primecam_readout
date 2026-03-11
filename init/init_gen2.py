@@ -5,7 +5,7 @@
 # James Burgoyne jburgoyne@phas.ubc.ca
 # Ruixuan (Matt) Xie  mattxie956@gmail.com
 # Adrian Sinclair aksincla@asu.edu
-# CCAT/FYST 2025
+# CCAT/FYST 2026
 # ============================================================================ #
 
 from pynq import Overlay
@@ -18,6 +18,7 @@ import sys
 import numpy as np
 import subprocess
 
+
 print(f"Running init_15.py...")
 
 # Determine the directory where the script is located
@@ -29,18 +30,7 @@ sys.path.insert(1, os.path.join(os.path.dirname(script_dir), 'src'))
 
 import ip_addr
 from config import board as cfg_b
-
-
-# =========================================================================== #
-# gatewareInfoFromBoardCfg
-def gatewareInfoFromBoardCfg(cfg_b):
-    # MUST use *_v[version]p* as gateware filename
-    gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
-    gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
-    gateware_fname_parts = re.search(r'_v(\d+)p(\d+)', gateware_fname)
-    gateware_version = int(gateware_fname_parts.group(1)) 
-    gateware_version_minor = int(gateware_fname_parts.group(2))
-    return gateware_file, gateware_version, gateware_version_minor
+import gateware as gw
 
 
 try:
@@ -49,10 +39,9 @@ try:
     # Gateware
     # ======================================================================== #
 
-    gateware_file, gateware_version, gateware_version_minor = \
-        gatewareInfoFromBoardCfg(cfg_b)
+    gateware_file, gateware_version, gateware_version_minor = gw.info()
     print(f"Loading gateware: {gateware_file}")
-    gateware = Overlay(gateware_file, ignore_version=True)
+    gateware = gw.loadGateware(download=True)
 
 
 
@@ -70,6 +59,8 @@ try:
     # ======================================================================== #
     # PTP
     # ======================================================================== #
+    # this is more robust if setup as system services
+    # and cfg_b.ptp_enable=False
 
     print(f"PTP enabled: {cfg_b.ptp_enable}")
     if cfg_b.ptp_enable:
