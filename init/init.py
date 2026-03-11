@@ -11,6 +11,7 @@ import os
 import re
 import sys
 
+
 # Determine the directory where the script is located
 script_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -18,23 +19,12 @@ script_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, os.path.join(os.path.dirname(script_dir), 'src'))
 
 from config import board as cfg_b
+import gateware
 
 
-# =========================================================================== #
-# gatewareInfoFromBoardCfg
-def gatewareInfoFromBoardCfg(cfg_b):
-    # MUST use *_v[version]p* as gateware filename
-    gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
-    gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
-    gateware_fname_parts = re.search(r'_v(\d+)p(\d+)', gateware_fname)
-    gateware_version = int(gateware_fname_parts.group(1)) 
-    gateware_version_minor = int(gateware_fname_parts.group(2))
-    return gateware_file, gateware_version, gateware_version_minor
-
-gateware_file, gateware_version, gateware_version_minor = \
-    gatewareInfoFromBoardCfg(cfg_b)
-
-if gateware_version >= 15:
-    import init_15
+if gateware.isGen2():
+    # import init_15
+    print("gen2")
 else:
-    import init_14
+    # import init_14
+    print("gen1")

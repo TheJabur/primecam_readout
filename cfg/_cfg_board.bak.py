@@ -107,7 +107,9 @@ drone_dir = ''
 temp_dir = '/tmp'
 drid = 0
 board_ip = '0.0.0.0'
+gateware_error = None
 gateware = None
+gateware_filename = ''
 gateware_version = 0 # v
 gateware_version_minor = 0 # p
 
