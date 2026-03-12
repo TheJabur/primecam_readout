@@ -27,6 +27,7 @@ dir_root = parentDir(__file__)
 sys.path.insert(1, dir_root)
 
 import_queen = False
+queen = None
 try:
     from cfg import _cfg_queen as queen
     queen.dir_root = dir_root
@@ -35,6 +36,7 @@ except ImportError:
     pass
     
 import_board = False
+board = None
 try:
     from cfg import _cfg_board as board
     board.dir_root = dir_root
