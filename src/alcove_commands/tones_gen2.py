@@ -364,88 +364,97 @@ def _writeAllTones(chan, bin_num, dphi, init_re, init_im):
 
 
 # ============================================================================ #
+# _calculateCombParameters
+def _calculateCombParameters(freqs):
+    '''
+    '''
+
+    freqs = _getSafeFrequencies(freqs)
+    f_step = cfg_b.fs / cfg_b.lut_len
+    freqs_actual = np.round(freqs / f_step) * f_step
+    
+    bin_step = cfg_b.fs / cfg_b.psb_channel_count
+    bin_num = np.round(freqs_actual / bin_step).astype(np.int64)
+    bin_num[bin_num < 0] += cfg_b.psb_channel_count
+    
+    # dphi/2pi ratio corresponds to the channel bandwidth of PSB which is 2*fs/2048
+    dphi = _wrap_to_pi(np.pi * (freqs_actual / bin_step - bin_num))
+    beat_dphi = _wrap_to_pi(-2 * dphi) # Careful with different sampling frequency
+    
+    return freqs_actual, bin_num, dphi, beat_dphi
+
+
+# ============================================================================ #
+# _generateToneMaps
+def _generateToneMaps(chan, bin_num, beat_dphi):
+    '''Handles bin collisions and generates the hardware mapping.
+    '''
+
+    psb_count = cfg_b.psb_channel_count # 2048
+    
+    # 1. Identify Collsions
+    # 'inverse' gives the index of the first occurrence for every element in bin_num
+    _, unique_indices, counts = np.unique(bin_num, return_index=True, return_counts=True)
+    
+    # Mask out the first occurrences to find the second (colliding) tones
+    collision_mask = np.ones(len(bin_num), dtype=bool)
+    collision_mask[unique_indices] = False
+    collision_idx = np.where(collision_mask)[0]
+
+    if collision_idx.size > 0:
+        # 2. Find replacement bins
+        # np.setdiff1d is highly efficient for finding 'holes' in the bin range
+        all_bins = np.arange(psb_count)
+        unused_bins = np.setdiff1d(all_bins, bin_num)
+        
+        # Assign new bins to the collisions
+        new_bins = unused_bins[:collision_idx.size]
+        
+        # 3. Update Tone Selection Map (Hardware-specific call)
+        # toneSelectInfo[0] = original bin, [1] = remapped bin
+        toneSelectInfo = np.vstack([bin_num[collision_idx], new_bins])
+        _updateToneSelMap(chan, toneSelectInfo)
+        
+        # 4. Final mapping for hardware write
+        # Use the remapped bins for the second tones
+        final_bins = bin_num.copy()
+        final_bins[collision_idx] = new_bins
+    else:
+        # No collisions: reset map to 1:1 identity
+        _writeToneSelectAll(chan, _genDefaultToneSelMap())
+        final_bins = bin_num
+
+    # 5. Populate the fixed-length 2048 arrays
+    # We place all active tones at the front of the map
+    bin_map = np.zeros(psb_count, dtype=int)
+    beat_map = np.zeros(psb_count, dtype=float)
+    
+    num_active = len(final_bins)
+    bin_map[:num_active] = final_bins
+    beat_map[:num_active] = beat_dphi
+
+    return bin_map, beat_map
+
+
+# ============================================================================ #
 # _writeComb
 def _writeComb(chan, freqs, amps, phi, save=True):
     '''
     '''
 
-    print("Using tones_gen2: _writeTargComb")
+    # frequency, bin, and dphi (safe frequencies)
+    freqs_actual, bin_num, dphi, beat_dphi = _calculateCombParameters(freqs)
 
-    freqs = _getSafeFrequencies(freqs)
+    # map generation (bin collision handling)
+    bin_map, beat_dphi_map = _generateToneMaps(chan, bin_num, beat_dphi)
 
-    f_step = cfg_b.fs/cfg_b.lut_len
-    freqs_actual = np.round(freqs / (f_step)) * f_step
-    
-    bin_step = cfg_b.fs/cfg_b.psb_channel_count
-    bin_num = np.round(freqs_actual/bin_step).astype(np.int64)
-    
-    # dphi/2pi ratio corresponds to the channel bandwidth of PSB which is 2*fs/2048
-    dphi = _wrap_to_pi(np.pi*(freqs_actual/bin_step - bin_num)) 
-    beat_dphi = _wrap_to_pi(-2*dphi)  # Careful with different sampling frequency
-
-    bin_num[bin_num < 0] += cfg_b.psb_channel_count # all positive
-    
-    bin_count = np.bincount(bin_num, minlength=cfg_b.psb_channel_count)
-
-    bin_map = np.zeros(cfg_b.psb_channel_count, dtype=int)
-    beat_dphi_map = np.zeros(cfg_b.psb_channel_count, dtype=float)
-    beat_dphi_2048 = np.zeros(cfg_b.psb_channel_count, dtype=float)
-
-    # For any two tones per bin instances, the second bin index will be replaced
-    # with an unused bin index, and this mapping is saved in toneSelectInfo
-    second_tone_index = np.where(np.diff(bin_num)==0)[0] + 1
-    if second_tone_index.size > 0:
-        secondTone_flag = True
-        toneSelectInfo = np.zeros((2,second_tone_index.size), dtype=int)
-        toneSelectInfo[0] = bin_num[second_tone_index]
-        all_bins = np.arange(cfg_b.psb_channel_count)
-        unused_bins = np.setdiff1d(all_bins, bin_num)
-        bin_num[second_tone_index] = unused_bins[0:second_tone_index.size]
-        toneSelectInfo[1] = bin_num[second_tone_index]
-        
-        _updateToneSelMap(chan, toneSelectInfo)
-        
-        beat_dphi_2048[bin_num] = beat_dphi
-        temp = beat_dphi_2048[toneSelectInfo[1]]
-        beat_dphi_2048[toneSelectInfo[1]] = 0
-        beat_dphi_2048_stack = np.vstack([beat_dphi_2048,beat_dphi_2048])
-        beat_dphi_2048_stack[1, toneSelectInfo[0]] = temp
-
-        transmit_bin_count = 0
-        for i in range(2048):
-            if bin_count[i] == 2:
-                bin_map[transmit_bin_count] = i
-                beat_dphi_map[transmit_bin_count] = beat_dphi_2048_stack[0, i]
-                transmit_bin_count += 1
-                bin_map[transmit_bin_count] = i
-                beat_dphi_map[transmit_bin_count] = beat_dphi_2048_stack[1, i]
-                transmit_bin_count += 1
-            elif bin_count[i] == 1:
-                bin_map[transmit_bin_count] = i
-                beat_dphi_map[transmit_bin_count] = beat_dphi_2048_stack[0, i]
-                transmit_bin_count += 1
-    else:
-        secondTone_flag = False
-        _writeToneSelectAll(chan, _genDefaultToneSelMap())
-        
-        beat_dphi_2048[bin_num] = beat_dphi
-        transmit_bin_count = 0
-        for i in range(2048):
-            if bin_count[i] == 1:
-                bin_map[transmit_bin_count] = i
-                beat_dphi_map[transmit_bin_count] = beat_dphi_2048[i]
-                transmit_bin_count += 1
-
+    # hardware write
     _loadBinMap(chan, bin_map)
     _loadBeatDphiMap(chan, beat_dphi_map)
-    
-    Z = amps*np.exp(1.j*phi)
-
-    _writeAllTones(chan, bin_num, dphi, Z.real, Z.imag)
-
-    # write number of channels to 16 bit value in UDP packet
+    _writeAllTones(chan, bin_num, dphi, amps*np.cos(phi), amps*np.sin(phi))
     alcove_base.writeChannelCount(len(freqs))
 
+    # persistence
     if save:
         f_center   = io.load(io.file.f_center_vna) # 
         freqs_rf_actual = freqs_actual + f_center
@@ -455,7 +464,6 @@ def _writeComb(chan, freqs, amps, phi, save=True):
         io.save(io.file.p_tones_comb, phi)
 
     return freqs_actual
-    # return freqs_actual, bin_map, transmit_bin_count, secondTone_flag
 
 
 # ============================================================================ #
