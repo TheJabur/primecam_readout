@@ -362,112 +362,10 @@ def _writeAllTones(chan, bin_num, dphi, init_re, init_im):
         _writeTone(chan, bin_num[i]%8, bin_num[i]//8, 
                    dphi[i], init_re[i], init_im[i])
 
-"""
-# ============================================================================ #
-# _calculateCombParameters
-def _calculateCombParameters(freqs):
-    '''
-    '''
-
-    freqs = _getSafeFrequencies(freqs)
-    f_step = cfg_b.fs / cfg_b.lut_len
-    freqs_actual = np.round(freqs / f_step) * f_step
-    
-    bin_step = cfg_b.fs / cfg_b.psb_channel_count
-    bin_num = np.round(freqs_actual / bin_step).astype(np.int64)
-    bin_num[bin_num < 0] += cfg_b.psb_channel_count
-    
-    # dphi/2pi ratio corresponds to the channel bandwidth of PSB which is 2*fs/2048
-    dphi = _wrap_to_pi(np.pi * (freqs_actual / bin_step - bin_num))
-    beat_dphi = _wrap_to_pi(-2 * dphi) # Careful with different sampling frequency
-    
-    return freqs_actual, bin_num, dphi, beat_dphi
-
 
 # ============================================================================ #
-# _generateToneMaps
-def _generateToneMaps(chan, bin_num, beat_dphi):
-    '''Handles bin collisions and generates the hardware mapping.
-    '''
-
-    psb_count = cfg_b.psb_channel_count # 2048
-    
-    # 1. Identify Collsions
-    # 'inverse' gives the index of the first occurrence for every element in bin_num
-    _, unique_indices, counts = np.unique(bin_num, return_index=True, return_counts=True)
-    
-    # Mask out the first occurrences to find the second (colliding) tones
-    collision_mask = np.ones(len(bin_num), dtype=bool)
-    collision_mask[unique_indices] = False
-    collision_idx = np.where(collision_mask)[0]
-
-    if collision_idx.size > 0:
-        # 2. Find replacement bins
-        # np.setdiff1d is highly efficient for finding 'holes' in the bin range
-        all_bins = np.arange(psb_count)
-        unused_bins = np.setdiff1d(all_bins, bin_num)
-        
-        # Assign new bins to the collisions
-        new_bins = unused_bins[:collision_idx.size]
-        
-        # 3. Update Tone Selection Map (Hardware-specific call)
-        # toneSelectInfo[0] = original bin, [1] = remapped bin
-        toneSelectInfo = np.vstack([bin_num[collision_idx], new_bins])
-        _updateToneSelMap(chan, toneSelectInfo)
-        
-        # 4. Final mapping for hardware write
-        # Use the remapped bins for the second tones
-        final_bins = bin_num.copy()
-        final_bins[collision_idx] = new_bins
-    else:
-        # No collisions: reset map to 1:1 identity
-        _writeToneSelectAll(chan, _genDefaultToneSelMap())
-        final_bins = bin_num
-
-    # 5. Populate the fixed-length 2048 arrays
-    # We place all active tones at the front of the map
-    bin_map = np.zeros(psb_count, dtype=int)
-    beat_map = np.zeros(psb_count, dtype=float)
-    
-    num_active = len(final_bins)
-    bin_map[:num_active] = final_bins
-    beat_map[:num_active] = beat_dphi
-
-    return bin_map, beat_map
-
-
-# ============================================================================ #
-# _writeComb
-def _writeComb(chan, freqs, amps, phi, save=True):
-    '''
-    '''
-
-    # frequency, bin, and dphi (safe frequencies)
-    freqs_actual, bin_num, dphi, beat_dphi = _calculateCombParameters(freqs)
-
-    # map generation (bin collision handling)
-    bin_map, beat_dphi_map = _generateToneMaps(chan, bin_num, beat_dphi)
-
-    # hardware write
-    _loadBinMap(chan, bin_map)
-    _loadBeatDphiMap(chan, beat_dphi_map)
-    _writeAllTones(chan, bin_num, dphi, amps*np.cos(phi), amps*np.sin(phi))
-    alcove_base.writeChannelCount(len(freqs))
-
-    # persistence
-    if save:
-        f_center   = io.load(io.file.f_center_vna) # 
-        freqs_rf_actual = freqs_actual + f_center
-
-        io.save(io.file.f_rf_tones_comb, freqs_rf_actual)
-        io.save(io.file.a_tones_comb, amps)
-        io.save(io.file.p_tones_comb, phi)
-
-    return freqs_actual
-"""
-
-
-def _filter_and_snap_tones(freqs, amps, phi):
+# _filterAndSnapCombTones
+def _filterAndSnapCombTones(freqs, amps, phi):
     # Setup constants
     nyquist = cfg_b.fs / 2
     fs_out = (cfg_b.fs / cfg_b.psb_channel_count) / cfg_b.acc_factor
@@ -485,7 +383,10 @@ def _filter_and_snap_tones(freqs, amps, phi):
     
     return {'freqs': f_snapped, 'amps': a, 'phi': p}
 
-def _resolve_bin_collisions(chan, sig):
+
+# ============================================================================ #
+# _resolveCombBinCollisions
+def _resolveCombBinCollisions(chan, sig):
     bin_size = cfg_b.fs / cfg_b.psb_channel_count
     nyquist = cfg_b.fs / 2
     
@@ -524,7 +425,10 @@ def _resolve_bin_collisions(chan, sig):
     sig['hw_bins'] = hw_bins # Remapped bins (for hardware index)
     return sig
 
-def _execute_hw_write(chan, sig):
+
+# ============================================================================ #
+# _executeCombHwWrite
+def _executeCombHwWrite(chan, sig):
     psb_count = cfg_b.psb_channel_count
     bin_size = cfg_b.fs / psb_count
     
@@ -546,20 +450,47 @@ def _execute_hw_write(chan, sig):
     
     alcove_base.writeChannelCount(n)
 
+
+# ============================================================================ #
+# _writeComb
 def _writeComb(chan, freqs, amps, phi, save=True):
+    '''Orchestrates the generation and hardware-loading of a multi-tone frequency comb.
+
+    This function synchronizes the high-level signal definition with the underlying 
+    RFSoC/PSB hardware state through a three-stage pipeline:
+    1. Physical Filtering: Truncates frequencies to the Nyquist range and snaps them 
+       to the valid FFT bin centers (fs_out).
+    2. Logic Resolution: Identifies and resolves bin collisions by limiting occupancy 
+       to 2 tones per bin and remapping "second" tones to unused bins via the 
+       Tone Selection Map.
+    3. Hardware Execution: Calculates phase corrections (dphi/beat_dphi) and performs 
+       vectorized writes to the bin maps and tone registers.
+
+    Args:
+        chan (int): The target hardware channel index.
+        freqs (array_like): Requested tone frequencies in Hz.
+        amps (array_like): Linear amplitudes for each tone.
+        phi (array_like): Initial phases in radians.
+        save (bool): If True, persists the final snapped and filtered comb state 
+            to the local filesystem.
+
+    Returns:
+        numpy.ndarray: The actual, snapped frequencies [Hz] successfully 
+            written to the hardware.
+    '''
+
     # 1. Physical Filtering & Snapping
-    sig = _filter_and_snap_tones(freqs, amps, phi)
+    sig = _filterAndSnapCombTones(freqs, amps, phi)
     if sig['freqs'].size == 0:
         return np.array([])
 
     # 2. Logistics: Handle overcrowded bins (max 2) and collisions
-    sig = _resolve_bin_collisions(chan, sig)
+    sig = _resolveCombBinCollisions(chan, sig)
 
     # 3. Hardware Execution
-    _execute_hw_write(chan, sig)
+    _executeCombHwWrite(chan, sig)
 
     # 4. Persistence
-    # persistence
     if save:
         f_center   = io.load(io.file.f_center_vna) # 
         freqs_rf_actual = sig['freqs'] + f_center
