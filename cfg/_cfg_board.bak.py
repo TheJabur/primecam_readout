@@ -1,8 +1,9 @@
 # ============================================================================ #
 # _cfg_board.bak.py
-# Board configuration file.
+# RFSoC configuration file TEMPLATE.
+# Copy this file and rename to _cfg_board.py, and edit that.
 # James Burgoyne jburgoyne@phas.ubc.ca 
-# CCAT/FYST 2023  
+# CCAT/FYST 2026 
 # ============================================================================ #
 
 

@@ -2,7 +2,7 @@
 # config.py
 # Script to manage configuration file imports.
 # James Burgoyne jburgoyne@phas.ubc.ca
-# CCAT Prime 2023   
+# CCAT Prime 2026
 # ============================================================================ #
 
 
@@ -26,6 +26,8 @@ dir_root = parentDir(__file__)
 # add parent dir to path
 sys.path.insert(1, dir_root)
 
+# queen config
+# should only be on control computer
 import_queen = False
 queen = None
 try:
@@ -35,6 +37,8 @@ try:
 except ImportError:
     pass
     
+# board config
+# should only be on RFSoCs
 import_board = False
 board = None
 try:

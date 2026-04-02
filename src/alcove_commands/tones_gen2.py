@@ -443,9 +443,8 @@ def _writeComb(chan, freqs, amps, phi, save=True):
 
     _writeAllTones(chan, bin_num, dphi, Z.real, Z.imag)
 
-    # TODO:
     # write number of channels to 16 bit value in UDP packet
-    # alcove_base.writeChannelCount(len(freqs))
+    alcove_base.writeChannelCount(len(freqs))
 
     if save:
         f_center   = io.load(io.file.f_center_vna) # 

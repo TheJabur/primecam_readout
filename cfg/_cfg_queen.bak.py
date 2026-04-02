@@ -1,5 +1,11 @@
-## Queen configuration file
-## which lives on the control server
+# ============================================================================ #
+# _cfg_queen.bak.py
+# CONTROL COMPUTER configuration file TEMPLATE.
+# Copy this file and rename to _cfg_queen.py, and edit that.
+# James Burgoyne jburgoyne@phas.ubc.ca 
+# CCAT/FYST 2026
+# ============================================================================ #
+
 
 ## redis server configuration
 host = 'localhost'
