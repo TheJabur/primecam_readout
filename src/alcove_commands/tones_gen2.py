@@ -362,7 +362,7 @@ def _writeAllTones(chan, bin_num, dphi, init_re, init_im):
         _writeTone(chan, bin_num[i]%8, bin_num[i]//8, 
                    dphi[i], init_re[i], init_im[i])
 
-
+"""
 # ============================================================================ #
 # _calculateCombParameters
 def _calculateCombParameters(freqs):
@@ -464,6 +464,111 @@ def _writeComb(chan, freqs, amps, phi, save=True):
         io.save(io.file.p_tones_comb, phi)
 
     return freqs_actual
+"""
+
+
+def _filter_and_snap_tones(freqs, amps, phi):
+    # Setup constants
+    nyquist = cfg_b.fs / 2
+    fs_out = (cfg_b.fs / cfg_b.psb_channel_count) / cfg_b.acc_factor
+
+    # Sort and Filter Nyquist
+    f, a, p = np.asarray(freqs), np.asarray(amps), np.asarray(phi)
+    idx = np.argsort(f)
+    f, a, p = f[idx], a[idx], p[idx]
+    
+    mask = (f >= -nyquist) & (f <= nyquist)
+    f, a, p = f[mask], a[mask], p[mask]
+    
+    # Snap to Grid
+    f_snapped = np.round(f / fs_out) * fs_out
+    
+    return {'freqs': f_snapped, 'amps': a, 'phi': p}
+
+def _resolve_bin_collisions(chan, sig):
+    bin_size = cfg_b.fs / cfg_b.psb_channel_count
+    nyquist = cfg_b.fs / 2
+    
+    # Calculate initial bins
+    bins = np.floor((sig['freqs'] + nyquist) / bin_size).astype(np.int32)
+    
+    # Filter: Max 2 tones per bin
+    _, first_idx, counts = np.unique(bins, return_index=True, return_counts=True)
+    within_bin_idx = np.arange(len(bins)) - np.repeat(first_idx, counts)
+    keep = (within_bin_idx >= (np.repeat(counts, counts) - 2) // 2) & \
+           (within_bin_idx < (np.repeat(counts, counts) - 2) // 2 + 2)
+    
+    # Update signal state
+    for key in ['freqs', 'amps', 'phi']:
+        sig[key] = sig[key][keep]
+    bins = bins[keep]
+
+    # Remap Second Tones
+    _, u_idx = np.unique(bins, return_index=True)
+    collision_mask = np.ones(len(bins), dtype=bool)
+    collision_mask[u_idx] = False
+    
+    if np.any(collision_mask):
+        unused = np.setdiff1d(np.arange(cfg_b.psb_channel_count), bins)
+        new_slots = unused[:np.sum(collision_mask)]
+        
+        _updateToneSelMap(chan, np.vstack([bins[collision_mask], new_slots]))
+        
+        hw_bins = bins.copy()
+        hw_bins[collision_mask] = new_slots
+    else:
+        _writeToneSelectAll(chan, _genDefaultToneSelMap())
+        hw_bins = bins
+
+    sig['bins'] = bins     # Original bins (for dphi)
+    sig['hw_bins'] = hw_bins # Remapped bins (for hardware index)
+    return sig
+
+def _execute_hw_write(chan, sig):
+    psb_count = cfg_b.psb_channel_count
+    bin_size = cfg_b.fs / psb_count
+    
+    # Phase corrections
+    dphi = _wrap_to_pi(np.pi * (sig['freqs'] / bin_size - sig['bins']))
+    beat_map = np.zeros(psb_count)
+    bin_map = np.zeros(psb_count, dtype=int)
+    
+    n = len(sig['hw_bins'])
+    bin_map[:n] = sig['hw_bins']
+    beat_map[:n] = _wrap_to_pi(-2 * dphi)
+    
+    # Device I/O
+    _loadBinMap(chan, bin_map)
+    _loadBeatDphiMap(chan, beat_map)
+    _writeAllTones(chan, sig['bins'], dphi, 
+                   sig['amps'] * np.cos(sig['phi']), 
+                   sig['amps'] * np.sin(sig['phi']))
+    
+    alcove_base.writeChannelCount(n)
+
+def _writeComb(chan, freqs, amps, phi, save=True):
+    # 1. Physical Filtering & Snapping
+    sig = _filter_and_snap_tones(freqs, amps, phi)
+    if sig['freqs'].size == 0:
+        return np.array([])
+
+    # 2. Logistics: Handle overcrowded bins (max 2) and collisions
+    sig = _resolve_bin_collisions(chan, sig)
+
+    # 3. Hardware Execution
+    _execute_hw_write(chan, sig)
+
+    # 4. Persistence
+    # persistence
+    if save:
+        f_center   = io.load(io.file.f_center_vna) # 
+        freqs_rf_actual = sig['freqs'] + f_center
+
+        io.save(io.file.f_rf_tones_comb, freqs_rf_actual)
+        io.save(io.file.a_tones_comb, sig['amps'])
+        io.save(io.file.p_tones_comb, sig['phi'])
+
+    return sig['freqs']
 
 
 # ============================================================================ #
