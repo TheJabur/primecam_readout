@@ -129,7 +129,7 @@ class TimeStream:
 # ============================================================================ #
 # parsePtpTimestamp
 def parsePtpTimestamp(b, offset=0):
-    """Parses a PTP timestamp from a 12-byte string.
+    """Parses a PTP timestamp from a 12-byte string (to ns!).
 
     Args:
         b (bytes): The (12-byte) byte string containing the PTP timestamp
@@ -138,7 +138,7 @@ def parsePtpTimestamp(b, offset=0):
             in seconds. Defaults to 0. 37 to convert from TAI time to UTC.
 
     Returns:
-        float: The PTP timestamp as a floating-point number representing seconds.
+        float: The PTP timestamp as a uint64 representing total ns.
     """
 
     d = np.frombuffer(b, dtype='>u4') 
@@ -146,4 +146,8 @@ def parsePtpTimestamp(b, offset=0):
     seconds = int((d[-3] << 18) | (d[-2] >> 14))
     nanoseconds = int((((d[-2] & 0x00003FFF) << 16) | (d[-1] >> 16)))
 
-    return seconds + nanoseconds*1e-9 + offset
+    # Calculate total nanoseconds
+    total_ns = (seconds*1_000_000_000) + nanoseconds + int(offset*1_000_000_000)
+
+    # Cast to unsigned 64-bit
+    return np.uint64(total_ns)
