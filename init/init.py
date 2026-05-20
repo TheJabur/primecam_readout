@@ -11,6 +11,7 @@ import xrfclk
 import xrfdc
 
 import os
+import re
 import sys
 import subprocess
 
@@ -35,7 +36,12 @@ try:
     # assuming cfg.firmware_file is a local filename
     firmware_file = os.path.join(cfg_b.dir_root, cfg_b.firmware_file)
     firmware_fname = os.path.splitext(os.path.basename(firmware_file))[0]
-    firmware_V = int(firmware_fname[7:9]) # fragile!
+
+    # firmware_V = int(firmware_fname[7:9]) # fragile!
+    firmware_fname_parts = re.search(r'_v(\d+)p(\d+)', firmware_fname)
+    firmware_V = int(firmware_fname_parts.group(1)) 
+    firmware_M = int(firmware_fname_parts.group(2))
+
     firmware = Overlay(firmware_file, ignore_version=True)
 
     clksrc = 409.6 # MHz
@@ -63,13 +69,17 @@ try:
     rf_data_conv = firmware.usp_rf_data_converter_0
 
     # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
-    
-    if firmware_V >= 13:
-        tb_indices = {
-            1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-    else:
-        tb_indices = {
-            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+        
+    # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
+    print(f"ASU port mapping: {cfg_b.asu_board}")
+    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    if firmware_V==14 and firmware_M>=2:
+        if cfg_b.asu_board:
+            tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+            port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
+        else:
+            port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
+        firmware.gpio_chan2DC_mapping.write(0x00, port_mapping)
     
     for chan, ii in tb_indices.items():
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
