@@ -17,7 +17,7 @@ import pickle
 import logging
 from datetime import datetime
 
-from config import queen as cfg
+from config import queen as cfg_q
 from config import parentDir
 
 import feeds
@@ -267,7 +267,7 @@ def monitorMode():
     print('Starting queen monitor mode.') 
     while True:
         monitorAction(r)
-        time.sleep(cfg.monitor_interval) 
+        time.sleep(cfg_q.monitor_interval) 
 
 
 # ============================================================================ #
@@ -383,7 +383,7 @@ def print(*args, **kw):
 def _connectRedis():
     '''connect to redis server'''
 
-    r = redis.Redis(host=cfg.host, port=cfg.port, db=cfg.db, password=cfg.pw)
+    r = redis.Redis(host=cfg_q.host, port=cfg_q.port, db=cfg_q.db, password=cfg_q.pw)
     p = r.pubsub()
 
     r.client_setname(f'queen')
@@ -502,13 +502,13 @@ def _rectifyProcessBuffer(r):
     """
 
     # set buffer size if needed
-    if cfg.client_output_buffer_limit == 0:
+    if cfg_q.client_output_buffer_limit == 0:
         pubsub_buf_lim_soft = _redisConfigBufferLimitPubsubSoft(r)
-        cfg.client_output_buffer_limit = pubsub_buf_lim_soft
+        cfg_q.client_output_buffer_limit = pubsub_buf_lim_soft
         print(f"buff: {pubsub_buf_lim_soft}")
 
     # oldest that the last started command process can be
-    ts_min = datetime.now().timestamp() - cfg.command_return_timeout
+    ts_min = datetime.now().timestamp() - cfg_q.command_return_timeout
 
     # parse required redis keyvals
     def parse_int(val):
@@ -521,7 +521,7 @@ def _rectifyProcessBuffer(r):
 
     # rectify buffer keyval if out of whack
     if (proc_cmd_rtn_cnt == 0) or (proc_cmd_rtn_ts < ts_min):
-        r.set('rtn_data_max_bytes', str(cfg.client_output_buffer_limit))
+        r.set('rtn_data_max_bytes', str(cfg_q.client_output_buffer_limit))
 
 
 # ============================================================================ #

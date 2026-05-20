@@ -21,6 +21,23 @@ from bluefors_controller import BlueFTController
 
 
 # ============================================================================ #
+# 1 INTERNAL
+# ============================================================================ #
+"""
+     ==
+    ===
+ ======
+     ==
+     ==
+     ==
+     ==
+     ==
+ ==========
+ ==========
+ """
+
+
+# ============================================================================ #
 # _sendCom
 def _sendCom(bid, drid, com_str, args_str=None):
     """
@@ -193,8 +210,21 @@ def _waitForBlueforsTemperatureStable(
 
 
 # ============================================================================ #
-# TESTS
+# 2 TESTS
 # ============================================================================ #
+"""
+===========
+===========
+         ==
+         ==
+===========
+===========
+==
+==
+===========
+===========
+"""
+
 
 # _sendCom()
 # _sendComAll()
@@ -363,9 +393,9 @@ def loopbackCapture():
     # N_packets = 4096*4 # 4096 samples ~ 8.4 s
     # N_packets = 10
 
-    # _sendCom(bid, drid, "setNCLO", 600)        # set LO
-    # _sendComAll("writeNewVnaComb")     # gen. tone comb
-    # _sendComAll("timestreamOn", 1)     # start streaming
+    # _sendCom(bid, drid, "setNCLO", 600) # set LO
+    # _sendComAll("writeNewVnaComb") # gen. tone comb
+    # _sendComAll("timestreamOn", 1) # start streaming
 
     # N_packets = 1
 
@@ -381,7 +411,7 @@ def loopbackCapture():
     print(f"success!")
     print(f" Elapsed time: {time.time() - start:.6f} seconds")
 
-    # _sendComAll("timestreamOn", 0)     # stop streaming
+    # _sendComAll("timestreamOn", 0) # stop streaming
 
     timestream, II, QQ, packet_counts, ptp_timestamps, packet_infos, channel_counts, packet_ips = packets
 
@@ -650,8 +680,7 @@ def adriansNoiseTest():
     nclo = 500
     t_tod = 10
 
-    # fnclos = np.concatenate((-np.logspace(-4, -1, 50)[::-1], 
-    #                          np.logspace(-4, -1, 50)))
+    # fnclos = np.concatenate((-np.logspace(-4, -1, 50)[::-1], np.logspace(-4, -1, 50)))
     fnclos = np.linspace(-0.02, 0.02, 100)
 
     def sendCom(com_str, args_str=None):
