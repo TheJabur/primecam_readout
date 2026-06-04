@@ -15,6 +15,7 @@
 # ============================================================================ #
 
 import os
+from time import sleep
 
 import alcove_commands.board_io as io
 import queen_commands.control_io as cio
@@ -229,6 +230,7 @@ def _getSnapData(chan, mux_sel, wrap=False):
     axi_wide.write(0x08, mux_sel<<1 | 0)
     axi_wide.write(0x08, mux_sel<<1 | 1)
     axi_wide.write(0x08, mux_sel<<1 | 0)
+    sleep(0.02) # testing
     mmio_wide_bram = MMIO(base_addr_wide,max_count)
     wide_data = mmio_wide_bram.array[0:8192]# max/4, bram depth*word_bits/32bits
     if mux_sel==0:
