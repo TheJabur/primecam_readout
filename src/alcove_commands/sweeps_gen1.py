@@ -91,7 +91,8 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None, N_accums=5):
     
     def _Z(lofreq, Naccums=N_accums):
         alcove_base.setFineNCLO(lofreq)
-        sleep(0.003) # 0.003 s optimum to settle freq from testing
+        # sleep(0.003) # 0.003 s optimum to settle freq from testing
+        sleep(0.03)
         alcove_base.getSnapData(3, wrap=False) # clear
         data = np.array([alcove_base.getSnapData(3, wrap=False) for _ in range(Naccums)])
         Is = np.mean(data[:, 0], axis=0)

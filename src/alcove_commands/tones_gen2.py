@@ -4,7 +4,7 @@
 # Compatible with gateware versions 15+ (gen2).
 # James Burgoyne jburgoyne@phas.ubc.ca 
 # Adrian Sinclair aksincla@asu.edu
-# CCAT Prime 2025  
+# CCAT Prime 2026
 # ============================================================================ #
 
 import numpy as np
@@ -136,6 +136,35 @@ def _getSafeFrequencies(freqs, min_spacing=None, snap=True):
         freqs = freqs[keep_mask]
     
     return freqs
+
+
+def _ampScaling(user_gain_linear=1.0, reference_peak=32768):
+    """
+    Computes the fixed-point gateware registers based on a static 
+    reference ceiling and a user gain modifier.
+    
+    reference_peak: The maximum theoretical peak envelope allowed 
+                    before hardware clipping occurs. Fixed for a given 
+                    maximum tone count profile.
+    user_gain_linear: Multiplier to scale down the output power linearly (0.0 to 1.0).
+    """
+    # Enforce safe bounds
+    gain = np.clip(user_gain_linear, 0.0, 1.0)
+    
+    # 1. Base hardware configuration derived from the maximum ceiling
+    bit_growth = int(np.ceil(np.log2(reference_peak)))
+    ifft_scale_bits = max(0, bit_growth - 1)
+    fft_scale_bits = bit_growth + 12 - 16 # derived from gateware word layout
+    
+    # 2. Apply user gain directly to the fractional master volume knob (PSB scale)
+    base_psb_scale = (2**bit_growth) / reference_peak
+    actual_psb_scale = base_psb_scale * gain
+    
+    # Convert actual_psb_scale to the register format:
+    # ov_status = setPSBscaleConst(cut, C = 2**15 * actual_psb_scale)
+    psb_reg_val = int(round((2**15) * actual_psb_scale))
+    
+    return fft_scale_bits, ifft_scale_bits, psb_reg_val
 
 
 # ============================================================================ #
