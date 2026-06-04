@@ -26,6 +26,8 @@ except ImportError: cfg_b = None
 try: import xrfdc # type: ignore
 except ImportError: xrfdc = None
 
+import gateware as gw
+
 
 
 
@@ -315,9 +317,9 @@ def _setNCLO(chan, lofreq):
         lofreq (float): Desired local oscillator frequency in MHz.
     """
 
-    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-    if cfg_b.asu_board:
-        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    tb_indices,_ = gw.portMapping(
+        cfg_b.gateware_version, cfg_b.gateware_version_minor)
+
     ii = tb_indices[chan]
 
     rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
@@ -342,9 +344,9 @@ def _getNCLO(chan):
     Returns: (float): Desired local oscillator frequency in MHz.
     """
 
-    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-    if cfg_b.asu_board:
-        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    tb_indices,_ = gw.portMapping(
+        cfg_b.gateware_version, cfg_b.gateware_version_minor)
+
     ii = tb_indices[chan]
 
     rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0

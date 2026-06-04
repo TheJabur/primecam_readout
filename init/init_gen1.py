@@ -36,7 +36,7 @@ try:
     # Gateware
     # ======================================================================== #
 
-    gateware_file, gateware_version, gateware_version_minor = gw.info()
+    gateware_file, v, p = gw.info()
     print(f"Loading gateware: {gateware_file}")
     gateware = gw.loadGateware(download=True)
 
@@ -94,17 +94,11 @@ try:
 
     # chan: [adc tiles, adc blocks, dac tiles, dac blocks]
     print(f"ASU port mapping: {cfg_b.asu_board}")
-    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-    if gateware_version==14 and gateware_version_minor>=2:
-        if cfg_b.asu_board:
-            tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-            # port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
-            port_mapping = 0b_11_10_00_01_10_11_01_00 # 32012310
-        else:
-            port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
-        gateware.gpio_chan2DC_mapping.write(0x00, port_mapping)
+    
+    tb_indices, port_mapping = gw.portMapping(v, p)
 
-    # 1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    if port_mapping is not None:
+        gateware.gpio_chan2DC_mapping.write(0x00, port_mapping)
 
     for chan, ii in tb_indices.items():
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
@@ -130,7 +124,7 @@ try:
     gateware.chan3.dsp_regs_0.write(0x08, cfg_b.accum_len)
     gateware.chan4.dsp_regs_0.write(0x08, cfg_b.accum_len)
 
-    if gateware_version >= 14:
+    if v >= 14:
         # set chain timing gaps
         accum_start_gap = cfg_b.accum_len//4
         gateware.receive_timing_gpio1.write(0x00, accum_start_gap - 4)

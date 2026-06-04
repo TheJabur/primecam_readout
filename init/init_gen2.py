@@ -39,7 +39,7 @@ try:
     # Gateware
     # ======================================================================== #
 
-    gateware_file, gateware_version, gateware_version_minor = gw.info()
+    gateware_file, v, p = gw.info()
     print(f"Loading gateware: {gateware_file}")
     gateware = gw.loadGateware(download=True)
 
@@ -130,12 +130,8 @@ try:
     rf_data_conv = gateware.usp_rf_data_converter_0
 
     print(f"ASU port mapping: {cfg_b.asu_board}")
-    if cfg_b.asu_board:
-        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-        port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
-    else:
-        tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-        port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
+
+    tb_indices, port_mapping = gw.portMapping(v, p)
 
     for chan, ii in tb_indices.items():
         adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]

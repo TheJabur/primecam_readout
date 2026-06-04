@@ -30,8 +30,8 @@ def _loadInfo():
 
         cfg_b.gateware_error = 0
         cfg_b.gateware_filename = gateware_file
-        cfg_b.gateware_version = gateware_version
-        cfg_b.gateware_version_minor = gateware_version_minor
+        cfg_b.gateware_version = gateware_version # v
+        cfg_b.gateware_version_minor = gateware_version_minor # p
     
     except:
         cfg_b.gateware_error = 1
@@ -90,5 +90,69 @@ def isGen2():
     if cfg_b is None:
         return True # default to assuming gen2
 
-    _,versMajor,_ = info()
-    return versMajor >= 15
+    _,v,_ = info()
+    return v >= 15
+
+
+# =========================================================================== #
+# portMapping
+def portMapping(v=None, p=None):
+
+    # xm500; default shipped RF breakout board
+    tb_indices_xm500 = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
+    port_mapping_xm500 = 0b_11_10_01_00_00_01_10_11 # 32100123
+
+    # ASU breakout board, bespoke for CCAT
+    tb_indices_asu = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    port_mapping_asu = 0b_11_10_00_01_10_11_01_00 # 32012310
+    
+    # board config doesn't exist, assume on control computer?
+    if cfg_b is None:
+        return tb_indices_asu, port_mapping_asu # default I guess
+
+    # v is missing from filename? No idea what to do.
+    if v is None:
+        v = 100 # assume some big numbered version for latest
+
+    try:
+        asu_board = cfg_b.asu_board
+    except:
+        asu_board = False # not in config, old version
+
+    # before v13 only had xm500 mapping, and port_mapping didn't exist
+    if v < 13: 
+        tb_indices = tb_indices_xm500
+        port_mapping = None
+
+    # v13 only had asu, and xm500 was tossed (port_mapping didn't exist)
+    elif v == 13:
+        tb_indices = tb_indices_asu
+        port_mapping = None
+
+    elif v == 14:
+        if p is None: # no such version
+            p = 1 # assume p1
+
+        if p == 1: # similar to v13
+            tb_indices = tb_indices_asu
+            port_mapping = None
+
+        if p >= 2: # port mapping introduced
+            if asu_board:
+                tb_indices = tb_indices_asu
+                port_mapping = port_mapping_asu
+
+            else:
+                tb_indices = tb_indices_xm500
+                port_mapping = port_mapping_xm500
+
+    elif v >= 15: # gen2
+        if asu_board:
+            tb_indices = tb_indices_asu
+            port_mapping = port_mapping_asu
+
+        else:
+            tb_indices = tb_indices_xm500
+            port_mapping = port_mapping_xm500
+
+    return tb_indices, port_mapping

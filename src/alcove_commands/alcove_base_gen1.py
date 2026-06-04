@@ -21,7 +21,9 @@ import alcove_commands.board_io as io
 import queen_commands.control_io as cio
 
 try: from config import board as cfg_b
-except ImportError: cfg_b = None 
+except ImportError: cfg_b = None
+
+import gateware as gw
 
 try: import xrfdc # type: ignore
 except ImportError: xrfdc = None
@@ -320,11 +322,9 @@ def _setNCLO(chan, lofreq):
         lofreq (float): Desired local oscillator frequency in MHz.
     """
 
-    tb_indices = {1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
-    if cfg_b.gateware_version==14 \
-        and cfg_b.gateware_version_minor>=2 \
-        and cfg_b.asu_board:
-        tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
+    tb_indices,_ = gw.portMapping(
+        cfg_b.gateware_version, cfg_b.gateware_version_minor)
+    
     ii = tb_indices[chan]
 
     rf_data_conv = cfg_b.gateware.usp_rf_data_converter_0
