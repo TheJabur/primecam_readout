@@ -429,7 +429,7 @@ def _processCommandReturn(dat, r):
 
 # ============================================================================ #
 # _catchAllResponses
-def _catchAllResponses(p, num_clients, r, timeout=60):
+def _catchAllResponses(p, num_clients, r, timeout=120):
     """Listen for Redis responses, with a timeout.
 
     p: Redis pubsub object that listens for responses.
