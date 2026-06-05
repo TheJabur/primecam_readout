@@ -14,6 +14,7 @@
 # ============================================================================ #
 
 import os
+import re
 
 import alcove_commands.board_io as io
 import queen_commands.control_io as cio
@@ -314,13 +315,17 @@ def getADCrms():
 # _setNCLO
 def _setNCLO(chan, lofreq):
 
-    # lofreq *= freqOffsetFixHackFactor() # Fequency offset fix
-    # implemented in tones._writeComb and alcove_base._setNCLO
+    # assuming cfg.firmware_file is a local filename
+    firmware_file = os.path.join(cfg_b.dir_root, cfg_b.firmware_file)
+    firmware_fname = os.path.splitext(os.path.basename(firmware_file))[0]
 
-    # import xrfdc
+    firmware_fname_parts = re.search(r'_v(\d+)p(\d+)', firmware_fname)
+    firmware_V = int(firmware_fname_parts.group(1)) 
+    firmware_M = int(firmware_fname_parts.group(2))
+
     rf_data_conv = cfg_b.firmware.usp_rf_data_converter_0
-    name = os.path.splitext(os.path.basename(cfg_b.firmware_file))[0]
-    if int(name[7:9]) >= 13:
+
+    if firmware_V >= 13: # assume asu for v13 and up
         tb_indices = {
             1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
     else:
@@ -340,23 +345,26 @@ def _setNCLO(chan, lofreq):
 # _getNCLO
 def _getNCLO(chan):
 
+    # assuming cfg.firmware_file is a local filename
+    firmware_file = os.path.join(cfg_b.dir_root, cfg_b.firmware_file)
+    firmware_fname = os.path.splitext(os.path.basename(firmware_file))[0]
+
+    firmware_fname_parts = re.search(r'_v(\d+)p(\d+)', firmware_fname)
+    firmware_V = int(firmware_fname_parts.group(1)) 
+    firmware_M = int(firmware_fname_parts.group(2))
+
     rf_data_conv = cfg_b.firmware.usp_rf_data_converter_0
 
-    # adc tiles; adc blocks; dac tiles; dac blocks
-    if chan == 1: 
-        i = [0,0,1,3]
-    elif chan == 2:
-        i = [0,1,1,2]
-    elif chan == 3:
-        i = [1,0,1,1]
-    elif chan == 4:
-        i = [1,1,1,0]
+    if firmware_V >= 13: # assume asu for v13 and up
+        tb_indices = {
+            1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
     else:
-        print("_getNCLO: Invalid chan!")
-        return
+        tb_indices = {
+            1: [0,0,1,3], 2: [0,1,1,2], 3: [1,0,1,1], 4: [1,1,1,0]}
 
-    adc = rf_data_conv.adc_tiles[i[0]].blocks[i[1]]
-    dac = rf_data_conv.dac_tiles[i[2]].blocks[i[3]]
+    ii = tb_indices[chan]
+    adc = rf_data_conv.adc_tiles[ii[0]].blocks[ii[1]]
+    dac = rf_data_conv.dac_tiles[ii[2]].blocks[ii[3]]
 
     f_lo = adc.MixerSettings['Freq']
 

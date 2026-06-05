@@ -76,7 +76,7 @@ try:
     if firmware_V==14 and firmware_M>=2:
         if cfg_b.asu_board:
             tb_indices = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-            port_mapping = 0b_00_01_11_10_10_11_01_00 # 01322310
+            port_mapping = 0b_11_10_00_01_10_11_01_00 # 32012310
         else:
             port_mapping = 0b_11_10_01_00_00_01_10_11 # 32100123
         firmware.gpio_chan2DC_mapping.write(0x00, port_mapping)
