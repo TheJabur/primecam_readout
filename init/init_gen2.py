@@ -177,6 +177,7 @@ try:
 
     # start chan 1 readout
     print(f"Starting readouts.")
+    gateware.chan1.GPIO.axi_gpio_0.write(0x8, 2**32-1)
     gateware.chan1.GPIO.axi_gpio_0.write(0x0, 0)
     gateware.chan1.GPIO.axi_gpio_0.write(0x0, 1)
 

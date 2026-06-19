@@ -65,6 +65,22 @@ def safe_cast_to_int(data_str):
         return None
 
 
+def setSampleStartTime(timestamp):
+    '''Set the board detector sample collection start time.
+
+    Args:
+        timestamp (_type_): Timestamp in seconds.
+    '''
+
+    int(timestamp)
+
+    if not (0 <= timestamp <= 4294967295):
+        print("Input must be a 32-bit unsigned integer.")
+        return
+
+    cfg_b.gateware.chan1.GPIO.axi_gpio_0.write(0x8, timestamp)
+
+
 # ============================================================================ #
 # timestreamOn
 def timestreamOn(on=True):
