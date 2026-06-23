@@ -1,4 +1,4 @@
 numpy
-yaml
+pyyaml
 redis
 paramiko
