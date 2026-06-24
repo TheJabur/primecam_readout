@@ -65,11 +65,13 @@ def safe_cast_to_int(data_str):
         return None
 
 
-def setSampleStartTime(timestamp):
+# ============================================================================ #
+# setSamplingStartTime
+def setSamplingStartTime(timestamp):
     '''Set the board detector sample collection start time.
 
     Args:
-        timestamp (_type_): Timestamp in seconds.
+        timestamp (uint32): Timestamp in seconds. PTP epoch.
     '''
 
     int(timestamp)

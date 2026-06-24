@@ -63,7 +63,7 @@ def _com():
         65:clean_io.cleanBoardDroneDirs,
         70:alcove_base.timestreamOn,
         71:alcove_base.userPacketInfo,
-        # 72:alcove_base.setSampleStartTime,
+        # 72:alcove_base.setSamplingStartTime,
         80:alcove_base.setAtten2024,
         81:alcove_base.setAtten2025,
         82:alcove_base.getAtten,

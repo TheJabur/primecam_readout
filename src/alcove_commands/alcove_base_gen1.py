@@ -61,6 +61,24 @@ def safe_cast_to_int(data_str):
 
 
 # ============================================================================ #
+# setSamplingStartTime
+def setSamplingStartTime(timestamp):
+    '''Set the board detector sample collection start time.
+
+    Args:
+        timestamp (uint32): Timestamp in seconds. PTP epoch.
+    '''
+
+    int(timestamp)
+
+    if not (0 <= timestamp <= 4294967295):
+        print("Input must be a 32-bit unsigned integer.")
+        return
+
+    cfg_b.gateware.receive_timing_gpio1.write(0x00, timestamp)
+
+
+# ============================================================================ #
 # timestreamOn
 def timestreamOn(on=True):
     '''Turn the UDP timestream on (or off) for the current drone.'''

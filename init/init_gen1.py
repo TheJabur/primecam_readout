@@ -125,11 +125,19 @@ try:
     gateware.chan4.dsp_regs_0.write(0x08, cfg_b.accum_len)
 
     if v >= 14:
-        # set chain timing gaps
+
+        # chain timing gaps
         accum_start_gap = cfg_b.accum_len//4
-        gateware.receive_timing_gpio1.write(0x00, accum_start_gap - 4)
-        gateware.receive_timing_gpio1.write(0x08, accum_start_gap - 4)
         gateware.receive_timing_gpio2.write(0x00, accum_start_gap - 4)
+
+        if p < 3:
+            gateware.receive_timing_gpio1.write(0x00, accum_start_gap - 4)
+            gateware.receive_timing_gpio1.write(0x08, accum_start_gap - 4)
+            
+        else:
+            # set distant future start timestamp
+            # gateware.receive_timing_gpio1.write(0x00, 2**32-1)
+            gateware.receive_timing_gpio1.write(0x00, 0)
 
         # start chains
         gateware.receive_timing_gpio2.write(0x08, 1)
