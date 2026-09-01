@@ -104,7 +104,8 @@ def portMapping(v=None, p=None):
 
     # ASU breakout board, bespoke for CCAT
     tb_indices_asu = {1: [1,0,1,3], 2: [1,1,1,2], 3: [0,1,1,0], 4: [0,0,1,1]}
-    port_mapping_asu = 0b_11_10_00_01_10_11_01_00 # 32012310
+    # port_mapping_asu = 0b_11_10_00_01_10_11_01_00 # 32012310
+    port_mapping_asu = 0b_00_01_11_10_00_01_11_10 # 01320132
     
     # board config doesn't exist, assume on control computer?
     if cfg_b is None:

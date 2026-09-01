@@ -138,6 +138,8 @@ def _getSafeFrequencies(freqs, min_spacing=None, snap=True):
     return freqs
 
 
+# ============================================================================ #
+# _ampScaling
 def _ampScaling(user_gain_linear=1.0, reference_peak=32768):
     """
     Computes the fixed-point gateware registers based on a static 
