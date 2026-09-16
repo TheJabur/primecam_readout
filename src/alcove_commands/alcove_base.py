@@ -471,7 +471,8 @@ def _setAtten(chan, direction, attenuation, v2025=True):
 
         atten_id = (chan - 1) + {'drive':0, 'sense':4}[direction]
 
-        D(cfg_b.atten_device).set_atten(atten_id, attenuation)
+        with D(cfg_b.atten_device) as dev:
+            dev.set_atten(atten_id, attenuation)
 
     except Exception as e:
         print(f"_setAtten Error: {e}")
@@ -491,7 +492,8 @@ def _getAtten(chan, direction):
 
         atten_id = (chan - 1) + {'drive':0, 'sense':4}[direction]
 
-        return D(cfg_b.atten_device).get_atten(atten_id)
+        with D(cfg_b.atten_device) as dev:
+            return dev.get_atten(atten_id)
         
     except Exception as e:
         print(f"_getAtten Error: {e}")
