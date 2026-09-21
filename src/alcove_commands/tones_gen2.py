@@ -487,15 +487,10 @@ def _executeCombHwWrite(chan, sig):
 def _writeComb(chan, freqs, amps, phi, save=True):
     '''Orchestrates the generation and hardware-loading of a multi-tone frequency comb.
 
-    This function synchronizes the high-level signal definition with the underlying 
-    RFSoC/PSB hardware state through a three-stage pipeline:
-    1. Physical Filtering: Truncates frequencies to the Nyquist range and snaps them 
-       to the valid FFT bin centers (fs_out).
-    2. Logic Resolution: Identifies and resolves bin collisions by limiting occupancy 
-       to 2 tones per bin and remapping "second" tones to unused bins via the 
-       Tone Selection Map.
-    3. Hardware Execution: Calculates phase corrections (dphi/beat_dphi) and performs 
-       vectorized writes to the bin maps and tone registers.
+    This function synchronizes the high-level signal definition with the underlying RFSoC/PSB hardware state through a three-stage pipeline:
+    1. Physical Filtering: Truncates frequencies to the Nyquist range and snaps them to the valid FFT bin centers (fs_out).
+    2. Logic Resolution: Identifies and resolves bin collisions by limiting occupancy to 2 tones per bin and remapping "second" tones to unused bins via the Tone Selection Map.
+    3. Hardware Execution: Calculates phase corrections (dphi/beat_dphi) and performs vectorized writes to the bin maps and tone registers.
 
     Args:
         chan (int): The target hardware channel index.
@@ -645,7 +640,7 @@ def genAmpsAndPhis(freqs, amp_max=1.0, phase_trials=5):
     """See genPhis(...)"""
 
     # equal amplitude tones
-    amps = amp_max*np.ones(len(freqs))
+    amps = amp_max*np.ones(len(freqs))*349 # TODO: hardcocded
 
     return genPhis(freqs, amps, amp_max, phase_trials)
 
