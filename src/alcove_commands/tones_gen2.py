@@ -636,11 +636,11 @@ def genPhis(freqs, amps_rel, amp_max=1., phase_trials=5):
 
 # ============================================================================ #
 # genAmpsAndPhis
-def genAmpsAndPhis(freqs, amp_max=1.0, phase_trials=5):
+def genAmpsAndPhis(freqs, amp_max=349, phase_trials=5):
     """See genPhis(...)"""
 
     # equal amplitude tones
-    amps = amp_max*np.ones(len(freqs))*349 # TODO: hardcocded
+    amps = amp_max*np.ones(len(freqs))
 
     return genPhis(freqs, amps, amp_max, phase_trials)
 
