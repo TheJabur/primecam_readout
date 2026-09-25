@@ -5,7 +5,7 @@ from pathlib import Path
 
 # Path to Zynq UltraScale+ SYSMON IIO device
 IIO_PATH = Path("/sys/bus/iio/devices/iio:device0")
-LOG_FILE = Path("/home/player1/primecam_readout/logs/zcu111_telemetry.csv") # Use non-volatile storage
+LOG_FILE = Path("/home/xilinx/primecam_readout/logs/zcu111_telemetry.csv") # Use non-volatile storage
 
 
 def read_iio_val(param_name: str) -> float:
