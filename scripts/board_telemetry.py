@@ -3,19 +3,29 @@ import sys
 import time
 from pathlib import Path
 
-# Try importing PYNQ to read PMBus/INA226 rail metrics directly
+# Try importing PYNQ
 try:
     from pynq import Device
-    PYNQ_AVAILABLE = True
     dev = Device.active_device
     vccint_sensor = dev.sensors.get("vccint") if (hasattr(dev, "sensors") and dev.sensors) else None
 except Exception:
-    PYNQ_AVAILABLE = False
     vccint_sensor = None
 
 # Path to Zynq UltraScale+ SYSMON IIO device
 IIO_PATH = Path("/sys/bus/iio/devices/iio:device0")
 LOG_FILE = Path("/home/xilinx/primecam_readout/logs/zcu111_telemetry.csv") # Use non-volatile storage
+# ina226_u65 on ZCU111 maps to vccint
+INA226_VCCINT_PATH = Path("/sys/class/hwmon/hwmon10") 
+
+
+def read_sysfs_float(path: Path) -> float:
+    """Read a single float from sysfs."""
+    try:
+        if path.exists():
+            return float(path.read_text().strip())
+    except Exception:
+        pass
+    return float("nan")
 
 
 def read_iio_val(param_name: str) -> float:
@@ -52,29 +62,42 @@ def get_mem_available_mb() -> float:
     return float("nan")
 
 
-def read_pynq_sensor_attr(sensor, attr_name: str) -> float:
-    """Safely query a PYNQ sensor attribute (voltage, current, power)."""
-    if sensor and hasattr(sensor, attr_name):
-        try:
-            val_func = getattr(sensor, attr_name)
-            return float(val_func())
-        except Exception:
-            pass
-    return float("nan")
+def get_vccint_ina226():
+    """Read VCCINT voltage, current, power directly from INA226 hwmon sysfs."""
+    v_in = read_sysfs_float(INA226_VCCINT_PATH / "in1_input") / 1000.0   # mV -> V
+    i_in = read_sysfs_float(INA226_VCCINT_PATH / "curr1_input") / 1000.0 # mA -> A
+    p_in = read_sysfs_float(INA226_VCCINT_PATH / "power1_input") / 1e6   # uW -> W
+    
+    # Fallback to in0_input if in1_input isn't present
+    if float("nan") in (v_in, i_in):
+        if (INA226_VCCINT_PATH / "in0_input").exists():
+            v_in = read_sysfs_float(INA226_VCCINT_PATH / "in0_input") / 1000.0
+
+    return v_in, i_in, p_in
+
+
+def get_vccint_pynq_fallback():
+    """Fallback reader for PYNQ sensor object structure."""
+    if not vccint_sensor:
+        return float("nan"), float("nan"), float("nan")
+    
+    val = float("nan")
+    # PYNQ sensors typically expose .value or ['value']
+    if hasattr(vccint_sensor, "value"):
+        val = float(vccint_sensor.value)
+    elif hasattr(vccint_sensor, "get_value"):
+        val = float(vccint_sensor.get_value())
+    
+    return val, float("nan"), float("nan")
 
 
 def main():
     write_header = not LOG_FILE.exists()
 
-    print(f"Starting telemetry logger. Output file: {LOG_FILE}")
-    if vccint_sensor:
-        print("Successfully bound PYNQ 'vccint' sensor (Voltage, Current, Power).")
-    else:
-        print("Warning: PYNQ 'vccint' sensor not detected; relying on SYSMON fallbacks.")
+    print(f"Starting telemetry logger. Output: {LOG_FILE}")
 
     with open(LOG_FILE, "a", buffering=1) as f:
         if write_header:
-            # Header includes SYSMON on-die metrics and board-level VCCINT current/power
             f.write(
                 "timestamp,ps_temp_c,pl_temp_c,sysmon_vccint_v,vccint_v,vccint_i_a,vccint_p_w,vccaux_v,mem_avail_mb\n"
             )
@@ -84,22 +107,20 @@ def main():
         while True:
             t_now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-            # 1. On-die SYSMON metrics
+            # 1. On-die SYSMON
             ps_temp = read_iio_val("in_temp0_ps_temp")
             pl_temp = read_iio_val("in_temp1_remote_temp")
             sysmon_vccint = read_iio_val("in_voltage2_vccint")
             vccaux = read_iio_val("in_voltage4_vccaux")
             mem_avail = get_mem_available_mb()
 
-            # 2. Board-level VCCINT PMBus/INA226 metrics via PYNQ
-            if vccint_sensor:
-                vccint_v = read_pynq_sensor_attr(vccint_sensor, "voltage")
-                vccint_i = read_pynq_sensor_attr(vccint_sensor, "current")
-                vccint_p = read_pynq_sensor_attr(vccint_sensor, "power")
-            else:
-                vccint_v = sysmon_vccint
-                vccint_i = float("nan")
-                vccint_p = float("nan")
+            # 2. Direct INA226 HWMon reading for VCCINT
+            vccint_v, vccint_i, vccint_p = get_vccint_ina226()
+
+            # Fallback to PYNQ if INA226 sysfs path fails
+            if any(map(lambda x: x != x, [vccint_v, vccint_i])): # Check for NaN
+                pv_v, pv_i, pv_p = get_vccint_pynq_fallback()
+                vccint_v = pv_v if vccint_v != vccint_v else vccint_v
 
             log_line = (
                 f"{t_now},{ps_temp:.2f},{pl_temp:.2f},{sysmon_vccint:.3f},"
@@ -107,8 +128,6 @@ def main():
             )
 
             f.write(log_line)
-
-            # Flush to storage immediately so entries survive a hang
             f.flush()
             os.fsync(f.fileno())
 
