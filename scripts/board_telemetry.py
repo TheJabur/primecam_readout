@@ -13,9 +13,33 @@ except Exception:
 
 # Path to Zynq UltraScale+ SYSMON IIO device
 IIO_PATH = Path("/sys/bus/iio/devices/iio:device0")
-LOG_FILE = Path("/home/xilinx/primecam_readout/logs/zcu111_telemetry.csv") # Use non-volatile storage
-# ina226_u65 on ZCU111 maps to vccint
-INA226_VCCINT_PATH = Path("/sys/class/hwmon/hwmon10") 
+LOG_FILE = Path("/home/xilinx/primecam_readout/logs/zcu111_telemetry.csv")
+
+
+def find_vccint_hwmon_path() -> Path:
+    """Dynamically find the hwmon directory for VCCINT (ina226_u67 on ZCU111)."""
+    # 1. Primary check by explicit device chip name
+    for p in Path("/sys/class/hwmon").glob("hwmon*"):
+        name_file = p / "name"
+        if name_file.exists() and name_file.read_text().strip() == "ina226_u67":
+            return p
+
+    # 2. Fallback check by bus voltage (~0.85V nominal core logic)
+    for p in Path("/sys/class/hwmon").glob("hwmon*"):
+        bus_file = p / "in2_input"
+        if bus_file.exists():
+            try:
+                v_bus = float(bus_file.read_text().strip()) / 1000.0
+                if 0.80 <= v_bus <= 0.90:
+                    return p
+            except Exception:
+                pass
+
+    # Default fallback to hwmon3 based on board topology
+    return Path("/sys/class/hwmon/hwmon3")
+
+
+INA226_VCCINT_PATH = find_vccint_hwmon_path()
 
 
 def read_sysfs_float(path: Path) -> float:
@@ -64,14 +88,16 @@ def get_mem_available_mb() -> float:
 
 def get_vccint_ina226():
     """Read VCCINT voltage, current, power directly from INA226 hwmon sysfs."""
-    v_in = read_sysfs_float(INA226_VCCINT_PATH / "in1_input") / 1000.0   # mV -> V
-    i_in = read_sysfs_float(INA226_VCCINT_PATH / "curr1_input") / 1000.0 # mA -> A
-    p_in = read_sysfs_float(INA226_VCCINT_PATH / "power1_input") / 1e6   # uW -> W
+    # Bus Voltage on INA226 is in2_input (mV -> V)
+    v_in = read_sysfs_float(INA226_VCCINT_PATH / "in2_input") / 1000.0
     
-    # Fallback to in0_input if in1_input isn't present
-    if float("nan") in (v_in, i_in):
-        if (INA226_VCCINT_PATH / "in0_input").exists():
-            v_in = read_sysfs_float(INA226_VCCINT_PATH / "in0_input") / 1000.0
+    # Current on INA226 is curr1_input (mA -> A)
+    i_in = read_sysfs_float(INA226_VCCINT_PATH / "curr1_input") / 1000.0
+    
+    # Power reading (uW -> W) with fallback calculation (P = V * I)
+    p_in = read_sysfs_float(INA226_VCCINT_PATH / "power1_input") / 1e6
+    if (p_in != p_in) and (v_in == v_in) and (i_in == i_in):
+        p_in = v_in * i_in
 
     return v_in, i_in, p_in
 
@@ -80,14 +106,13 @@ def get_vccint_pynq_fallback():
     """Fallback reader for PYNQ sensor object structure."""
     if not vccint_sensor:
         return float("nan"), float("nan"), float("nan")
-    
+
     val = float("nan")
-    # PYNQ sensors typically expose .value or ['value']
     if hasattr(vccint_sensor, "value"):
         val = float(vccint_sensor.value)
     elif hasattr(vccint_sensor, "get_value"):
         val = float(vccint_sensor.get_value())
-    
+
     return val, float("nan"), float("nan")
 
 
@@ -95,6 +120,7 @@ def main():
     write_header = not LOG_FILE.exists()
 
     print(f"Starting telemetry logger. Output: {LOG_FILE}")
+    print(f"Targeting VCCINT INA226 Path: {INA226_VCCINT_PATH}")
 
     with open(LOG_FILE, "a", buffering=1) as f:
         if write_header:
@@ -118,7 +144,7 @@ def main():
             vccint_v, vccint_i, vccint_p = get_vccint_ina226()
 
             # Fallback to PYNQ if INA226 sysfs path fails
-            if any(map(lambda x: x != x, [vccint_v, vccint_i])): # Check for NaN
+            if any(map(lambda x: x != x, [vccint_v, vccint_i])):
                 pv_v, pv_i, pv_p = get_vccint_pynq_fallback()
                 vccint_v = pv_v if vccint_v != vccint_v else vccint_v
 
