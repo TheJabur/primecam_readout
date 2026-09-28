@@ -164,7 +164,8 @@ try:
 
         # PSB scale
         print(f"PSB scale = 37170.")
-        gateware.chan1.GPIO.axi_gpio_5.write(0x00, 37170)
+        # gateware.chan1.GPIO.axi_gpio_5.write(0x00, 37170)
+        gwc.GPIO.axi_gpio_5.write(0x00, 37170)
 
         # clear all tones
         gwc.GPIO.axi_gpio_2.write(0x00, 0)
