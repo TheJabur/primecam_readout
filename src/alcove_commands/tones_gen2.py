@@ -770,23 +770,16 @@ def writeTestTone():
 
 # ============================================================================ #
 # writeNewVnaComb
-def writeNewVnaComb(freq_noise=0):
+def _writeNewVnaComb():
     """Create and write the vna sweep tone comb.
 
     freq_noise: (float) Frequency noise to add to the tone placement.
         This uses a uniform distribution of noise. [Hz]
     """
-
-    freq_noise = float(freq_noise)
     
-    chan = cfg_b.drid # drone (chan) id is from config
+    chan = cfg_b.drid
 
-    # freqs_bb = np.array(np.linspace(-254.4e6, 255.00e6, 1000))
-    freqs_bb = np.array(np.arange(-256e6, 256e6, 500e3))
-
-    # add some frequency noise (could be useful for evenly spaced tones)
-    if freq_noise:
-        freqs_bb += np.random.uniform(-freq_noise, freq_noise, len(freqs_bb))
+    freqs_bb = np.array(np.arange(-512e6, 512e6, 1024e3))
 
     amps, phis = genAmpsAndPhis(freqs_bb)
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
@@ -802,12 +795,9 @@ def writeNewVnaComb(freq_noise=0):
 
 # ============================================================================ #
 # writeTargCombFromVnaSweep
-def writeTargCombFromVnaSweep(cal_tones=False):
+def _writeTargCombFromVnaSweep():
     """Write the target comb from the vna sweep resonator frequencies.
     Note that vnaSweep and findVnaResonators must be run first.
-
-    cal_tones:  (bool) Include calibration tones (True) or not (False).
-    Note that findCalTones must be run first.
     """
 
     import numpy as np
@@ -825,8 +815,7 @@ def writeTargCombFromVnaSweep(cal_tones=False):
     io.save(io.file.p_res_targ, phis)
 
     freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(
-        f_center, freqs_rf, cal_tones=cal_tones)
-    # these may have cal_tones added in (not just resonators)
+        f_center, freqs_rf)
 
     # check for overflow of this comb
     alcove_base.checkWaveformOverflow()

@@ -7,6 +7,8 @@
 
 from alcove_commands import alcove_base
 import alcove_commands.board_io as io
+from alcove_commands import tones
+from alcove_commands import analysis
 
 try: from config import board as cfg_b
 except ImportError: cfg_b = None 
@@ -82,13 +84,42 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
 
 # ============================================================================ #
 # performFullVnaSweep
-def performFullVnaSweep():
-    pass
+def performFullVnaSweep(**kwargs):
+    """Perform a full VNA sweep.
+    This wraps together the following:
+    Comb generation, sweep, resonator finding, and targ comb writing.
+    
+    Note: Accepts _findResonators(...) input parameters.
+
+    Returns:
+        (2-tuple): 
+            First element is the comb files (3-tuple).
+                (f_rf_tones_comb, a_tones_comb, p_tones_comb)
+            Second element is the tone comb arrays (3-tuple).
+                (freqs_rf_comb, amps_comb, phis_comb)
+    """
+
+    # change scaling factors appropriate to 1024 tone comb 
+    # TODO: check these values
+    IFFT_scale = 6
+    PSB_scale  = 1.0
+    FFT_scale  = 3
+    alcove_base._setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
+
+    tones._writeNewVnaComb()
+    _vnaSweep(sweep_steps=1000)
+    analysis.findVnaResonators(**kwargs)
+    ret = tones._writeTargCombFromVnaSweep()
+
+    # change scaling factors back to config values
+    alcove_base.setScaleFactors()
+
+    return ret
 
 
 # ============================================================================ #
 # vnaSweep
-def vnaSweep(sweep_steps=None):
+def _vnaSweep(sweep_steps=None):
     """Perform a stepped frequency sweep with current comb, save as vna sweep.
 
     sweep_steps: (int) Number of steps per tone in the sweep.
