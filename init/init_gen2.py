@@ -154,6 +154,8 @@ try:
 
     for gwc in [gateware.chan1, gateware.chan2, gateware.chan3, gateware.chan4]:
 
+        # TODO: why are we setting scaling factors in here?
+
         # FFT scale
         print(f"FFT scale = 2016.")
         gwc.GPIO.axi_gpio_4.write(0x08, 2016) 

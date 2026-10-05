@@ -34,6 +34,7 @@ from config import board as cfg_b
 import redis_channels as chans
 import feeds
 import gateware as gw
+from alcove_commands import alcove_base
 
 
 
@@ -200,7 +201,7 @@ def _loadGateware():
     gateware = gw.loadGateware(download=False)
 
     # set scaling factors from config
-    alcove._setScaleFactorsFromConfig()
+    alcove_base._setScaleFactorsFromConfig()
 
 
 # ============================================================================ #
