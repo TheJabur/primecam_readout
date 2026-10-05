@@ -16,6 +16,7 @@
 # ============================================================================ #
 
 import os
+import numpy as np
 
 import alcove_commands.board_io as io
 import queen_commands.control_io as cio
@@ -224,6 +225,151 @@ def generateWaveDdr4(freqs, amps, phis):
     dphi[:len(dphi0)] = dphi0
 
     return x, dphi, freqs_actual
+
+
+# ============================================================================ #
+# _checkWaveformOverflow
+def _checkWaveformOverflow() -> bool:
+    """Sample the waveform register to test for DAC overflow.
+    
+    Returns:
+        bool: True if any overflow was detected, False otherwise.
+    """
+
+    import time
+    
+    # Wait for at least a full waveform to make sure overflow triggered
+    time.sleep(0.1) # TODO: is this the right amount of time?
+
+    # Check if overflow has been triggered
+    gwc = _gateware_chan(cfg_b.gateware, cfg_b.drid)
+    ov_flag = gwc.GPIO.axi_gpio_5.read(0x08)
+
+    _OV_HELP = { # order matters here
+        "psb-ifft": "vIFFT internal overflow -- increase IFFT_scale",
+        "psb-overlap-add": "PFB overlap-add overflow -- increase IFFT_scale",
+        "psb-post-scale": "constant multiplier saturating -- reduce PSB_scale",
+    }
+    has_overflow = False
+    for i, name in enumerate(_OV_HELP.keys()):
+        if ov_flag & (1 << i):
+            has_overflow = True
+            msg = _OV_HELP.get(name, "reported by gateware.")
+            print(f"Overflow detected - {name}: {msg}")
+
+    if not has_overflow:
+        print("Overflow not detected.")
+
+    return has_overflow
+
+
+# ============================================================================ #
+# _findOptimalScaleFactors
+def _findOptimalScaleFactors(N):
+    """Find optimal scale factors for N resonators.
+    """
+
+    # TODO: find the optimal values for N
+    IFFT_scale = 6
+    PSB_scale  = 1.0
+
+    # def _optTXscale(peak, chan=None, margin=0.03):
+        # LOG2N   = 11
+        # bit_growth = max(0, int(np.ceil(np.log2(peak))))
+        # IFFT_scale = max(0, bit_growth - 1)
+        # PSB_scale = 2**bit_growth / peak * (1-margin)
+
+    return (IFFT_scale, PSB_scale)
+
+
+# ============================================================================ #
+# _checkScaleFactors
+def _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N, C_WIDTH):
+    """Check that the scale factor are reasonable.
+    Returns a Tuple of Bools, e.g. (True, True, True).
+    """
+
+    MAX_PSB_SCALE = 2.0 # TODO:
+
+    # Running checks [IFFT_scale, PSB_scale, FFT_scale]
+    valid = [True, True, True] # Assume all are valid
+
+    # IFFT_scale checks
+
+    if not isinstance(IFFT_scale, (int, np.integer)):
+        print(f"Error: IFFT_scale must be an integer.")
+        valid[0] = False
+
+    if not (0 <= IFFT_scale <= LOG2N):
+        print(f"Error: IFFT_scale must be in range [0, {LOG2N}].")
+        valid[0] = False
+
+    # PSB_scale checks
+
+    if not isinstance(PSB_scale, (float, np.floating)):
+        print(f"Error: PSB_scale must be a float.")
+        valid[1] = False
+
+    if not (0.0 <= PSB_scale <= MAX_PSB_SCALE):
+        print(f"Error: PSB_scale must be in range [0.0, {MAX_PSB_SCALE}].")
+        valid[1] = False
+
+    #  FFT_scale checks
+
+    if not isinstance(FFT_scale, (int, np.integer)):
+        print(f"Error: FFT_scale must be an integer.")
+        valid[2] = False
+
+    if not (0 <= FFT_scale <= LOG2N):
+        print(f"Error: FFT_scale must be in range [0, {LOG2N}].")
+        valid[2] = False
+
+    return valid
+
+
+# ============================================================================ #
+# _setScaleFactors
+def _setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
+    """Set the scale factors into fabric.
+    """
+
+    chan = cfg_b.drid
+    gwc = _gateware_chan(cfg_b.gateware, chan)
+
+    LOG2N   = 11 # both transforms are 2048-point -> 11-bit SI bus
+    C_WIDTH = 32
+
+    # Type enforcement
+    IFFT_scale = int(IFFT_scale)
+    PSB_scale = float(PSB_scale)
+    FFT_scale = int(FFT_scale)
+
+    # Check factors: Fallback to defaults if needed
+    use = _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N, C_WIDTH)
+    IFFT_scale = IFFT_scale if use[0] else 6    ###
+    PSB_scale  = PSB_scale  if use[1] else 1.0  ###
+    IFFT_scale = IFFT_scale if use[2] else 6    ###
+
+    # IFFT and FFT Scales
+    SI_tx = ((1 << IFFT_scale) - 1) << (LOG2N - IFFT_scale)
+    SI_rx = ((1 << FFT_scale) - 1) << (LOG2N - FFT_scale)
+    gwc.GPIO.axi_gpio_4.write(0x08, int(SI_tx<<11 | SI_rx))
+    
+    # PSB Scale
+    C = int(round(2**16 * PSB_scale))
+    gwc.GPIO.axi_gpio_5.write(0x00, int(0b111<<29 | int(C)))
+    gwc.GPIO.axi_gpio_5.write(0x00, int(C))
+
+
+# ============================================================================ #
+# _setScaleFactorsFromConfig
+def _setScaleFactorsFromConfig():
+
+    IFFT_scale = int(cfg_b.IFFT_scale)
+    PSB_scale = float(cfg_b.PSB_scale)
+    FFT_scale = IFFT_scale # TODO: ?
+
+    _setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
 
 
 # ============================================================================ #
@@ -595,3 +741,46 @@ def getAtten(direction):
     print(f"getAtten: direction={direction}, atten={atten}")
 
     return atten
+
+
+# ============================================================================ #
+# findScaleFactors
+def findScaleFactors(N):
+    """Find the optimal scaling factors for N resonators.
+    These determine the relationship between amps and output power,
+    as well as floating point resolution within waveform generation.
+    Altering them will affect both.
+    This function is specifically provided to find optimal values
+    for the expected number of tones (resonators) on this RF network.
+    It is expected that these values will not be changed once set.
+
+    NOTE: These must be set in the board config after finding!
+
+    Args:
+        N (int): Expected number of resonators on this RF network.
+    """
+
+    IFFT_scale, PSB_scale = _findOptimalScaleFactors(N)
+
+    print(f"Optimal (N={N}): IFFT_scale={IFFT_scale}, PSB_scale={PSB_scale}")
+    
+    return {'IFFT_scale':IFFT_scale, 'PSB_scale':PSB_scale}
+
+
+# ============================================================================ #
+# setScaleFactors
+def setScaleFactors():
+    """Set the scale factors from config values.
+    Performed automatically on boot, but useful to avoid a reboot on change.
+    """
+
+    _setScaleFactorsFromConfig()
+
+
+# ============================================================================ #
+# checkWaveformOverflow
+def checkWaveformOverflow():
+    """Sample the waveform to test for DAC overflow.
+    """
+
+    return _checkWaveformOverflow()

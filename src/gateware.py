@@ -77,6 +77,10 @@ def loadGateware(download=False):
     gateware = Overlay(gateware_file, ignore_version=True, download=download)
     cfg_b.gateware = gateware
 
+    # may want a try/except?
+    # except Exception as e: 
+    #     print(f"Gateware loading issue: {e}")
+
     return gateware
 
 

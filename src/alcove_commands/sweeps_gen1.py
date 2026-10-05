@@ -134,8 +134,7 @@ def vnaSweep(sweep_steps=None):
         sweep_steps = cfg_b.sweep_steps
 
     S21 = np.array(_sweep( # =(f,Z)
-        chan, f_center/1e6, freqs_bb, sweep_steps,
-        N_accums=cfg_b.sweep_accums)) # f, Z
+        chan, f_center/1e6, freqs_bb, sweep_steps)) # f, Z
 
     io.save(io.file.s21_vna, S21)
     # io.save(io.file.f_center_vna, f_center)
@@ -196,11 +195,10 @@ def targetSweep(chan_bw=None, sweep_steps=None):
     try:     # attempt to use input
         chan_bw = float(chan_bw)
     except:  # fallback to config value
-        chan_bw = cfg_b.target_chan_bw
+        chan_bw = cfg_b.sweep_chan_bw
     
     S21 = np.array(_sweep(
-        chan, f_center/1e6, freqs_bb, sweep_steps, 
-        chan_bandwidth=chan_bw, N_accums=cfg_b.sweep_accums)) 
+        chan, f_center/1e6, freqs_bb, sweep_steps, chan_bandwidth=chan_bw)) 
 
     io.save(io.file.s21_targ, S21)
 
@@ -227,15 +225,14 @@ def customSweep(bw=1., sweep_steps=None):
     try:     # attempt to use input
         chan_bw = float(bw)
     except:  # fallback to config value
-        chan_bw = cfg_b.target_chan_bw
+        chan_bw = cfg_b.sweep_chan_bw
     
     f_center = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
     freqs_bb = freqs_rf - f_center
 
     S21 = np.array(_sweep(
-        chan, f_center/1e6, freqs_bb, sweep_steps, 
-        chan_bandwidth=chan_bw, N_accums=cfg_b.sweep_accums)) 
+        chan, f_center/1e6, freqs_bb, sweep_steps, chan_bandwidth=chan_bw)) 
 
     return io.returnWrapper(io.file.s21_custom, S21)
 

@@ -33,6 +33,7 @@ import alcove
 from config import board as cfg_b
 import redis_channels as chans
 import feeds
+import gateware as gw
 
 
 
@@ -196,22 +197,10 @@ def _setupTmpDir():
 # _loadGateware
 def _loadGateware():
 
-    #TODO: fix this to use extant function
+    gateware = gw.loadGateware(download=False)
 
-    try:
-        from pynq import Overlay # type: ignore
-
-        gateware_file = os.path.join(cfg_b.dir_root, cfg_b.gateware_file)
-        cfg_b.gateware = Overlay(gateware_file, ignore_version=True, download=False)
-
-        # gateware version
-        gateware_fname = os.path.splitext(os.path.basename(gateware_file))[0]
-        gateware_fname_parts = re.search(r'_v(\d+)p(\d+)', gateware_fname)
-        cfg_b.gateware_version = int(gateware_fname_parts.group(1)) 
-        cfg_b.gateware_version_minor = int(gateware_fname_parts.group(2))
-
-    except Exception as e: 
-        print(f"Gateware loading issue: {e}")
+    # set scaling factors from config
+    alcove._setScaleFactorsFromConfig()
 
 
 # ============================================================================ #

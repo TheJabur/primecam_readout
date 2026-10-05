@@ -139,37 +139,6 @@ def _getSafeFrequencies(freqs, min_spacing=None, snap=True):
 
 
 # ============================================================================ #
-# _ampScaling
-def _ampScaling(user_gain_linear=1.0, reference_peak=32768):
-    """
-    Computes the fixed-point gateware registers based on a static 
-    reference ceiling and a user gain modifier.
-    
-    reference_peak: The maximum theoretical peak envelope allowed 
-                    before hardware clipping occurs. Fixed for a given 
-                    maximum tone count profile.
-    user_gain_linear: Multiplier to scale down the output power linearly (0.0 to 1.0).
-    """
-    # Enforce safe bounds
-    gain = np.clip(user_gain_linear, 0.0, 1.0)
-    
-    # 1. Base hardware configuration derived from the maximum ceiling
-    bit_growth = int(np.ceil(np.log2(reference_peak)))
-    ifft_scale_bits = max(0, bit_growth - 1)
-    fft_scale_bits = bit_growth + 12 - 16 # derived from gateware word layout
-    
-    # 2. Apply user gain directly to the fractional master volume knob (PSB scale)
-    base_psb_scale = (2**bit_growth) / reference_peak
-    actual_psb_scale = base_psb_scale * gain
-    
-    # Convert actual_psb_scale to the register format:
-    # ov_status = setPSBscaleConst(cut, C = 2**15 * actual_psb_scale)
-    psb_reg_val = int(round((2**15) * actual_psb_scale))
-    
-    return fft_scale_bits, ifft_scale_bits, psb_reg_val
-
-
-# ============================================================================ #
 # _writeToneSelect
 def _writeToneSelect(chan, addr, data):
     """Updates toneSelect parameter memory at one address
@@ -566,34 +535,28 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
 
 
 # ============================================================================ #
-# genPhis
-def genPhis(freqs, amps_rel, amp_max=1., phase_trials=5):
-    """Generates optimized phases for a tone comb to minimize waveform peak.
+# _xPeak
+def _xPeak(freqs, amps, phis):
+    """Peak amplitude of the waveform that will be built from input arrays.
 
-    Args:
-        freqs (array): Frequencies of the tones. [Hz]
-        amps_rel: (array) Relative amplitudes of the tones. 
-            These will be scaled so largest = amp_max.
-        amp_max (float, default=1): Largest tone amplitude.
-            In gen2, amp_max=1 scales the waveform to DAC max.
-        phase_trials (int, default=5): The number of random phase sets to try.
+    freqs (array of floats): Frequencies of the tones. [Hz]
+    amps: (array of floats): Amplitudes of the tones. 
+    phis: (array of floats): Phases of the tones. [rads]
 
-    Returns:
-        tuple: A tuple containing:
-            - amps (array): An real array of scaled amplitudes.
-            - phis (array): An real array of optimized phases.
-                In radians, [-pi, pi).
+    Return:
+        xPeak (float): Waveform peak amplitude.
     """
+
     import numpy as np
     from math import gcd
     from functools import reduce
     from scipy.fft import ifft
 
+    # Type confirmation (O(1) if already correct)
     freqs = np.asarray(freqs, float)
-    amps_rel  = np.asarray(amps_rel, float)
-
-    N = len(freqs)
-
+    amps  = np.asarray(amps, float)
+    phis  = np.asarray(phis, float)
+    
     # Map frequencies to bins of the full LUT FFT
     k_full = np.round(freqs * cfg_b.lut_len / cfg_b.fs).astype(np.int64)
 
@@ -606,66 +569,203 @@ def genPhis(freqs, amps_rel, amp_max=1., phase_trials=5):
     # Reduced FFT length and bin sizes
     L = cfg_b.lut_len // g
     k = (k_full // g).astype(np.int64)
-    unique_k = np.unique(k)
 
-    X = np.zeros(L, dtype=np.complex128) # Preallocate FFT buffer
-    best_peak = np.inf
-    best_phis = None
-    for _ in range(phase_trials):
-        # Clear only relevant bins
-        X[unique_k] = 0.0
+    # Preallocate FFT buffer
+    X = np.zeros(L, dtype=np.complex128)
 
-        # Random phases
-        phis = np.random.uniform(-np.pi, np.pi, N) 
+    # Populate spectrum
+    X[k] = amps * np.exp(-1j * phis)
 
-        # Populate spectrum
-        X[k] = amps_rel * np.exp(-1j * phis)
+    # IFFT at reduced length
+    x = L * ifft(X, norm="backward", workers=-1)
 
-        # IFFT at reduced length
-        x = L * ifft(X, norm="backward", workers=-1)
+    # Peak amplitude
+    xPeak = np.max(np.abs(x))
 
-        # Peak amplitude
-        peak = np.max(np.abs(x))
+    return xPeak
 
-        if peak < best_peak:
-            best_peak = peak
-            best_phis = phis
+
+# ============================================================================ #
+# _estimateMaxPhaseTrials
+def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_trials=1000):
+    """Estimates the number of trials needed to find a phase set keeping 
+    the peak under x_peak_max with a target confidence.
+
+    freqs (array of floats): Frequencies of the tones. [Hz]
+    amps  (array of floats): Amplitudes of the tones in [0, x_peak_max).
+    confidence (float): Desired statistical confidence in result (0 to 1).
+                        E.g. % will find solution in # trials.
+    absolute_max_trials (int): Upper ceiling on return.
+    k (float): Oversampling multiplier for independent peak locations. 
+
+    Returns:
+        (int): Recommended max trials, or 0 if success unlikely.
+    """
+
+    N = len(freqs)
+    x_rms = np.sqrt(0.5 * np.sum(amps**2))
+
+    # Hard physical limit check (Parseval / RMS)
+    if x_rms >= cfg_b.x_peak_max:
+        return 0  # Physically impossible
+
+    # Ratio of target peak to RMS
+    gamma_sq = (cfg_b.x_peak_max / x_rms) ** 2
     
-    return amp_max*amps_rel/amps_rel.max(), best_phis
+    # Probability that a single sample stays below threshold
+    p_sample = 1.0 - np.exp(-0.5 * gamma_sq)
+    
+    # Probability that all M = k*N samples stay below threshold in 1 draw
+    M = k * N
+    p_draw = p_sample ** M
+    
+    if p_draw < 1e-12:
+        return 0  # Statistically impossible in realistic time
+    
+    # Number of trials needed for target confidence
+    trials = np.log(1.0 - confidence) / np.log(1.0 - p_draw)
+    
+    return int(np.clip(np.ceil(trials), 1, absolute_max_trials))
+
+
+# ============================================================================ #
+# genPhis
+def genPhis(freqs, amps):
+    """Generates optimized phases for a tone comb to minimize waveform peak.
+
+    freqs (array of floats): Frequencies of the tones. [Hz]
+    amps  (array of floats): Amplitudes of the tones in [0, 2^15-1).
+
+    Return:
+        phis: (array of floats or False): Phases of the tones in [-pi, pi).
+            Returns False if no phases can satisfy max peak amplitude.
+    """
+
+    # Type confirmation (O(1) if already correct)
+    freqs = np.asarray(freqs, float)
+    amps  = np.asarray(amps, float)
+
+    N = len(freqs)
+
+    # Estimate max number of trials to find a solution
+    max_trials = _estimateMaxPhaseTrials(freqs, amps, cfg_b.x_peak_max)
+
+    # Unlikely (or impossible) to succeed
+    if max_trials == 0:
+        return False
+
+    # Regenerate phases up to max_trials times
+    # and return when a solution is found
+    for _ in range(max_trials):
+
+        # Generate random phases
+        # If N large then Central Limit Theorem (Rayleigh distribution)
+        # says a random draw is likely to get close to optimal solution
+        phis = np.random.uniform(-np.pi, np.pi, N)
+
+        # Find the waveform peak amplitude
+        xPeak = _xPeak(freqs, amps, phis)
+        
+        if xPeak < cfg_b.x_peak_max:
+            return phis
+
+    # Unable to find a solution
+    return False
+
+
+# ============================================================================ #
+# _estimate_safe_amplitude
+def _estimate_safe_amplitude(freqs, target_trials=5, confidence=0.99, k=2.5):
+    """Estimates the maximum equal amplitude per tone.
+    ...such that random phase generation is expected 
+    to find a peak below `x_peak_max` within `target_trials`.
+
+    freqs (array of floats): Frequencies of the tones. [Hz]
+    target_trials      (in): Target number of random phase trials.
+    confidence      (float): Desired statistical confidence (0 to 1).
+                             ...of finding a valid phase set within target_trials.
+    k               (float): Oversampling factor.
+
+    Return:
+        (float): Safe uniform amplitude per tone.
+    """
+
+    N = len(freqs)
+
+    # Probability that a random phase draw succeeds within target_trials
+    # (1 - p_draw)^target_trials = 1 - confidence
+    p_draw = 1.0 - (1.0 - confidence) ** (1.0 / target_trials)
+
+    # Number of independent peak samples per time waveform
+    M = k * N
+
+    # Solve Rayleigh extreme value tail for target peak-to-RMS ratio gamma
+    # p_draw = (1 - exp(-0.5 * gamma^2))^M
+    # then gamma^2 = -2 * ln(1 - p_draw^(1/M))
+    gamma_sq = -2.0 * np.log(-np.expm1(np.log(p_draw) / M))
+    gamma = np.sqrt(gamma_sq)
+
+    # Convert peak-to-RMS ratio back to single-tone amplitude A
+    # x_rms = A * sqrt(N / 2) then x_peak = gamma * x_rms <= x_peak_max
+    a_safe = cfg_b.x_peak_max / (gamma * np.sqrt(N / 2.0))
+
+    return float(a_safe)
 
 
 # ============================================================================ #
 # genAmpsAndPhis
-def genAmpsAndPhis(freqs, amp_max=349, phase_trials=5):
-    """See genPhis(...)"""
+def genAmpsAndPhis(freqs):
+    """Generates safe amps and phis for a given set of frequencies.
+    """
 
     # equal amplitude tones
-    amps = amp_max*np.ones(len(freqs))
+    amps = _estimate_safe_amplitude(freqs) * np.ones(len(freqs), dtype=float)
 
-    return genPhis(freqs, amps, amp_max, phase_trials)
+    # safe phis, could be false
+    phis = genPhis(freqs, amps)
+
+    # if no solution was found
+    # something is wrong with _estimate_safe_amplitude
+    if phis == False:
+        print("ERROR: No amps/phis solution can be found!")
+        
+        # we can't just crash, default to something
+        amps = np.ones(len(freqs), dtype=float)
+        phis = np.zeros(len(freqs), dtype=float)
+
+    return amps, phis
 
 
 # ============================================================================ #
-# writeTestTone
-def writeTestTone(freq=50e6):
-    """Write a single tone.
+# writeTestTones
+def writeTestTones(N=1, freqs=None):
+    """Write requested tones.
 
-    Args:
-        freq (float): Tone frequency, base band. [Hz]
-
-    Returns:
-        (float): The actual frequency written.
+    N (int): Number of tones. Step size 1 MHz. 1024 max.
+    freqs (array of floats): Specific tone requests. Overrides N.
     """
     
     chan = cfg_b.drid
 
-    freqs = np.array([freq])
-    amps = np.array([1.])
-    phis = np.array([np.pi])
+    # build freqs for number of requested tones
+    if freqs is None:
+        # 1 MHz step size, max 1024 tones
+        freqs = np.arange(0, 1024e6, 1000e3)[:int(N)]
+
+    # type enforcement
+    freqs = np.asarray(freqs, float)
+
+    amps, phis = genAmpsAndPhis(freqs)
 
     freq_actual = _writeComb(chan, freqs, amps, phis)
 
     return freq_actual
+
+
+# ============================================================================ #
+# writeTestTone
+def writeTestTone():
+    return writeTestTones(N=1)
 
 
 # ============================================================================ #
@@ -728,6 +828,9 @@ def writeTargCombFromVnaSweep(cal_tones=False):
         f_center, freqs_rf, cal_tones=cal_tones)
     # these may have cal_tones added in (not just resonators)
 
+    # check for overflow of this comb
+    alcove_base.checkWaveformOverflow()
+
     return io.returnWrapperMultiple(
         [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
         [freqs_rf_comb, amps_comb, phis_comb])
@@ -763,6 +866,9 @@ def writeTargCombFromTargSweep(cal_tones=False, new_amps_and_phis=False):
     # These will include cal tones (if cal_tones=True)
     # not just resonator tones.
 
+    # check for overflow of this comb
+    alcove_base.checkWaveformOverflow()
+
     return io.returnWrapperMultiple(
         [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
         [freqs_rf_comb, amps_comb, phis_comb])
@@ -782,25 +888,12 @@ def writeTargCombFromCustomList():
     freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
     io.save(io.file.f_res_targ, freqs_rf)
 
-    return writeCombFromCustomList()
+    ret = writeCombFromCustomList()
 
-    # chan = cfg_b.drid
+    # check for overflow of this comb
+    alcove_base.checkWaveformOverflow()
 
-    # f_center   = io.load(io.file.f_center_vna)
-    # freqs_rf = io.load(io.file.f_rf_tones_comb_cust)
-    # amps = io.load(io.file.a_tones_comb_cust)
-    # phis = io.load(io.file.p_tones_comb_cust)
-
-    # freqs_bb = freqs_rf - f_center
-
-    # io.save(io.file.f_res_targ, freqs_rf)
-
-    # freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
-    # freqs_rf_comb = freqs_bb_comb + f_center
-
-    # return io.returnWrapperMultiple(
-    #     [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
-    #     [freqs_rf_comb, amps, phis])
+    return ret
 
 
 # ============================================================================ #
@@ -823,6 +916,9 @@ def writeCombFromCustomList():
         
     freqs_bb_comb = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_comb = freqs_bb_comb + f_center
+
+    # check for overflow of this comb
+    alcove_base.checkWaveformOverflow()
 
     return io.returnWrapperMultiple(
         [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 

@@ -43,18 +43,22 @@ def _com():
         21:alcove_base.setFineNCLO,
         25:alcove_base.getSnapData,
         26:alcove_base.getADCrms,
+        27:alcove_base.findScaleFactors,
+        28:alcove_base.setScaleFactors,
+        29:alcove_base.checkWaveformOverflow,
         30:tones.writeTestTone,
-        31:tones.writeNewVnaComb,
-        32:tones.writeTargCombFromVnaSweep,
+        31:tones.writeNewVnaComb, #
+        32:tones.writeTargCombFromVnaSweep, #
         33:tones.writeTargCombFromTargSweep,
         34:tones.writeCombFromCustomList,
         35:alcove_base.createCustomCombFilesFromCurrentComb,
         36:alcove_base.modifyCustomCombAmps,
         37:tones.writeTargCombFromCustomList,
-        40:sweeps.vnaSweep,
+        40:sweeps.vnaSweep, #
+        # 41:sweeps.performFullVnaSweep,
         42:sweeps.targetSweep,
         44:sweeps.customSweep,
-        50:analysis.findVnaResonators,
+        50:analysis.findVnaResonators, #
         51:analysis.findTargResonators,
         55:analysis.findCalTones,
         60:sys_info.sys_info,

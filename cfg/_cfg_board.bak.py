@@ -58,7 +58,11 @@ udp_ori_mac  = 'c0:ff:ee:c0:ff:ee'
 
 # ============================================================================ #
 # gen2 waveform properties
-acc_factor = 1024 # determines sample rate: 5e5/acc_factor Hz
+acc_factor = 1024      # Determines sample rate: 5e5/acc_factor Hz.
+IFFT_scale = 6         # (int) e.g. 6
+PSB_scale  = 1.0       # (float) e.g. 1.0
+# The scale factors determine amps to output...
+# ... calculate using the provided function.
 
 # ============================================================================ #
 # gen1 waveform properties
@@ -66,10 +70,9 @@ accum_len  = 2**19 - 1 # determines sample rate: 512e6/((accum_len+1)*2)
 
 
 # ============================================================================ #
-# frequency sweep properties
-sweep_steps    = 500 # number of sweep steps
-sweep_accums   = 5   # number of repeats of each sweep (averaging)
-target_chan_bw = 1 # target sweep channel bandwidth [MHz]
+# target/custom sweep properties
+sweep_chan_bw = 1   # [MHz] sweep channel bandwidth
+sweep_steps   = 500 # sweep steps (step res = sweep_chan_bw/sweep_steps)
 
 
 # ============================================================================ #
@@ -95,6 +98,7 @@ interval_feeds = 60 # s
 # ============================================================================ #
 
 # gen2 constants
+x_peak_max = 2**15 - 1
 fs = 1024e6 # Hz
 nco_bits = 22
 freq_resolution = fs / 2**nco_bits
