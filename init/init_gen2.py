@@ -201,8 +201,9 @@ try:
             
             driver = D(cfg_b.atten_device)
             for atten_id, v in enumerate(atten_list):
-                driver.set_atten(atten_id, float(v))
-                time.wait(1) # requires serial commands
+                print(f"Should set atten: {atten_id}:{v}")
+                # driver.set_atten(atten_id, float(v))
+                # time.wait(1) # requires serial commands
 
         except Exception as e:
             print(f"init attenuation Error: {e}")
