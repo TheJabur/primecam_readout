@@ -202,7 +202,7 @@ try:
             driver = D(cfg_b.atten_device)
             for atten_id, v in enumerate(atten_list):
                 print(f"Should set atten: {atten_id}:{v}")
-                # driver.set_atten(atten_id, float(v))
+                # driver.set_atten(atten_id, float(v)) # TODO:
                 # time.wait(1) # requires serial commands
 
         except Exception as e:
