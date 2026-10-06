@@ -609,8 +609,11 @@ def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_tr
     x_rms = np.sqrt(0.5 * np.sum(amps**2))
 
     # Hard physical limit check (Parseval / RMS)
+    print("     Hard physical limit check.")
     if x_rms >= cfg_b.x_peak_max:
         return 0  # Physically impossible
+
+    print("     Calculating probabilities.")
 
     # Ratio of target peak to RMS
     gamma_sq = (cfg_b.x_peak_max / x_rms) ** 2
@@ -621,13 +624,16 @@ def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_tr
     # Probability that all M = k*N samples stay below threshold in 1 draw
     M = k * N
     p_draw = p_sample ** M
-    
+
+    print("     Checking a solution is possible.")
     if p_draw < 1e-12:
         return 0  # Statistically impossible in realistic time
     
     # Number of trials needed for target confidence
+    print("     Determining number of trials.")
     trials = np.log(1.0 - confidence) / np.log(1.0 - p_draw)
-    
+
+    print("     Returning result.")
     return int(np.clip(np.ceil(trials), 1, absolute_max_trials))
 
 
