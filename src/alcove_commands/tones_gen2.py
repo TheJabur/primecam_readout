@@ -659,7 +659,7 @@ def genPhis(freqs, amps):
 
     # Estimate max number of trials to find a solution
     print("    Estimating max phase trials.")
-    max_trials = _estimateMaxPhaseTrials(freqs, amps, cfg_b.x_peak_max)
+    max_trials = _estimateMaxPhaseTrials(freqs, amps)
 
     # Unlikely (or impossible) to succeed
     if max_trials == 0:
