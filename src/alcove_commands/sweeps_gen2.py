@@ -101,23 +101,23 @@ def performFullVnaSweep(**kwargs):
 
     # change scaling factors appropriate to 1024 tone comb 
     # TODO: check these values
-    print("Setting appropriate scale factors.")
+    print(" Setting appropriate scale factors.")
     alcove_base.setScaleFactors(IFFT_scale=6, PSB_scale=1.0, FFT_scale=3)
 
-    print("Writing a 1024 tone VNA comb.")
+    print(" Writing a 1024 tone VNA comb.")
     tones.writeNewVnaComb()
 
-    print("Running a 1000 step VNA sweep.")
+    print(" Running a 1000 step VNA sweep.")
     _vnaSweep(sweep_steps=1000)
 
-    print("Attempting to find resonators from VNA sweep.")
+    print(" Attempting to find resonators from VNA sweep.")
     analysis.findVnaResonators(**kwargs)
 
-    print("Writing a target comb at the found resonator locations.")
+    print(" Writing a target comb at the found resonator locations.")
     ret = tones.writeTargCombFromVnaSweep()
 
     # change scaling factors back to config values
-    print("Setting scale factors back to config.")
+    print(" Setting scale factors back to config.")
     alcove_base.setScaleFactors()
 
     return ret

@@ -587,7 +587,7 @@ def _xPeak(freqs, amps, phis):
 
 # ============================================================================ #
 # _estimateMaxPhaseTrials
-def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_trials=1000):
+def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_trials=10):
     """Estimates the number of trials needed to find a phase set keeping 
     the peak under x_peak_max with a target confidence.
 
@@ -601,6 +601,9 @@ def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_tr
     Returns:
         (int): Recommended max trials, or 0 if success unlikely.
     """
+
+    freqs = np.asarray(freqs, float)
+    amps  = np.asarray(amps, float)
 
     N = len(freqs)
     x_rms = np.sqrt(0.5 * np.sum(amps**2))
@@ -780,10 +783,15 @@ def writeNewVnaComb():
     chan = cfg_b.drid
 
     freqs_bb = np.array(np.arange(-512e6, 512e6, 1024e3))
+    print(f"  VNA comb: {len(freqs_bb)} tones.")
 
+    print("Generating amps and phis.")
     amps, phis = genAmpsAndPhis(freqs_bb)
+
+    print("Writing the comb.")
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
-    
+
+    print("Saving the comb files.")
     io.save(io.file.freqs_vna, freqs_bb_actual)
     io.save(io.file.amps_vna, amps)
     io.save(io.file.phis_vna, phis)
