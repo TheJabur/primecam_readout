@@ -556,13 +556,9 @@ def _xPeak(freqs, amps, phis):
     freqs = np.asarray(freqs, float)
     amps  = np.asarray(amps, float)
     phis  = np.asarray(phis, float)
-
-    print("     1")
     
     # Map frequencies to bins of the full LUT FFT
     k_full = np.round(freqs * cfg_b.lut_len / cfg_b.fs).astype(np.int64)
-
-    print("     2")
 
     # Compute maximum downsampling factor g = gcd(k_full)
     g = reduce(gcd, k_full)
@@ -570,28 +566,18 @@ def _xPeak(freqs, amps, phis):
         # Degenerate cases: at least one bin index is zero
         g = reduce(gcd, k_full[k_full != 0]) if np.any(k_full != 0) else 1
 
-    print("     3")
-
     # Reduced FFT length and bin sizes
     L = cfg_b.lut_len // g
     k = (k_full // g).astype(np.int64)
 
-    print("     4")
-
     # Preallocate FFT buffer
     X = np.zeros(L, dtype=np.complex128)
-
-    print("     5")
 
     # Populate spectrum
     X[k] = amps * np.exp(-1j * phis)
 
-    print("     6")
-
     # IFFT at reduced length
     x = L * ifft(X, norm="backward", workers=-1)
-
-    print("     7")
 
     # Peak amplitude
     xPeak = np.max(np.abs(x))
@@ -756,7 +742,7 @@ def genAmpsAndPhis(freqs):
 
     # if no solution was found
     # something is wrong with _estimate_safe_amplitude
-    if phis == False:
+    if phis is False:
         print("ERROR: No amps/phis solution can be found!")
         
         # we can't just crash, default to something
