@@ -112,15 +112,13 @@ def performFullVnaSweep(**kwargs):
 
     # change scaling factors back to config values
     print(" Setting scale factors back to config.")
-    alcove_base.setScaleFactors()
+    alcove_base.setScaleFactorsFromConfig()
 
     print(" Attempting to find resonators from VNA sweep.")
     analysis.findVnaResonators(**kwargs)
 
     print(" Writing a target comb at the found resonator locations.")
     ret = tones.writeTargCombFromVnaSweep()
-
-
 
     return ret
 
