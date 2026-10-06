@@ -596,7 +596,7 @@ def _xPeak(freqs, amps, phis):
     # Peak amplitude
     xPeak = np.max(np.abs(x))
 
-    print("     8")
+    print(f"     xPeak={xPeak}")
 
     return xPeak
 
