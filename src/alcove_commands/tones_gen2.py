@@ -631,6 +631,7 @@ def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_tr
     
     # Number of trials needed for target confidence
     print("     Determining number of trials.")
+    print(f"     {confidence}, {p_draw}.")
     trials = np.log(1.0 - confidence) / np.log(1.0 - p_draw)
 
     print(f"     Returning result ({trials}).")
