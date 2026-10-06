@@ -651,6 +651,7 @@ def genPhis(freqs, amps):
     N = len(freqs)
 
     # Estimate max number of trials to find a solution
+    print("    Estimating max phase trials.")
     max_trials = _estimateMaxPhaseTrials(freqs, amps, cfg_b.x_peak_max)
 
     # Unlikely (or impossible) to succeed
@@ -659,6 +660,7 @@ def genPhis(freqs, amps):
 
     # Regenerate phases up to max_trials times
     # and return when a solution is found
+    print("    Iterating to find a phase solution.")
     for _ in range(max_trials):
 
         # Generate random phases
