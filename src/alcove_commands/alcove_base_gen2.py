@@ -329,7 +329,7 @@ def _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N, C_WIDTH):
 
 # ============================================================================ #
 # _setScaleFactors
-def _setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
+def setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
     """Set the scale factors into fabric.
     """
 
@@ -363,13 +363,13 @@ def _setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
 
 # ============================================================================ #
 # _setScaleFactorsFromConfig
-def _setScaleFactorsFromConfig():
+def setScaleFactorsFromConfig():
 
     IFFT_scale = int(cfg_b.IFFT_scale)
     PSB_scale = float(cfg_b.PSB_scale)
     FFT_scale = IFFT_scale # TODO: ?
 
-    _setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
+    setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
 
 
 # ============================================================================ #
@@ -765,16 +765,6 @@ def findScaleFactors(N):
     print(f"Optimal (N={N}): IFFT_scale={IFFT_scale}, PSB_scale={PSB_scale}")
     
     return {'IFFT_scale':IFFT_scale, 'PSB_scale':PSB_scale}
-
-
-# ============================================================================ #
-# setScaleFactors
-def setScaleFactors():
-    """Set the scale factors from config values.
-    Performed automatically on boot, but useful to avoid a reboot on change.
-    """
-
-    _setScaleFactorsFromConfig()
 
 
 # ============================================================================ #

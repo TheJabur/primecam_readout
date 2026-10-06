@@ -770,7 +770,7 @@ def writeTestTone():
 
 # ============================================================================ #
 # writeNewVnaComb
-def _writeNewVnaComb():
+def writeNewVnaComb():
     """Create and write the vna sweep tone comb.
 
     freq_noise: (float) Frequency noise to add to the tone placement.
@@ -795,7 +795,7 @@ def _writeNewVnaComb():
 
 # ============================================================================ #
 # writeTargCombFromVnaSweep
-def _writeTargCombFromVnaSweep():
+def writeTargCombFromVnaSweep():
     """Write the target comb from the vna sweep resonator frequencies.
     Note that vnaSweep and findVnaResonators must be run first.
     """

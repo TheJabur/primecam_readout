@@ -44,7 +44,7 @@ def _com():
         25:alcove_base.getSnapData,
         26:alcove_base.getADCrms,
         27:alcove_base.findScaleFactors,
-        28:alcove_base.setScaleFactors,
+        # 28:alcove_base.setScaleFactorsFromConfig,
         29:alcove_base.checkWaveformOverflow,
         30:tones.writeTestTone,
         # 31:tones.writeNewVnaComb, #

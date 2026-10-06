@@ -104,12 +104,12 @@ def performFullVnaSweep(**kwargs):
     IFFT_scale = 6
     PSB_scale  = 1.0
     FFT_scale  = 3
-    alcove_base._setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
+    alcove_base.setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
 
-    tones._writeNewVnaComb()
+    tones.writeNewVnaComb()
     _vnaSweep(sweep_steps=1000)
     analysis.findVnaResonators(**kwargs)
-    ret = tones._writeTargCombFromVnaSweep()
+    ret = tones.writeTargCombFromVnaSweep()
 
     # change scaling factors back to config values
     alcove_base.setScaleFactors()
