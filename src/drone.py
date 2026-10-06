@@ -201,6 +201,7 @@ def _loadGateware():
     gateware = gw.loadGateware(download=False)
 
     # set scaling factors from config
+    time.sleep(10) # TODO:
     alcove_base.setScaleFactorsFromConfig()
 
 

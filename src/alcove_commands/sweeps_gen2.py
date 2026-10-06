@@ -101,10 +101,7 @@ def performFullVnaSweep(**kwargs):
 
     # change scaling factors appropriate to 1024 tone comb 
     # TODO: check these values
-    IFFT_scale = 6
-    PSB_scale  = 1.0
-    FFT_scale  = 3
-    alcove_base.setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
+    alcove_base.setScaleFactors(IFFT_scale=6, PSB_scale=1.0, FFT_scale=3)
 
     tones.writeNewVnaComb()
     _vnaSweep(sweep_steps=1000)
