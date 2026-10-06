@@ -556,9 +556,13 @@ def _xPeak(freqs, amps, phis):
     freqs = np.asarray(freqs, float)
     amps  = np.asarray(amps, float)
     phis  = np.asarray(phis, float)
+
+    print("     1")
     
     # Map frequencies to bins of the full LUT FFT
     k_full = np.round(freqs * cfg_b.lut_len / cfg_b.fs).astype(np.int64)
+
+    print("     2")
 
     # Compute maximum downsampling factor g = gcd(k_full)
     g = reduce(gcd, k_full)
@@ -566,21 +570,33 @@ def _xPeak(freqs, amps, phis):
         # Degenerate cases: at least one bin index is zero
         g = reduce(gcd, k_full[k_full != 0]) if np.any(k_full != 0) else 1
 
+    print("     3")
+
     # Reduced FFT length and bin sizes
     L = cfg_b.lut_len // g
     k = (k_full // g).astype(np.int64)
 
+    print("     4")
+
     # Preallocate FFT buffer
     X = np.zeros(L, dtype=np.complex128)
+
+    print("     5")
 
     # Populate spectrum
     X[k] = amps * np.exp(-1j * phis)
 
+    print("     6")
+
     # IFFT at reduced length
     x = L * ifft(X, norm="backward", workers=-1)
 
+    print("     7")
+
     # Peak amplitude
     xPeak = np.max(np.abs(x))
+
+    print("     8")
 
     return xPeak
 
@@ -631,7 +647,6 @@ def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_tr
     
     # Number of trials needed for target confidence
     print("     Determining number of trials.")
-    print(f"     {confidence}, {p_draw}.")
     trials = np.log(1.0 - confidence) / np.log(1.0 - p_draw)
 
     print(f"     Returning result ({trials}).")
@@ -676,6 +691,7 @@ def genPhis(freqs, amps):
         phis = np.random.uniform(-np.pi, np.pi, N)
 
         # Find the waveform peak amplitude
+        print("    Find this solutions peak amplitude.")
         xPeak = _xPeak(freqs, amps, phis)
         
         if xPeak < cfg_b.x_peak_max:
