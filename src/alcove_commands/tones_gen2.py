@@ -722,9 +722,11 @@ def genAmpsAndPhis(freqs):
     """
 
     # equal amplitude tones
+    print("   Estimating safe amplitudes.")
     amps = _estimate_safe_amplitude(freqs) * np.ones(len(freqs), dtype=float)
 
     # safe phis, could be false
+    print("   Generating phis.")
     phis = genPhis(freqs, amps)
 
     # if no solution was found
@@ -785,13 +787,13 @@ def writeNewVnaComb():
     freqs_bb = np.array(np.arange(-512e6, 512e6, 1024e3))
     print(f"  VNA comb: {len(freqs_bb)} tones.")
 
-    print("Generating amps and phis.")
+    print("  Generating amps and phis.")
     amps, phis = genAmpsAndPhis(freqs_bb)
 
-    print("Writing the comb.")
+    print("  Writing the comb.")
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
 
-    print("Saving the comb files.")
+    print("  Saving the comb files.")
     io.save(io.file.freqs_vna, freqs_bb_actual)
     io.save(io.file.amps_vna, amps)
     io.save(io.file.phis_vna, phis)
