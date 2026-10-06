@@ -316,7 +316,7 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
             Converted to 18-bit fixed point (Q2.16).
 
     Note:
-        - If `mem` is odd, a $\pi$ phase shift is automatically applied to `dphi`.
+        - If `mem` is odd, a pi phase shift is automatically applied to `dphi`.
         - `axi_gpio_2` handles the initial vector (I/Q) components.
         - `axi_gpio_1` handles the packed (Address + Frequency) word and the 
           strobe/trigger bit defined by `mem`.
