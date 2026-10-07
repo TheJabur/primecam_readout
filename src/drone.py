@@ -6,10 +6,12 @@
 # ============================================================================ #
 
 import os
+import sys
 import time
 import redis # type: ignore
 import queue
 import shutil
+import signal
 import pickle
 import logging
 import argparse
@@ -24,6 +26,12 @@ import redis_channels as chans
 import feeds
 import gateware as gw
 from alcove_commands import alcove_base
+
+
+
+_redis_client = None
+_pubsub_client = None
+_shutdown_event = threading.Event()
 
 
 
@@ -53,6 +61,9 @@ def main():
     r.client_setname(f'drone_{cfg_b.bid}.{cfg_b.drid}')
 
     print(f"Drone {cfg_b.bid}.{cfg_b.drid} is running...")    
+
+    # setup logic to handle script shutdown
+    _setupShutdown()
 
     # run loop
     command_queue = queue.Queue()
@@ -87,6 +98,52 @@ def _setupLogging():
 
     # get rid of that annoying asyncio log message
     logging.getLogger("asyncio").setLevel(logging.WARNING)
+
+
+# ============================================================================ #
+# _handleShutdown
+def _handleShutdown(signum, frame):
+    """Handle a shutdown gracefully.
+    """
+
+    # Prevent duplicate handling if signals fire sequentially
+    if _shutdown_event.is_set():
+        return
+    _shutdown_event.set()
+
+    bid = getattr(cfg_b, 'bid', 'N/A')
+    drid = getattr(cfg_b, 'drid', 'N/A')
+    print(f"Drone {bid}.{drid} shutting down... ", end="")
+
+    # Close Redis PubSub & Client connections
+    if _pubsub_client:
+        try:
+            _pubsub_client.close()
+        except Exception as e:
+            print("") # close print stmt above
+            print(f"Error closing pubsub: {e}")
+
+    if _redis_client:
+        try:
+            _redis_client.close()
+        except Exception as e:
+            print("") # close print stmt above
+            print(f"Error closing redis connection: {e}")
+
+    # Flush logging buffers
+    logging.shutdown()
+
+    print(f"Done.")
+    sys.exit(0)
+
+
+# ============================================================================ #
+# _setupShutdown
+def _setupShutdown():
+
+    # Register handlers for SIGTERM and SIGINT
+    signal.signal(signal.SIGTERM, _handleShutdown)
+    signal.signal(signal.SIGINT, _handleShutdown)
 
 
 # ============================================================================ #
@@ -186,15 +243,24 @@ def _loadGateware():
 # ============================================================================ #
 # connectRedis
 def connectRedis():
-    '''connect to redis server'''
-    r = redis.Redis(host=cfg_b.host, port=cfg_b.port, db=cfg_b.db, password=cfg_b.pw)
+    """Connect to redis server.
+    """
+
+    global _redis_client, _pubsub_client
+
+    r = redis.Redis(host=cfg_b.host, 
+                    port=cfg_b.port, 
+                    db=cfg_b.db, 
+                    password=cfg_b.pw)
     p = r.pubsub()
 
-    # check for connection
     try:
         r.ping()
     except redis.exceptions.ConnectionError as e:
         print(f"Redis connection error: {e}")
+
+    _redis_client = r
+    _pubsub_client = p
 
     return r, p
 
