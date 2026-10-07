@@ -8,14 +8,12 @@
 # CCAT/FYST 2026
 # ============================================================================ #
 
-from pynq import Overlay
-import xrfclk
-import xrfdc
+# from pynq import Overlay
+import xrfclk # type: ignore
+import xrfdc # type: ignore
 
 import os
-import re
 import sys
-import time
 import numpy as np
 import subprocess
 
@@ -29,9 +27,9 @@ print(f"Script directory: {script_dir}")
 # add src/ to path (where most of the other scripts live)
 sys.path.insert(1, os.path.join(os.path.dirname(script_dir), 'src'))
 
-import ip_addr
-from config import board as cfg_b
-import gateware as gw
+import ip_addr # type: ignore
+from config import board as cfg_b # type: ignore
+import gateware as gw # type: ignore
 
 
 try:
@@ -197,7 +195,7 @@ try:
     if atten_list is not None:
         try:
             print("Setting warm variable attenuation.")
-            from alcove_commands.transceiver_serialdriver import Primecamfe as D
+            from alcove_commands.transceiver_serialdriver import Primecamfe as D # type: ignore
             
             driver = D(cfg_b.atten_device)
             for atten_id, v in enumerate(atten_list):

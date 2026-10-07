@@ -169,12 +169,8 @@ def _modifyConfig(args):
     # tmp directory
     cfg_b.temp_dir = f'/tmp/drone{args.drid}'
 
-    # drone config
-    sys.path.append(cfg_b.drone_dir)
-    cfg_dr = importlib.import_module(f'_cfg_drone{args.drid}')
-
     # drone identifier
-    cfg_b.drid = cfg_dr.drid
+    cfg_b.drid = {args.drid}
 
 
 # ============================================================================ #

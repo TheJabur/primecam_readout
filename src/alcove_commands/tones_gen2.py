@@ -365,13 +365,13 @@ def _writeAllTones(chan, bin_num, dphi, init_re, init_im):
 
 # ============================================================================ #
 # _filterAndSnapCombTones
-def _filterAndSnapCombTones(freqs, amps, phi):
+def _filterAndSnapCombTones(freqs, amps, phis):
     # Setup constants
     nyquist = cfg_b.fs / 2
     fs_out = (cfg_b.fs / cfg_b.psb_channel_count) / cfg_b.acc_factor
 
     # Sort and Filter Nyquist
-    f, a, p = np.asarray(freqs), np.asarray(amps), np.asarray(phi)
+    f, a, p = np.asarray(freqs), np.asarray(amps), np.asarray(phis)
     idx = np.argsort(f)
     f, a, p = f[idx], a[idx], p[idx]
     
@@ -381,7 +381,7 @@ def _filterAndSnapCombTones(freqs, amps, phi):
     # Snap to Grid
     f_snapped = np.round(f / fs_out) * fs_out
     
-    return {'freqs': f_snapped, 'amps': a, 'phi': p}
+    return {'freqs': f_snapped, 'amps': a, 'phis': p}
 
 
 # ============================================================================ #
@@ -400,7 +400,7 @@ def _resolveCombBinCollisions(chan, sig):
            (within_bin_idx < (np.repeat(counts, counts) - 2) // 2 + 2)
     
     # Update signal state
-    for key in ['freqs', 'amps', 'phi']:
+    for key in ['freqs', 'amps', 'phis']:
         sig[key] = sig[key][keep]
     bins = bins[keep]
 
@@ -445,56 +445,103 @@ def _executeCombHwWrite(chan, sig):
     _loadBinMap(chan, bin_map)
     _loadBeatDphiMap(chan, beat_map)
     _writeAllTones(chan, sig['bins'], dphi, 
-                   sig['amps'] * np.cos(sig['phi']), 
-                   sig['amps'] * np.sin(sig['phi']))
+                   sig['amps'] * np.cos(sig['phis']), 
+                   sig['amps'] * np.sin(sig['phis']))
     
     alcove_base.writeChannelCount(n)
 
 
 # ============================================================================ #
 # _writeComb
-def _writeComb(chan, freqs, amps, phi, save=True):
-    '''Orchestrates the generation and hardware-loading of a multi-tone frequency comb.
+def _writeComb(chan, freqs, amps, phis):
+    '''Generation and hardware-loading of a multi-tone frequency comb.
 
-    This function synchronizes the high-level signal definition with the underlying RFSoC/PSB hardware state through a three-stage pipeline:
-    1. Physical Filtering: Truncates frequencies to the Nyquist range and snaps them to the valid FFT bin centers (fs_out).
-    2. Logic Resolution: Identifies and resolves bin collisions by limiting occupancy to 2 tones per bin and remapping "second" tones to unused bins via the Tone Selection Map.
-    3. Hardware Execution: Calculates phase corrections (dphi/beat_dphi) and performs vectorized writes to the bin maps and tone registers.
-
-    Args:
-        chan (int): The target hardware channel index.
-        freqs (array_like): Requested tone frequencies in Hz.
-        amps (array_like): Linear amplitudes for each tone.
-        phi (array_like): Initial phases in radians.
-        save (bool): If True, persists the final snapped and filtered comb state 
-            to the local filesystem.
+    chan (int): The target hardware channel index.
+    freqs (array of floats): Requested tone frequencies in Hz.
+    amps (array of floats): Linear amplitudes for each tone.
+    phis (array of floats): Initial phases in radians.
 
     Returns:
-        numpy.ndarray: The actual, snapped frequencies [Hz] successfully 
+        (array of floats): The actual, snapped frequencies [Hz] successfully 
             written to the hardware.
     '''
 
-    # 1. Physical Filtering & Snapping
-    sig = _filterAndSnapCombTones(freqs, amps, phi)
+    # Truncate freqs to the Nyquist range 
+    # and snap them to the valid FFT bin centers (fs_out).
+    sig = _filterAndSnapCombTones(freqs, amps, phis)
     if sig['freqs'].size == 0:
         return np.array([])
 
-    # 2. Logistics: Handle overcrowded bins (max 2) and collisions
+    # Handle overcrowded bins (max 2) and collisions
     sig = _resolveCombBinCollisions(chan, sig)
 
-    # 3. Hardware Execution
-    _executeCombHwWrite(chan, sig)
+    # Translate effective amps to unit amps
+    sig_unit = _ampsToUnitAmps(chan, sig)
 
-    # 4. Persistence
-    if save:
-        f_center   = io.load(io.file.f_center_vna) # 
-        freqs_rf_actual = sig['freqs'] + f_center
+    # Hardware execution
+    _executeCombHwWrite(chan, sig_unit)
 
-        io.save(io.file.f_rf_tones_comb, freqs_rf_actual)
-        io.save(io.file.a_tones_comb, sig['amps'])
-        io.save(io.file.p_tones_comb, sig['phi'])
+    # Persistence
+    f_center   = io.load(io.file.f_center_vna) # 
+    freqs_rf_actual = sig['freqs'] + f_center
+
+    io.save(io.file.f_rf_tones_comb, freqs_rf_actual)
+    io.save(io.file.a_tones_comb, sig['amps'])
+    io.save(io.file.p_tones_comb, sig['phis'])
 
     return sig['freqs']
+
+
+# ============================================================================ #
+# _ampsToUnitAmps
+def _ampsToUnitAmps(chan, sig):
+    """Effective amps to unit amps.
+    Effective amps are what is stored in the amps arrays.
+    Unit amps are what is passed to the fabric."""
+
+    # Type enforcement
+    amps = np.asarray(sig['amps'], dtype=float)
+
+    # Calculate K
+    IFFT_scale = cfg_b.scale[chan][0]
+    C = cfg_b.C[chan]
+    s_eff = IFFT_scale + 1 # hardcoded pipeline -1 correction
+    K = 2.0**(-s_eff) * C / 2**15
+
+    # Convert effective amps to unit amps
+    amps_unit = amps/(K*2**14)
+
+    # Build a new 'unit' sig to pass back
+    sig_unit = sig
+    sig_unit['amps'] = amps_unit
+
+    return sig_unit
+
+
+# ============================================================================ #
+# _unitAmpsToAmps
+def _unitAmpsToAmps(chan, sig_unit):
+    """Unit amps to effective amps.
+    Effective amps are what is stored in the amps arrays.
+    Unit amps are what is passed to the fabric."""
+
+    # Type enforcement
+    amps_unit = np.asarray(sig_unit['amps'], dtype=float)
+
+    # Calculate K
+    IFFT_scale = cfg_b.scale[chan][0]
+    C = cfg_b.C[chan]
+    s_eff = IFFT_scale + 1 # hardcoded pipeline -1 correction
+    K = 2.0**(-s_eff) * C / 2**15
+
+    # Convert unit amps to effective amps
+    amps = amps_unit * K * 2**14
+
+    # Build a new sig to pass back
+    sig = sig_unit
+    sig['amps'] = amps
+
+    return sig
 
 
 # ============================================================================ #
@@ -508,8 +555,6 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         Note that findCalTones must be run first.
         Note that this will force new_amps_and_phis=True.
     """
-
-    import numpy as np
 
     if not isinstance(cal_tones, bool):
         cal_tones = cal_tones == "True" # force to bool; Redis args are strings
@@ -525,8 +570,11 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         amps = None # force recalculation of amps and phis with cal tones
         phis = None
 
-    if amps is None or phis is None:
-        amps, phis = genAmpsAndPhis(freqs_bb)
+    if amps is None:
+        if phis is None:
+            phis = genPhis(freqs_bb, amps)
+        else:
+            amps, phis = genAmpsAndPhis(freqs_bb)
 
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_actual = freqs_bb_actual + f_center 
@@ -733,11 +781,9 @@ def genAmpsAndPhis(freqs):
     """
 
     # equal amplitude tones
-    print("   Estimating safe amplitudes.")
     amps = _estimate_safe_amplitude(freqs) * np.ones(len(freqs), dtype=float)
 
     # safe phis, could be false
-    print("   Generating phis.")
     phis = genPhis(freqs, amps)
 
     # if no solution was found
@@ -757,16 +803,21 @@ def genAmpsAndPhis(freqs):
 def writeTestTones(N=1, freqs=None):
     """Write requested tones.
 
-    N (int): Number of tones. Step size 1 MHz. 1024 max.
+    N (int): Number of tones. Step size 1 MHz. [1,1024].
     freqs (array of floats): Specific tone requests. Overrides N.
     """
-    
+
     chan = cfg_b.drid
 
     # build freqs for number of requested tones
     if freqs is None:
-        # 1 MHz step size, max 1024 tones
-        freqs = np.arange(0, 1024e6, 1000e3)[:int(N)]
+
+        # Type enforcement and clip to [1,1024]
+        N = min(max(int(N), 1), 1024)
+
+        # Create a comb evenly spaced (1 MHz) around 0
+        # with preference for positive on odd N
+        freqs = 1e6*np.arange(-((N-1)//2), N//2+1, 1)
 
     # type enforcement
     freqs = np.asarray(freqs, float)
@@ -786,25 +837,16 @@ def writeTestTone():
 
 # ============================================================================ #
 # writeNewVnaComb
-def writeNewVnaComb():
+def writeNewVnaComb(freqs_bb):
     """Create and write the vna sweep tone comb.
-
-    freq_noise: (float) Frequency noise to add to the tone placement.
-        This uses a uniform distribution of noise. [Hz]
     """
     
     chan = cfg_b.drid
 
-    freqs_bb = np.array(np.arange(-512e6, 512e6, 1024e3))
-    print(f"  VNA comb: {len(freqs_bb)} tones.")
-
-    print("  Generating amps and phis.")
     amps, phis = genAmpsAndPhis(freqs_bb)
 
-    print("  Writing the comb.")
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
 
-    print("  Saving the comb files.")
     io.save(io.file.freqs_vna, freqs_bb_actual)
     io.save(io.file.amps_vna, amps)
     io.save(io.file.phis_vna, phis)
@@ -821,10 +863,6 @@ def writeTargCombFromVnaSweep():
     Note that vnaSweep and findVnaResonators must be run first.
     """
 
-    import numpy as np
-
-    chan = cfg_b.drid
-
     f_center   = io.load(io.file.f_center_vna) # Hz
     freqs_rf = io.load(io.file.f_res_vna).real
     freqs_bb = freqs_rf - f_center
@@ -835,8 +873,7 @@ def writeTargCombFromVnaSweep():
     io.save(io.file.a_res_targ, amps)
     io.save(io.file.p_res_targ, phis)
 
-    freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(
-        f_center, freqs_rf)
+    freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(f_center, freqs_rf)
 
     # check for overflow of this comb
     alcove_base.checkWaveformOverflow()

@@ -327,7 +327,7 @@ def _findMins(f, Z, stitch_bw=None):
 
 # ============================================================================ #
 # findVnaResonators
-def findVnaResonators(**kwargs):
+def findVnaResonators(sweep_steps, **kwargs):
     """Find the resonator peak frequencies from vnaSweep S21.
     See findResonators() for possible arguments.
     Note that vnaSweep must be run first.
@@ -335,7 +335,8 @@ def findVnaResonators(**kwargs):
 
     f, Z = io.load(io.file.s21_vna)
     # f_res = _findResonators_alt(f, Z, **kwargs)
-    f_res = _findResonatorsVna(f, Z, **kwargs)
+    f_res = _findResonatorsVna(f, Z, stitch_bw=sweep_steps, **kwargs)
+    print(f"Found resonators: {len(f_res)}")
 
     io.save(io.file.f_res_vna, f_res)
 

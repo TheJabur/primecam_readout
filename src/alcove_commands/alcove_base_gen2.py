@@ -5,8 +5,7 @@
 # Compatible with gateware versions 15+ (gen2).
 # James Burgoyne jburgoyne@phas.ubc.ca 
 # Ruixuan (Matt) Xie  mattxie956@gmail.com
-# Adrian Sinclair aksincla@asu.edu
-# CCAT Prime 2025  
+# CCAT Prime 2026
 # ============================================================================ #
 
 
@@ -16,6 +15,8 @@
 # ============================================================================ #
 
 import os
+import time
+import mmap
 import numpy as np
 
 import alcove_commands.board_io as io
@@ -237,12 +238,19 @@ def _checkWaveformOverflow() -> bool:
     """
 
     import time
-    
+
+    chan = cfg_b.drid
+    gwc = _gateware_chan(cfg_b.gateware, chan)
+
+    # Reset trigger
+    C = cfg_b.C[chan]
+    gwc.GPIO.axi_gpio_5.write(0x00, int(0b111<<29 | int(C)))
+    gwc.GPIO.axi_gpio_5.write(0x00, int(C))
+
     # Wait for at least a full waveform to make sure overflow triggered
-    time.sleep(0.1) # TODO: is this the right amount of time?
+    time.sleep(0.002)
 
     # Check if overflow has been triggered
-    gwc = _gateware_chan(cfg_b.gateware, cfg_b.drid)
     ov_flag = gwc.GPIO.axi_gpio_5.read(0x08)
 
     _OV_HELP = { # order matters here
@@ -270,26 +278,24 @@ def _findOptimalScaleFactors(N):
     """
 
     # TODO: find the optimal values for N
+    # LUT?
+
     IFFT_scale = 6
     PSB_scale  = 1.0
+    FFT_scale = 3
 
-    # def _optTXscale(peak, chan=None, margin=0.03):
-        # LOG2N   = 11
-        # bit_growth = max(0, int(np.ceil(np.log2(peak))))
-        # IFFT_scale = max(0, bit_growth - 1)
-        # PSB_scale = 2**bit_growth / peak * (1-margin)
-
-    return (IFFT_scale, PSB_scale)
+    return (IFFT_scale, PSB_scale, FFT_scale)
 
 
 # ============================================================================ #
 # _checkScaleFactors
-def _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N, C_WIDTH):
+def _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N):
     """Check that the scale factor are reasonable.
     Returns a Tuple of Bools, e.g. (True, True, True).
     """
 
-    MAX_PSB_SCALE = 2.0 # TODO:
+    MIN_PSB_SCALE = 1.0
+    MAX_PSB_SCALE = 2.0
 
     # Running checks [IFFT_scale, PSB_scale, FFT_scale]
     valid = [True, True, True] # Assume all are valid
@@ -310,8 +316,8 @@ def _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N, C_WIDTH):
         print(f"Error: PSB_scale must be a float.")
         valid[1] = False
 
-    if not (0.0 <= PSB_scale <= MAX_PSB_SCALE):
-        print(f"Error: PSB_scale must be in range [0.0, {MAX_PSB_SCALE}].")
+    if not (MIN_PSB_SCALE <= PSB_scale <= MAX_PSB_SCALE):
+        print(f"Error: PSB_scale must be in range [{MIN_PSB_SCALE}, {MAX_PSB_SCALE}].")
         valid[1] = False
 
     #  FFT_scale checks
@@ -328,7 +334,7 @@ def _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N, C_WIDTH):
 
 
 # ============================================================================ #
-# _setScaleFactors
+# setScaleFactors
 def setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
     """Set the scale factors into fabric.
     """
@@ -345,35 +351,129 @@ def setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
     FFT_scale = int(FFT_scale)
 
     # Check factors: Fallback to defaults if needed
-    use = _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N, C_WIDTH)
-    IFFT_scale = IFFT_scale if use[0] else 6    ###
-    PSB_scale  = PSB_scale  if use[1] else 1.0  ###
-    IFFT_scale = IFFT_scale if use[2] else 6    ###
+    valid = _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N)
+    IFFT_scale = IFFT_scale if valid[0] else 6    ###
+    PSB_scale  = PSB_scale  if valid[1] else 1.0  ###
+    IFFT_scale = IFFT_scale if valid[2] else 3    ###
 
     # IFFT and FFT Scales
     SI_tx = ((1 << IFFT_scale) - 1) << (LOG2N - IFFT_scale)
-    SI_rx = ((1 << FFT_scale) - 1) << (LOG2N - FFT_scale)
+    SI_rx = ((1 << FFT_scale) - 1) << (LOG2N - FFT_scale) # TODO: -1?
     gwc.GPIO.axi_gpio_4.write(0x08, int(SI_tx<<11 | SI_rx))
     
     # PSB Scale
     C = int(round(2**16 * PSB_scale))
-    gwc.GPIO.axi_gpio_5.write(0x00, int(0b111<<29 | int(C)))
+    # gwc.GPIO.axi_gpio_5.write(0x00, int(0b111<<29 | int(C)))
     gwc.GPIO.axi_gpio_5.write(0x00, int(C))
+    cfg_b.C[chan] = C # save in config
 
 
 # ============================================================================ #
-# _setScaleFactorsFromConfig
+# setScaleFactorsFromConfig
 def setScaleFactorsFromConfig():
 
-    IFFT_scale = int(cfg_b.IFFT_scale)
-    PSB_scale = float(cfg_b.PSB_scale)
-    FFT_scale = IFFT_scale # TODO: ?
+    chan = cfg_b.drid
+    scale_factors = cfg_b.scale_factors[chan]
+
+    IFFT_scale = int(scale_factors[0])
+    PSB_scale = float(scale_factors[1])
+    FFT_scale = int(scale_factors[2])
 
     setScaleFactors(IFFT_scale, PSB_scale, FFT_scale)
 
 
 # ============================================================================ #
 # _getSnapData
+def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
+    '''
+    Fetch data from gateware DSP using direct Linux /dev/mem mmap.
+    
+    Args:
+        chan (int): 
+            Channel index (1-4) specifying which readout chain to access.
+        mux_sel:
+            0: ADC outputs
+            1: PSB outputs (DAC inputs)
+            3: Receive outputs (time stream data)
+    Returns:
+        I, Q (numpy.ndarray):
+            for data converter data, I and Q are flat,
+            for time stream data, I and Q have shape (n, bin)
+    '''
+
+    # Reset snap
+    chan_access = _gateware_chan(cfg_b.gateware, chan)
+    chan_access.GPIO.axi_gpio_3.write(0x08, 3)
+    chan_access.GPIO.axi_gpio_3.write(0x08, 0)
+    time.sleep(wait)
+    
+    base_addr_wide = {
+        (1,0): 0x00_A001_0000, (1,1): 0x00_A001_0000, (1,3): 0x00_A002_0000,
+        (2,0): 0x00_A003_0000, (2,1): 0x00_A003_0000, (2,3): 0x00_A004_0000,
+        (3,0): 0x00_A005_0000, (3,1): 0x00_A005_0000, (3,3): 0x00_A006_0000,
+        (4,0): 0x00_A007_0000, (4,1): 0x00_A007_0000, (4,3): 0x00_A008_0000,
+    }[(chan, mux_sel)]
+    
+    max_bytes = 65536  # 32x2048 words * 4 bytes = 65536 bytes
+    
+    # Open physical memory and map the address space
+    fd = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+    try:
+        # Align offset to page size boundary if necessary (AXI base addresses here are 64KB aligned)
+        mem = mmap.mmap(
+            fd, 
+            length=max_bytes, 
+            flags=mmap.MAP_SHARED, 
+            prot=mmap.PROT_READ | mmap.PROT_WRITE, 
+            offset=base_addr_wide
+        )
+        try:
+            # Read 16384 32-bit words directly into numpy
+            wide_data = np.frombuffer(mem, dtype=np.uint32, count=16384)
+            
+            I = np.zeros(8192)
+            Q = np.zeros(8192)
+
+            if mux_sel == 0:
+                I[0::4] = np.int16(wide_data[4::8] & 0x0000ffff)
+                Q[0::4] = np.int16(wide_data[6::8] & 0x0000ffff)
+                I[1::4] = np.int16(wide_data[4::8] >> 16)
+                Q[1::4] = np.int16(wide_data[6::8] >> 16)
+                I[2::4] = np.int16(wide_data[5::8] & 0x0000ffff)
+                Q[2::4] = np.int16(wide_data[7::8] & 0x0000ffff)
+                I[3::4] = np.int16(wide_data[5::8] >> 16)
+                Q[3::4] = np.int16(wide_data[7::8] >> 16)
+
+            elif mux_sel == 1:
+                I[0::4] = np.int16(wide_data[0::8] & 0x0000ffff)
+                Q[0::4] = np.int16(wide_data[0::8] >> 16)
+                I[1::4] = np.int16(wide_data[1::8] & 0x0000ffff)
+                Q[1::4] = np.int16(wide_data[1::8] >> 16)
+                I[2::4] = np.int16(wide_data[2::8] & 0x0000ffff)
+                Q[2::4] = np.int16(wide_data[2::8] >> 16)
+                I[3::4] = np.int16(wide_data[3::8] & 0x0000ffff)
+                Q[3::4] = np.int16(wide_data[3::8] >> 16)
+
+            elif mux_sel == 3:
+                I[0::4] = (np.int32(wide_data[0::8])).astype("float")
+                Q[0::4] = (np.int32(wide_data[1::8])).astype("float")
+                I[1::4] = (np.int32(wide_data[2::8])).astype("float")
+                Q[1::4] = (np.int32(wide_data[3::8])).astype("float")
+                I[2::4] = (np.int32(wide_data[4::8])).astype("float")
+                Q[2::4] = (np.int32(wide_data[5::8])).astype("float")
+                I[3::4] = (np.int32(wide_data[6::8])).astype("float")
+                Q[3::4] = (np.int32(wide_data[7::8])).astype("float") 
+        finally:
+            mem.close()
+    finally:
+        os.close(fd)
+
+    if wrap:
+        return io.returnWrapper(io.file.IQ_generic, (I,Q))
+    else:
+        return I, Q
+    
+"""
 def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
     '''
     Fetch data from gateware DSP.
@@ -449,6 +549,7 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
         return io.returnWrapper(io.file.IQ_generic, (I,Q))
     else:
         return I, Q
+"""
 
 
 # ============================================================================ #
@@ -760,11 +861,13 @@ def findScaleFactors(N):
         N (int): Expected number of resonators on this RF network.
     """
 
-    IFFT_scale, PSB_scale = _findOptimalScaleFactors(N)
+    scale = _findOptimalScaleFactors(N) # (IFFT, PSB, FFT)
 
-    print(f"Optimal (N={N}): IFFT_scale={IFFT_scale}, PSB_scale={PSB_scale}")
+    print(f"Optimal scales (N={N}): \
+            IFFT={scale[0]}, PSB={scale[1]}, FFT={scale[2]}. \
+            Set scales in board config!")
     
-    return {'IFFT_scale':IFFT_scale, 'PSB_scale':PSB_scale}
+    return {'IFFT':scale[0], 'PSB':scale[1], 'FFT':scale[2]}
 
 
 # ============================================================================ #

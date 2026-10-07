@@ -5,6 +5,9 @@
 # CCAT Prime 2026
 # ============================================================================ #
 
+import numpy as np
+import time
+
 from alcove_commands import alcove_base
 import alcove_commands.board_io as io
 from alcove_commands import tones
@@ -32,10 +35,6 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
     f:               (1D array of floats) Central frequency for each bin.
     Z:               (1D array of complex) S_21 complex I+jQ for each bin.
     """
-
-    import numpy as np
-    from time import sleep
-    import time
 
     wait1 = 0.003
     wait2 = 0.02
@@ -105,20 +104,25 @@ def performFullVnaSweep(**kwargs):
     alcove_base.setScaleFactors(IFFT_scale=6, PSB_scale=1.0, FFT_scale=3)
 
     print(" Writing a tone VNA comb.")
-    tones.writeNewVnaComb()
+    freqs_bb = np.array(np.arange(-512e6, 512e6, 1024e3))
+    tones.writeNewVnaComb(freqs_bb)
 
     print(" Running a 1000 step VNA sweep.")
     _vnaSweep(sweep_steps=1000)
+
+    # TODO: set new comb? Otherwise will probably be overflowing when reset scales, and stay that way if there are no resonators
 
     # change scaling factors back to config values
     print(" Setting scale factors back to config.")
     alcove_base.setScaleFactorsFromConfig()
 
     print(" Attempting to find resonators from VNA sweep.")
-    analysis.findVnaResonators(**kwargs)
+    f_res = analysis.findVnaResonators(**kwargs)
+    print(f" Found {len(f_res)} resonators.")
 
-    print(" Writing a target comb at the found resonator locations.")
-    ret = tones.writeTargCombFromVnaSweep()
+    if len(f_res) > 0:
+        print(" Writing a target comb at the found resonator locations.")
+        ret = tones.writeTargCombFromVnaSweep()
 
     return ret
 
@@ -132,18 +136,10 @@ def _vnaSweep(sweep_steps=None):
         You must pass this override value to findResontators (stitch_bw?).
     """
 
-    import numpy as np
-
     chan = cfg_b.drid
 
     f_center = io.load(io.file.f_center_vna)
     freqs_bb = io.load(io.file.freqs_vna)
-
-    # number of sweep steps
-    try:     # attempt to use input
-        sweep_steps = int(sweep_steps)
-    except:  # fallback to config value
-        sweep_steps = cfg_b.sweep_steps
 
     S21 = np.array(_sweep( # =(f,Z)
         chan, f_center/1e6, freqs_bb, sweep_steps)) # f, Z

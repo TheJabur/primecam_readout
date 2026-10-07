@@ -6,6 +6,7 @@
 # CCAT/FYST 2026 
 # ============================================================================ #
 
+# NOTE: Also edit each drone config file (drones/droneX/_cfg_droneX.py)
 
 
 # ============================================================================ #
@@ -22,7 +23,7 @@ log_backup_count = 5   # number of log files
 
 # ============================================================================ #
 # gateware
-gateware_file = 'init/tetra_v15p1.xsa'
+gateware_file = 'init/tetra_v16p4.xsa'
 
 
 # ============================================================================ #
@@ -59,10 +60,10 @@ udp_ori_mac  = 'c0:ff:ee:c0:ff:ee'
 # ============================================================================ #
 # gen2 waveform properties
 acc_factor = 1024      # Determines sample rate: 5e5/acc_factor Hz.
-IFFT_scale = 6         # (int) e.g. 6
-PSB_scale  = 1.0       # (float) e.g. 1.0
-# The scale factors determine amps to output...
-# ... calculate using the provided function.
+scale_factors = {1:[6, 1.0, 3], # drone 1:[IFFT, PSB, FFT]
+                 2:[6, 1.0, 3],
+                 3:[6, 1.0, 3],
+                 4:[6, 1.0, 3]}
 
 # ============================================================================ #
 # gen1 waveform properties
@@ -107,6 +108,7 @@ psb_channel_count = 2048
 
 # gen2 caches
 defaultToneSelMap = None
+C = {1:None, 2:None, 3:None, 4:None} # drone [1,2,3,4]
 
 root_dir = ''
 drone_dir = ''
