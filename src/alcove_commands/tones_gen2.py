@@ -621,7 +621,7 @@ def _xPeak(freqs, amps, phis):
     # Peak amplitude
     xPeak = np.max(np.abs(x))
 
-    print(f"     xPeak={xPeak}")
+    print(f"Waveform xPeak={xPeak:.2f}")
 
     return xPeak
 
