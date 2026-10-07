@@ -1,13 +1,14 @@
 # ============================================================================ #
 # tones_gen2.py
-# Tone and comb functions and commands.
-# Compatible with gateware versions 15+ (gen2).
-# James Burgoyne jburgoyne@phas.ubc.ca 
+# Tone and comb functions and commands for gen2.
+# James Burgoyne jamesrburgoyne@icloud.com
 # Adrian Sinclair aksincla@asu.edu
-# CCAT Prime 2026
+# CCAT 2026
 # ============================================================================ #
 
 import numpy as np
+
+import gateware as gw
 
 from alcove_commands import alcove_base
 import alcove_commands.board_io as io
@@ -16,16 +17,6 @@ try: from config import board as cfg_b
 except ImportError: cfg_b = None 
 
 
-
-# ============================================================================ #
-# _gateware_chan
-def _gateware_chan(gateware, chan):
-    return {
-        1: gateware.chan1,
-        2: gateware.chan2,
-        3: gateware.chan3,
-        4: gateware.chan4,
-    }[chan]
 
 
 # ============================================================================ #
@@ -148,18 +139,19 @@ def _writeToneSelect(chan, addr, data):
         addr (uint): The address of the write operation.
         data (ufix_12): The data of the write operation.
     """
-    chan_access = _gateware_chan(cfg_b.gateware, chan)
+
+    gwc = gw.gw_chan(chan)
     
-    chan_access.GPIO.axi_gpio_6.write(0x08, int(addr))
+    gwc.GPIO.axi_gpio_6.write(0x08, int(addr))
     
-    chan_access.GPIO.axi_gpio_7.write(0x00, int((data[1] << 12) + data[0]))
-    chan_access.GPIO.axi_gpio_7.write(0x08, int((data[3] << 12) + data[2]))
-    chan_access.GPIO.axi_gpio_8.write(0x00, int((data[5] << 12) + data[4]))
-    chan_access.GPIO.axi_gpio_8.write(0x08, int((data[7] << 12) + data[6]))
+    gwc.GPIO.axi_gpio_7.write(0x00, int((data[1] << 12) + data[0]))
+    gwc.GPIO.axi_gpio_7.write(0x08, int((data[3] << 12) + data[2]))
+    gwc.GPIO.axi_gpio_8.write(0x00, int((data[5] << 12) + data[4]))
+    gwc.GPIO.axi_gpio_8.write(0x08, int((data[7] << 12) + data[6]))
     
-    chan_access.GPIO.axi_gpio_6.write(0x00,0)
-    chan_access.GPIO.axi_gpio_6.write(0x00,1)
-    chan_access.GPIO.axi_gpio_6.write(0x00,0)
+    gwc.GPIO.axi_gpio_6.write(0x00,0)
+    gwc.GPIO.axi_gpio_6.write(0x00,1)
+    gwc.GPIO.axi_gpio_6.write(0x00,0)
 
 
 # ============================================================================ #
@@ -243,17 +235,18 @@ def _writeBinMap(chan, addr, data):
         concact(data[1],data[0])LSB -> addr n
         concact(data[3],data[2])LSB -> addr n+1
     '''
-    chan_access = _gateware_chan(cfg_b.gateware, chan)
+
+    gwc = gw.gw_chan(chan)
     
     gpio_9_slot_1_word = int((data[1]<<21) + (data[0]<<10) + addr)
-    chan_access.GPIO.axi_gpio_9.write(0x00, gpio_9_slot_1_word)
+    gwc.GPIO.axi_gpio_9.write(0x00, gpio_9_slot_1_word)
     gpio_9_slot_2_word = int((data[3]<<12) + (data[2]<<1) + 0)
-    chan_access.GPIO.axi_gpio_9.write(0x08, gpio_9_slot_2_word)
+    gwc.GPIO.axi_gpio_9.write(0x08, gpio_9_slot_2_word)
     
     gpio_9_slot_2_word = int((data[3]<<12) + (data[2]<<1) + 1)
-    chan_access.GPIO.axi_gpio_9.write(0x08, gpio_9_slot_2_word)
+    gwc.GPIO.axi_gpio_9.write(0x08, gpio_9_slot_2_word)
     gpio_9_slot_2_word = int((data[3]<<12) + (data[2]<<1) + 0)
-    chan_access.GPIO.axi_gpio_9.write(0x08, gpio_9_slot_2_word)
+    gwc.GPIO.axi_gpio_9.write(0x08, gpio_9_slot_2_word)
 
 
 # ============================================================================ #
@@ -281,7 +274,7 @@ def _loadBeatDphiMap(chan, beat_dphi_map):
         chan (int): Readout RF channel.
         beat_dphi_map (array): beat dphi LUT values.
     '''
-    chan_access = _gateware_chan(cfg_b.gateware, chan)
+    gwc = gw.gw_chan(chan)
 
     dphi_i16, _ = _rad2int(beat_dphi_map)
     dphi_i16 = dphi_i16.reshape(512, 4)
@@ -290,9 +283,9 @@ def _loadBeatDphiMap(chan, beat_dphi_map):
         row = dphi_i16[addr]
         for mem in range(4):
             word = base | (int(row[mem]) << 4)
-            chan_access.GPIO.axi_gpio_4.write(0x00, word)
-            chan_access.GPIO.axi_gpio_4.write(0x00, word | (1 << mem))
-            chan_access.GPIO.axi_gpio_4.write(0x00, word)
+            gwc.GPIO.axi_gpio_4.write(0x00, word)
+            gwc.GPIO.axi_gpio_4.write(0x00, word | (1 << mem))
+            gwc.GPIO.axi_gpio_4.write(0x00, word)
 
 
 # ============================================================================ #
@@ -325,10 +318,10 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     if not (0 <= mem <= 7):
         return
 
-    chan_access = _gateware_chan(cfg_b.gateware, chan)
+    gwc = gw.gw_chan(chan)
 
-    chan_access.GPIO.axi_gpio_2.write(0x00, int(round(init_re*(1 << 16))) & 0x3FFFF)
-    chan_access.GPIO.axi_gpio_2.write(0x08, int(round(init_im*(1 << 16))) & 0x3FFFF)
+    gwc.GPIO.axi_gpio_2.write(0x00, int(round(init_re*(1 << 16))) & 0x3FFFF)
+    gwc.GPIO.axi_gpio_2.write(0x08, int(round(init_im*(1 << 16))) & 0x3FFFF)
 
     if mem & 1:  # mem odd: add π
         dphi = _wrap_to_pi(dphi + np.pi)
@@ -337,9 +330,9 @@ def _writeTone(chan, mem, addr, dphi, init_re, init_im):
     word = int((addr << 16) + dphi_int)
     bit_value = [1,16,2,32,4,64,8,128][mem]
     
-    chan_access.GPIO.axi_gpio_1.write(0x08, word)
-    chan_access.GPIO.axi_gpio_1.write(0x00, bit_value)
-    chan_access.GPIO.axi_gpio_1.write(0x00, 0)
+    gwc.GPIO.axi_gpio_1.write(0x08, word)
+    gwc.GPIO.axi_gpio_1.write(0x00, bit_value)
+    gwc.GPIO.axi_gpio_1.write(0x00, 0)
 
 
 # ============================================================================ #
@@ -505,8 +498,7 @@ def _ampsToUnitAmps(chan, sig):
     # Calculate K
     IFFT_scale = cfg_b.scale[chan][0]
     C = cfg_b.C[chan]
-    s_eff = IFFT_scale + 1 # hardcoded pipeline -1 correction
-    K = 2.0**(-s_eff) * C / 2**15
+    K = 2.0**(-IFFT_scale) * C / 2**15
 
     # Convert effective amps to unit amps
     amps_unit = amps/(K*2**14)
@@ -531,8 +523,7 @@ def _unitAmpsToAmps(chan, sig_unit):
     # Calculate K
     IFFT_scale = cfg_b.scale[chan][0]
     C = cfg_b.C[chan]
-    s_eff = IFFT_scale + 1 # hardcoded pipeline -1 correction
-    K = 2.0**(-s_eff) * C / 2**15
+    K = 2.0**(-IFFT_scale) * C / 2**15
 
     # Convert unit amps to effective amps
     amps = amps_unit * K * 2**14

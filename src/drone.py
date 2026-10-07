@@ -1,30 +1,19 @@
 # ============================================================================ #
 # drone.py
-# Board side Redis interface script.
-# James Burgoyne jburgoyne@phas.ubc.ca
-# CCAT/FYST 2024 
+# Board side main drone script. Each drone establishes an RF network.
+# James Burgoyne jamesrburgoyne@icloud.com
+# CCAT 2026
 # ============================================================================ #
-
-
-
-# ============================================================================ #
-# IMPORTS
-# ============================================================================ #
-
 
 import os
-import re
-import sys
 import time
-import redis
+import redis # type: ignore
 import queue
 import shutil
 import pickle
-import hashlib
 import logging
 import argparse
 import builtins
-import importlib
 import threading
 import numpy as np
 import logging.handlers
@@ -40,10 +29,7 @@ from alcove_commands import alcove_base
 
 
 # ============================================================================ #
-# MAIN
-# ============================================================================ #
-
-
+# main
 def main():
     # CTRL-c to exit out of listen mode
 
@@ -74,13 +60,6 @@ def main():
     listenMode(r, p, chans.subList(cfg_b.bid, cfg_b.drid), 
                command_queue, cfg_b.interval_feeds, returns_queue)
 
-            
-
-
-# ============================================================================ #
-# INTERNAL FUNCTIONS
-# ============================================================================ #
-
 
 # ============================================================================ #
 # _setupLogging
@@ -105,6 +84,9 @@ def _setupLogging():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)  # Set the logging level
     logger.addHandler(handler)
+
+    # get rid of that annoying asyncio log message
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
 
 
 # ============================================================================ #
@@ -497,10 +479,6 @@ def setKeyValue(key, value):
     r.set(bytes(key, encoding='utf-8'), bytes(value, encoding='utf-8'))   
 
 
-
-# ============================================================================ #
-# MAIN
-# ============================================================================ #
 
 
 if __name__ == "__main__":

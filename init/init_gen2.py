@@ -153,20 +153,9 @@ try:
 
     for gwc in [gateware.chan1, gateware.chan2, gateware.chan3, gateware.chan4]:
 
-        # TODO: why are we setting scaling factors in here?
-
-        # FFT scale
-        print(f"FFT scale = 2016.")
-        gwc.GPIO.axi_gpio_4.write(0x08, 2016) 
-
         # accum and snap bin len
         acc_length = int(2048/4 * cfg_b.acc_factor - 4)
         gwc.GPIO.axi_gpio_3.write(0x00, 253*2**23 + acc_length)
-
-        # PSB scale
-        print(f"PSB scale = 37170.")
-        # gateware.chan1.GPIO.axi_gpio_5.write(0x00, 37170)
-        gwc.GPIO.axi_gpio_5.write(0x00, 37170)
 
         # clear all tones
         gwc.GPIO.axi_gpio_2.write(0x00, 0)

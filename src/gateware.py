@@ -84,6 +84,18 @@ def loadGateware(download=False):
     return gateware
 
 
+# ============================================================================ #
+# gw_chan
+def gw_chan(chan):
+    gateware = cfg_b.gateware
+    return {
+        1: gateware.chan1,
+        2: gateware.chan2,
+        3: gateware.chan3,
+        4: gateware.chan4,
+    }[chan]
+
+
 # =========================================================================== #
 # isGen2
 def isGen2():

@@ -1,8 +1,8 @@
 # ============================================================================ #
 # sweeps_gen2.py
-# Sweep functions and commands.
-# James Burgoyne jburgoyne@phas.ubc.ca 
-# CCAT Prime 2026
+# Sweep functions and commands for gen2.
+# James Burgoyne jamesrburgoyne@icloud.com
+# CCAT 2026
 # ============================================================================ #
 
 import numpy as np
@@ -99,9 +99,8 @@ def performFullVnaSweep(**kwargs):
     """
 
     # change scaling factors appropriate to 1024 tone comb 
-    # TODO: check these values
     print(" Setting appropriate scale factors.")
-    alcove_base.setScaleFactors(IFFT_scale=6, PSB_scale=1.0, FFT_scale=3)
+    alcove_base.setScaleFactors(IFFT_scale=7, PSB_scale=1.0, FFT_scale=3)
 
     print(" Writing a tone VNA comb.")
     freqs_bb = np.array(np.arange(-512e6, 512e6, 1024e3))

@@ -1,17 +1,9 @@
-
 # ============================================================================ #
 # alcove_base_gen2.py
-# Alcove commands common base.
-# Compatible with gateware versions 15+ (gen2).
-# James Burgoyne jburgoyne@phas.ubc.ca 
+# Alcove commands common base for gen2.
+# James Burgoyne jamesrburgoyne@icloud.com
 # Ruixuan (Matt) Xie  mattxie956@gmail.com
-# CCAT Prime 2026
-# ============================================================================ #
-
-
-
-# ============================================================================ #
-# IMPORTS & GLOBALS
+# CCAT 2026
 # ============================================================================ #
 
 import os
@@ -31,22 +23,6 @@ except ImportError: xrfdc = None
 import gateware as gw
 
 
-
-
-# ============================================================================ #
-# GENERAL FUNCTIONS
-# ============================================================================ #
-
-
-# ============================================================================ #
-# _gateware_chan
-def _gateware_chan(gateware, chan):
-    return {
-        1: gateware.chan1,
-        2: gateware.chan2,
-        3: gateware.chan3,
-        4: gateware.chan4,
-    }[chan]
 
 
 # ============================================================================ #
@@ -82,7 +58,7 @@ def setSamplingStartTime(timestamp):
         print("Input must be a 32-bit unsigned integer.")
         return
 
-    cfg_b.gateware.chan1.GPIO.axi_gpio_0.write(0x8, timestamp)
+    gw.gw_chan(1).GPIO.axi_gpio_0.write(0x8, timestamp)
 
 
 # ============================================================================ #
@@ -174,61 +150,6 @@ def writeChannelCount(num_chans):
 
 
 # ============================================================================ #
-# generateWaveDdr4 
-def generateWaveDdr4(freqs, amps, phis):
-    '''
-    Generates a DDR4 waveform and associated phase correction data.
-
-    This function synthesizes a waveform by summing multiple sinusoidal components defined by their frequencies, amplitudes, and phases. It also calculates the necessary phase correction values for subsequent signal processing, particularly for FFT-based operations.
-
-    Args:
-        freqs (numpy.ndarray): An array of frequencies (Hz) for each sinusoidal component.
-        amps (numpy.ndarray): An array of amplitudes for each sinusoidal component.
-        phis (numpy.ndarray): An array of initial phases (radians) for each sinusoidal component.
-
-    Returns:
-        tuple: A tuple containing:
-            - x (numpy.ndarray): The generated waveform in the time domain (complex).
-            - dphi (numpy.ndarray): An array of phase correction values (float64).
-            - freqs_actual (numpy.ndarray): The actual frequencies used after quantization.
-    '''
-    
-    import numpy as np
-
-    # Ensure real values
-    freqs = np.real(freqs)
-    amps  = np.real(amps)
-    phis  = np.real(phis)
-
-    # System constants
-    fs      = 512e6       # Sampling frequency (Hz). cfg_b.wf_fs
-    lut_len = 2**20  # Lookup table length. cfg_b.wf_lut_len
-    fft_len = 1024  # FFT length. cfg_b.wf_fft_len
-
-    # Compute frequency bins
-    k            = np.round(freqs/(fs/lut_len)).astype(np.int64)
-    freqs_actual = k*(fs/lut_len)
-
-    # Vectorized X assignment (frequency space)
-    X    = np.zeros(lut_len, dtype=np.complex128)
-    X[k] = np.exp(-1j*phis)*amps
-
-    # Compute IFFT efficiently
-    x = np.fft.ifft(X, norm='backward')*lut_len
-    
-    # Compute bin numbers & phase correction
-    bin_num = np.round(freqs_actual/(fs/fft_len)).astype(np.int64)
-    f_beat  = bin_num*(fs/fft_len) - freqs_actual
-    dphi0   = (f_beat/(fs/fft_len))*2**16
-
-    # Efficiently initialize dphi
-    dphi = np.zeros(fft_len, dtype=np.float64)
-    dphi[:len(dphi0)] = dphi0
-
-    return x, dphi, freqs_actual
-
-
-# ============================================================================ #
 # _checkWaveformOverflow
 def _checkWaveformOverflow() -> bool:
     """Sample the waveform register to test for DAC overflow.
@@ -240,7 +161,7 @@ def _checkWaveformOverflow() -> bool:
     import time
 
     chan = cfg_b.drid
-    gwc = _gateware_chan(cfg_b.gateware, chan)
+    gwc = gw.gw_chan(chan)
 
     # Reset trigger
     C = cfg_b.C[chan]
@@ -280,7 +201,7 @@ def _findOptimalScaleFactors(N):
     # TODO: find the optimal values for N
     # LUT?
 
-    IFFT_scale = 6
+    IFFT_scale = 7
     PSB_scale  = 1.0
     FFT_scale = 3
 
@@ -306,8 +227,8 @@ def _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N):
         print(f"Error: IFFT_scale must be an integer.")
         valid[0] = False
 
-    if not (0 <= IFFT_scale <= LOG2N):
-        print(f"Error: IFFT_scale must be in range [0, {LOG2N}].")
+    if not (1 <= IFFT_scale <= LOG2N+1):
+        print(f"Error: IFFT_scale must be in range [1, {LOG2N}+1].")
         valid[0] = False
 
     # PSB_scale checks
@@ -340,7 +261,7 @@ def setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
     """
 
     chan = cfg_b.drid
-    gwc = _gateware_chan(cfg_b.gateware, chan)
+    gwc = gw.gw_chan(chan)
 
     LOG2N   = 11 # both transforms are 2048-point -> 11-bit SI bus
     C_WIDTH = 32
@@ -352,18 +273,18 @@ def setScaleFactors(IFFT_scale, PSB_scale, FFT_scale):
 
     # Check factors: Fallback to defaults if needed
     valid = _checkScaleFactors(IFFT_scale, PSB_scale, FFT_scale, LOG2N)
-    IFFT_scale = IFFT_scale if valid[0] else 6    ###
-    PSB_scale  = PSB_scale  if valid[1] else 1.0  ###
-    IFFT_scale = IFFT_scale if valid[2] else 3    ###
+    IFFT_scale = IFFT_scale if valid[0] else 7
+    PSB_scale  = PSB_scale  if valid[1] else 1.0
+    FFT_scale = FFT_scale if valid[2] else 3
 
     # IFFT and FFT Scales
-    SI_tx = ((1 << IFFT_scale) - 1) << (LOG2N - IFFT_scale)
-    SI_rx = ((1 << FFT_scale) - 1) << (LOG2N - FFT_scale) # TODO: -1?
+    # -1 on IFFT_scale for halfing in pipeline
+    SI_tx = ((1 << (IFFT_scale-1)) - 1) << (LOG2N - (IFFT_scale-1))
+    SI_rx = ((1 << FFT_scale) - 1) << (LOG2N - FFT_scale)
     gwc.GPIO.axi_gpio_4.write(0x08, int(SI_tx<<11 | SI_rx))
     
     # PSB Scale
     C = int(round(2**16 * PSB_scale))
-    # gwc.GPIO.axi_gpio_5.write(0x00, int(0b111<<29 | int(C)))
     gwc.GPIO.axi_gpio_5.write(0x00, int(C))
     cfg_b.C[chan] = C # save in config
 
@@ -402,9 +323,9 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
     '''
 
     # Reset snap
-    chan_access = _gateware_chan(cfg_b.gateware, chan)
-    chan_access.GPIO.axi_gpio_3.write(0x08, 3)
-    chan_access.GPIO.axi_gpio_3.write(0x08, 0)
+    gwc = gw.gw_chan(chan)
+    gwc.GPIO.axi_gpio_3.write(0x08, 3)
+    gwc.GPIO.axi_gpio_3.write(0x08, 0)
     time.sleep(wait)
     
     base_addr_wide = {
@@ -472,85 +393,7 @@ def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
         return io.returnWrapper(io.file.IQ_generic, (I,Q))
     else:
         return I, Q
-    
-"""
-def _getSnapData(chan, mux_sel, wrap=False, wait=0.02):
-    '''
-    Fetch data from gateware DSP.
-    
-    Args:
-        chan (int): 
-            Channel index (1-4) specifying which readout chain to access.
-        mux_sel:
-            0: ADC outputs
-            1: PSB outputs (DAC inputs)
-            3: Receive outputs (time stream data)
-    Returns:
-        I, Q (numpy.ndarray):
-            for data converter data, I and q are flat,
-            for time stream data, I and Q have shape (n, bin)
-    '''
-    import numpy as np
-    import time
-    from pynq import MMIO
-    
-    # reset snap
-    chan_access = _gateware_chan(cfg_b.gateware, chan)
-    chan_access.GPIO.axi_gpio_3.write(0x08, 3)
-    chan_access.GPIO.axi_gpio_3.write(0x08, 0)
-    time.sleep(wait)
-    
-    base_addr_wide = {
-        (1,0): 0x00_A001_0000, (1,1): 0x00_A001_0000, (1,3): 0x00_A002_0000,
-        (2,0): 0x00_A003_0000, (2,1): 0x00_A003_0000, (2,3): 0x00_A004_0000,
-        (3,0): 0x00_A005_0000, (3,1): 0x00_A005_0000, (3,3): 0x00_A006_0000,
-        (4,0): 0x00_A007_0000, (4,1): 0x00_A007_0000, (4,3): 0x00_A008_0000,
-    }[(chan, mux_sel)]
-    
-    max_count = 65536  # 32x2048 = 65536
-    mmio_wide_bram = MMIO(base_addr_wide , max_count)
-    wide_data = mmio_wide_bram.array[0:16384]  # max/4, bram depth*word_bits/32bits
-    
-    I = np.zeros(8192)
-    Q = np.zeros(8192)
-
-    if mux_sel == 0:
-        I[0::4] = np.int16(wide_data[4::8] & 0x0000ffff)
-        Q[0::4] = np.int16(wide_data[6::8] & 0x0000ffff)
-        I[1::4] = np.int16(wide_data[4::8] >> 16)
-        Q[1::4] = np.int16(wide_data[6::8] >> 16)
-        I[2::4] = np.int16(wide_data[5::8] & 0x0000ffff)
-        Q[2::4] = np.int16(wide_data[7::8] & 0x0000ffff)
-        I[3::4] = np.int16(wide_data[5::8] >> 16)
-        Q[3::4] = np.int16(wide_data[7::8] >> 16)
-
-    elif mux_sel == 1:
-        I[0::4] = np.int16(wide_data[0::8] & 0x0000ffff)
-        Q[0::4] = np.int16(wide_data[0::8] >> 16)
-        I[1::4] = np.int16(wide_data[1::8] & 0x0000ffff)
-        Q[1::4] = np.int16(wide_data[1::8] >> 16)
-        I[2::4] = np.int16(wide_data[2::8] & 0x0000ffff)
-        Q[2::4] = np.int16(wide_data[2::8] >> 16)
-        I[3::4] = np.int16(wide_data[3::8] & 0x0000ffff)
-        Q[3::4] = np.int16(wide_data[3::8] >> 16)
-
-    elif mux_sel == 3:
-        I[0::4] = (np.int32(wide_data[0::8])).astype("float")
-        Q[0::4] = (np.int32(wide_data[1::8])).astype("float")
-        I[1::4] = (np.int32(wide_data[2::8])).astype("float")
-        Q[1::4] = (np.int32(wide_data[3::8])).astype("float")
-        I[2::4] = (np.int32(wide_data[4::8])).astype("float")
-        Q[2::4] = (np.int32(wide_data[5::8])).astype("float")
-        I[3::4] = (np.int32(wide_data[6::8])).astype("float")
-        Q[3::4] = (np.int32(wide_data[7::8])).astype("float") 
-            
-    # return I, Q
-    if wrap:
-        return io.returnWrapper(io.file.IQ_generic, (I,Q))
-    else:
-        return I, Q
-"""
-
+ 
 
 # ============================================================================ #
 # getSnapData
@@ -676,8 +519,8 @@ def _setNCLO2(chan, lofreq):
         # actual_freq_hz = dtw * cfg_b.freq_resolution
 
         # Write DTW to firmware register for the given channel
-        chan_access = _gateware_chan(cfg_b.gateware, chan)
-        chan_access.GPIO.axi_gpio_10.write(0x00, dtw)
+        gwc = gw.gw_chan(chan)
+        gwc.GPIO.axi_gpio_10.write(0x00, dtw)
 
     except Exception as e:
         print(f"_setNCLO2 error: {e}")
@@ -798,7 +641,7 @@ def modifyCustomCombAmps(factor=1):
     """Modify custom tone amps file by multiplying by given factor.
     """
     
-    amps     = io.load(io.file.a_tones_comb_cust)
+    amps = io.load(io.file.a_tones_comb_cust)
     amps *= float(factor)
     io.save(io.file.a_tones_comb_cust, amps)
 
