@@ -621,8 +621,6 @@ def _xPeak(freqs, amps, phis):
     # Peak amplitude
     xPeak = np.max(np.abs(x))
 
-    print(f"Waveform xPeak={xPeak:.2f}")
-
     return xPeak
 
 
@@ -711,6 +709,7 @@ def genPhis(freqs, amps):
         xPeak = _xPeak(freqs, amps, phis)
         
         if xPeak < cfg_b.x_peak_max:
+            print(f"Waveform xPeak={xPeak:.2f}")
             return phis
 
     # Unable to find a solution
@@ -771,7 +770,7 @@ def genAmpsAndPhis(freqs):
     # if no solution was found
     # something is wrong with _estimate_safe_amplitude
     if phis is False:
-        print("ERROR: No amps/phis solution can be found!")
+        print("WARNING: genAmpsAndPhis: No solution can be found!")
         
         # we can't just crash, default to something
         amps = np.ones(len(freqs), dtype=float)
@@ -851,14 +850,22 @@ def writeTargCombFromVnaSweep():
 
     amps, phis = genAmpsAndPhis(freqs_bb)
 
+    print("1")
+
     io.save(io.file.f_res_targ, freqs_rf)
     io.save(io.file.a_res_targ, amps)
     io.save(io.file.p_res_targ, phis)
 
+    print("2")
+
     freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(f_center, freqs_rf)
+
+    print("3")
 
     # check for overflow of this comb
     alcove_base.checkWaveformOverflow()
+
+    print("4")
 
     return io.returnWrapperMultiple(
         [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
