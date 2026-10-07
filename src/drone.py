@@ -115,20 +115,13 @@ def _handleShutdown(signum, frame):
     drid = getattr(cfg_b, 'drid', 'N/A')
     print(f"Drone {bid}.{drid} shutting down... ", end="")
 
-    # Close Redis PubSub & Client connections
+    # Stop PubSub listener loop safely
     if _pubsub_client:
         try:
-            _pubsub_client.close()
+            _pubsub_client.punsubscribe()
+            _pubsub_client.unsubscribe()
         except Exception as e:
-            print("") # close print stmt above
-            print(f"Error closing pubsub: {e}")
-
-    if _redis_client:
-        try:
-            _redis_client.close()
-        except Exception as e:
-            print("") # close print stmt above
-            print(f"Error closing redis connection: {e}")
+            print(f"Error unsubscribing PubSub: {e}")
 
     # Flush logging buffers
     logging.shutdown()
