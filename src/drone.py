@@ -113,7 +113,7 @@ def _handleShutdown(signum, frame):
 
     bid = getattr(cfg_b, 'bid', 'N/A')
     drid = getattr(cfg_b, 'drid', 'N/A')
-    print(f"Drone {bid}.{drid} shutting down... ", end="")
+    print(f"Drone {bid}.{drid} shutting down... ")
 
     # Stop PubSub listener loop safely
     if _pubsub_client:
@@ -126,7 +126,6 @@ def _handleShutdown(signum, frame):
     # Flush logging buffers
     logging.shutdown()
 
-    print(f"Done.")
     sys.exit(0)
 
 

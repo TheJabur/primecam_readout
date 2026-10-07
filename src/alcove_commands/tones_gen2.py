@@ -496,7 +496,7 @@ def _ampsToUnitAmps(chan, sig):
     amps = np.asarray(sig['amps'], dtype=float)
 
     # Calculate K
-    IFFT_scale = cfg_b.scale[chan][0]
+    IFFT_scale = cfg_b.scale_factors[chan][0]
     C = cfg_b.C[chan]
     K = 2.0**(-IFFT_scale) * C / 2**15
 
@@ -521,7 +521,7 @@ def _unitAmpsToAmps(chan, sig_unit):
     amps_unit = np.asarray(sig_unit['amps'], dtype=float)
 
     # Calculate K
-    IFFT_scale = cfg_b.scale[chan][0]
+    IFFT_scale = cfg_b.scale_factors[chan][0]
     C = cfg_b.C[chan]
     K = 2.0**(-IFFT_scale) * C / 2**15
 
@@ -650,11 +650,8 @@ def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_tr
     x_rms = np.sqrt(0.5 * np.sum(amps**2))
 
     # Hard physical limit check (Parseval / RMS)
-    print("     Hard physical limit check.")
     if x_rms >= cfg_b.x_peak_max:
         return 0  # Physically impossible
-
-    print("     Calculating probabilities.")
 
     # Ratio of target peak to RMS
     gamma_sq = (cfg_b.x_peak_max / x_rms) ** 2
@@ -666,15 +663,12 @@ def _estimateMaxPhaseTrials(freqs, amps, confidence=0.99, k=2.5, absolute_max_tr
     M = k * N
     p_draw = p_sample ** M
 
-    print("     Checking a solution is possible.")
     if p_draw < 1e-12:
         return 0  # Statistically impossible in realistic time
     
     # Number of trials needed for target confidence
-    print("     Determining number of trials.")
     trials = np.log(1.0 - confidence) / np.log(1.0 - p_draw)
 
-    print(f"     Returning result ({trials}).")
     return int(np.clip(np.ceil(trials), 1, absolute_max_trials))
 
 
@@ -698,7 +692,6 @@ def genPhis(freqs, amps):
     N = len(freqs)
 
     # Estimate max number of trials to find a solution
-    print("    Estimating max phase trials.")
     max_trials = _estimateMaxPhaseTrials(freqs, amps)
 
     # Unlikely (or impossible) to succeed
@@ -707,7 +700,6 @@ def genPhis(freqs, amps):
 
     # Regenerate phases up to max_trials times
     # and return when a solution is found
-    print("    Iterating to find a phase solution.")
     for _ in range(max_trials):
 
         # Generate random phases
@@ -716,7 +708,6 @@ def genPhis(freqs, amps):
         phis = np.random.uniform(-np.pi, np.pi, N)
 
         # Find the waveform peak amplitude
-        print("    Find this solutions peak amplitude.")
         xPeak = _xPeak(freqs, amps, phis)
         
         if xPeak < cfg_b.x_peak_max:
