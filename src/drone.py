@@ -170,7 +170,7 @@ def _modifyConfig(args):
     cfg_b.temp_dir = f'/tmp/drone{args.drid}'
 
     # drone identifier
-    cfg_b.drid = {args.drid}
+    cfg_b.drid = int(args.drid)
 
 
 # ============================================================================ #
