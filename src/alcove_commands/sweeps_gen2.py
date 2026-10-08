@@ -218,7 +218,7 @@ def performFullVnaSweep(**kwargs):
     alcove_base.setScaleFactorsFromConfig()
 
     print("VNA: Attempting to find resonators from VNA sweep.")
-    ret_wrap = analysis.findVnaResonators(sweep_steps=1000, **kwargs)
+    ret_wrap = analysis.findVnaResonators(stitch_bw=1000, **kwargs)
     f_res = ret_wrap['data']
 
     if len(f_res) > 0:

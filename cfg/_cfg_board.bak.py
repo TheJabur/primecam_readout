@@ -64,6 +64,8 @@ scale_factors = {1:[6, 1.0, 3], # drone 1:[IFFT, PSB, FFT]
                  2:[6, 1.0, 3],
                  3:[6, 1.0, 3],
                  4:[6, 1.0, 3]}
+# The scale factors determine amps to output...
+# ... calculate using the provided function.
 
 # ============================================================================ #
 # gen1 waveform properties

@@ -690,7 +690,7 @@ def getAtten(direction):
 # ============================================================================ #
 # findScaleFactors
 def findScaleFactors(N):
-    """Find the optimal scaling factors for N resonators.
+    """Find the optimal scaling factors for N tones.
     These determine the relationship between amps and output power,
     as well as floating point resolution within waveform generation.
     Altering them will affect both.
@@ -703,6 +703,10 @@ def findScaleFactors(N):
     Args:
         N (int): Expected number of resonators on this RF network.
     """
+
+    if N is None:
+        print("findScaleFactors: Require N (# of tones)")
+        return
 
     scale = _findOptimalScaleFactors(N) # (IFFT, PSB, FFT)
 
