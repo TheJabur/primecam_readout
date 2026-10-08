@@ -212,8 +212,8 @@ def performFullVnaSweep(**kwargs):
 
     # TODO: set new comb? Otherwise will probably be overflowing when reset scales, and stay that way if there are no resonators
 
-    print(f"VNA: Setting the LO back to {lo_old}.") # TODO:  f_center?
-    alcove_base.setNCLO(lo_old)
+    # print(f"VNA: Setting the LO back to {lo_old}.") # TODO:  f_center?
+    # alcove_base.setNCLO(lo_old)
 
     # change scaling factors back to config values
     print("VNA: Setting scale factors back to config.")
