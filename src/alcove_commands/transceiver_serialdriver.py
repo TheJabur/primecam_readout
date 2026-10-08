@@ -145,7 +145,7 @@ class Primecamfe:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-        self._lock.release()
+        self._lock.release(exc_type, exc_val, exc_tb)
 
 
 
@@ -221,4 +221,4 @@ class Transceiver:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-        self._lock.release()
+        self._lock.release(exc_type, exc_val, exc_tb)
