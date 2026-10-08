@@ -336,7 +336,7 @@ def findVnaResonators(sweep_steps, **kwargs):
     f, Z = io.load(io.file.s21_vna)
     # f_res = _findResonators_alt(f, Z, **kwargs)
     f_res = _findResonatorsVna(f, Z, stitch_bw=sweep_steps, **kwargs)
-    print(f"Found resonators: {len(f_res)}")
+    print(f"findVnaResonators: Found resonators: {len(f_res)}")
 
     io.save(io.file.f_res_vna, f_res)
 

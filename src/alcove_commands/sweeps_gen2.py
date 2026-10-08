@@ -82,54 +82,6 @@ def _sweep(chan, f_center, freqs, N_steps, chan_bandwidth=None):
 
 
 # ============================================================================ #
-# performFullVnaSweep
-def performFullVnaSweep(**kwargs):
-    """Perform a full VNA sweep.
-    This wraps together the following:
-    Comb generation, sweep, resonator finding, and targ comb writing.
-    
-    Note: Accepts _findResonators(...) input parameters.
-
-    Returns:
-        (2-tuple): 
-            First element is the comb files (3-tuple).
-                (f_rf_tones_comb, a_tones_comb, p_tones_comb)
-            Second element is the tone comb arrays (3-tuple).
-                (freqs_rf_comb, amps_comb, phis_comb)
-    """
-
-    print("VNA: Performing a full VNA sweep.")
-
-    # change scaling factors appropriate to 1024 tone comb 
-    print("VNA: Setting appropriate scale factors.")
-    alcove_base.setScaleFactors(IFFT_scale=7, PSB_scale=1.0, FFT_scale=3)
-
-    print("VNA: Writing a 1024 tone VNA comb.")
-    freqs_bb = np.array(np.arange(-512e6, 512e6, 1000e3))
-    tones.writeNewVnaComb(freqs_bb)
-
-    print("VNA: Running a 1000 step VNA sweep.")
-    _vnaSweep(sweep_steps=1000)
-
-    # TODO: set new comb? Otherwise will probably be overflowing when reset scales, and stay that way if there are no resonators
-
-    # change scaling factors back to config values
-    print("VNA: Setting scale factors back to config.")
-    alcove_base.setScaleFactorsFromConfig()
-
-    print("VNA: Attempting to find resonators from VNA sweep.")
-    ret_wrap = analysis.findVnaResonators(sweep_steps=1000, **kwargs)
-    f_res = ret_wrap['data']
-    print(f" Found {len(f_res)} resonators.")
-
-    if len(f_res) > 0:
-        print("VNA: Writing a target comb at the found resonator locations.")
-        ret = tones.writeTargCombFromVnaSweep()
-
-    return ret
-
-
-# ============================================================================ #
 # vnaSweep
 def _vnaSweep(sweep_steps=None):
     """Perform a stepped frequency sweep with current comb, save as vna sweep.
@@ -222,3 +174,57 @@ def customSweep(bw=1., sweep_steps=None):
         chan, f_center/1e6, freqs_bb, sweep_steps, chan_bandwidth=chan_bw)) 
 
     return io.returnWrapper(io.file.s21_custom, S21)
+
+
+# ============================================================================ #
+# performFullVnaSweep
+def performFullVnaSweep(**kwargs):
+    """Perform a full VNA sweep.
+    This wraps together the following:
+    Comb generation, sweep, resonator finding, and targ comb writing.
+    
+    Note: Accepts _findResonators(...) input parameters.
+
+    Returns:
+        (2-tuple): 
+            First element is the comb files (3-tuple).
+                (f_rf_tones_comb, a_tones_comb, p_tones_comb)
+            Second element is the tone comb arrays (3-tuple).
+                (freqs_rf_comb, amps_comb, phis_comb)
+    """
+
+    print("VNA: Performing a full VNA sweep.")
+
+    # change scaling factors appropriate to 1024 tone comb 
+    print("VNA: Setting appropriate scale factors.")
+    alcove_base.setScaleFactors(IFFT_scale=7, PSB_scale=1.0, FFT_scale=3)
+
+    lo_old = alcove_base.getNCLO()
+    print(f"VNA: Setting the LO to 700 (was {lo_old}).")
+    alcove_base.setNCLO(700)
+
+    print("VNA: Writing a 1024 tone VNA comb.")
+    freqs_bb = np.arange(-512e6, 512e6, 1000e3)
+    tones.writeNewVnaComb(freqs_bb)
+
+    print("VNA: Running a 1000 step VNA sweep.")
+    _vnaSweep(sweep_steps=1000)
+
+    # TODO: set new comb? Otherwise will probably be overflowing when reset scales, and stay that way if there are no resonators
+
+    print(f"VNA: Setting the LO back to {lo_old}.") # TODO:  f_center?
+    alcove_base.setNCLO(lo_old)
+
+    # change scaling factors back to config values
+    print("VNA: Setting scale factors back to config.")
+    alcove_base.setScaleFactorsFromConfig()
+
+    print("VNA: Attempting to find resonators from VNA sweep.")
+    ret_wrap = analysis.findVnaResonators(sweep_steps=1000, **kwargs)
+    f_res = ret_wrap['data']
+
+    if len(f_res) > 0:
+        print("VNA: Writing a target comb at the found resonator locations.")
+        ret = tones.writeTargCombFromVnaSweep()
+
+    return ret

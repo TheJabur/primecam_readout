@@ -709,7 +709,7 @@ def genPhis(freqs, amps):
         xPeak = _xPeak(freqs, amps, phis)
         
         if xPeak < cfg_b.x_peak_max:
-            print(f"Waveform xPeak={xPeak:.2f}")
+            print(f"Waveform xPeak={xPeak:.2f} (max 32,767).")
             return phis
 
     # Unable to find a solution
@@ -825,6 +825,9 @@ def writeNewVnaComb(freqs_bb):
     chan = cfg_b.drid
 
     amps, phis = genAmpsAndPhis(freqs_bb)
+
+    print(f"*** tones: {len(freqs_bb)}")
+    print(f"*** amps: {amps[:5]}, phis: {phis[:5]}")
 
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
 
