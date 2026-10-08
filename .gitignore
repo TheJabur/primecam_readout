@@ -16,6 +16,8 @@ drone?/cal_tones/
 drone?/targ/
 drone?/vna/
 
+plots/
+
 # drone management
 scripts/drone_manager/drone_manager_state.json
 scripts/drone_manager_state.json
@@ -59,3 +61,4 @@ cython_debug/
 
 # Apple config files
 .DS_store
+test/
