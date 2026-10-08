@@ -465,22 +465,14 @@ def _writeComb(chan, freqs, amps, phis):
     if sig['freqs'].size == 0:
         return np.array([])
 
-    print("1")
-
     # Handle overcrowded bins (max 2) and collisions
     sig = _resolveCombBinCollisions(chan, sig)
-
-    print("2")
 
     # Translate effective amps to unit amps
     sig_unit = _ampsToUnitAmps(chan, sig)
 
-    print("3")
-
     # Hardware execution
     _executeCombHwWrite(chan, sig_unit)
-    
-    print("4")
 
     # Persistence
     f_center   = io.load(io.file.f_center_vna) # 
