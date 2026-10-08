@@ -547,18 +547,12 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         Note that this will force new_amps_and_phis=True.
     """
 
-    print("a")
-
     if not isinstance(cal_tones, bool):
         cal_tones = cal_tones == "True" # force to bool; Redis args are strings
 
     chan = cfg_b.drid
 
-    print("b")
-
     freqs_bb = freqs_rf - f_center
-
-    print("c")
 
     if cal_tones:
         f_cal_tones_rf = io.load(io.file.f_cal_tones).real
@@ -567,20 +561,14 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         amps = None # force recalculation of amps and phis with cal tones
         phis = None
 
-    print("d")
-
-    if amps is None:
-        if phis is None:
-            phis = genPhis(freqs_bb, amps)
-        else:
+    if phis is None:
+        if amps is None:
             amps, phis = genAmpsAndPhis(freqs_bb)
-
-    print("e")
+        else:
+            phis = genPhis(freqs_bb, amps)
 
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_actual = freqs_bb_actual + f_center 
-
-    print("f")
 
     return freqs_rf_actual, amps, phis
 
@@ -862,24 +850,16 @@ def writeTargCombFromVnaSweep():
 
     amps, phis = genAmpsAndPhis(freqs_bb)
 
-    print("1")
-
     io.save(io.file.f_res_targ, freqs_rf)
     io.save(io.file.a_res_targ, amps)
     io.save(io.file.p_res_targ, phis)
-
-    print("2")
 
     # _writeTargComb(f_center, freqs_rf, amps=None, phis=None)
     freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(
         f_center, freqs_rf, amps, phis)
 
-    print("3")
-
     # check for overflow of this comb
     alcove_base.checkWaveformOverflow()
-
-    print("4")
 
     return io.returnWrapperMultiple(
         [io.file.f_rf_tones_comb, io.file.a_tones_comb, io.file.p_tones_comb], 
