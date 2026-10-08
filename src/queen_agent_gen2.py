@@ -3,7 +3,7 @@
 # OCS agent to control computer (queen) commands for gen2.
 #
 # James Burgoyne jamesrburgoyne@icloud.com
-# CCAT Prime 2026
+# CCAT 2026
 # ============================================================================ #
 
 import time
@@ -306,7 +306,7 @@ class ReadoutAgent:
         """Sample the waveform to test for DAC overflow."""
         return self._exec_alcove(session, params, 'checkWaveformOverflow')
     
-
+     
     # ======================================================================== #
     # .cleanBoardDroneDirs
     @ocs_agent.param('com_to', default=None, type=str)
@@ -327,10 +327,11 @@ class ReadoutAgent:
     # .createCustomCombFilesFromCurrentComb
     @ocs_agent.param('com_to', default=None, type=str)
     @ocs_agent.param('silent', default=False, type=bool)
+    @ocs_agent.param('s', default='fap', type=str)
     @with_lock
     def createCustomCombFilesFromCurrentComb(self, session, params):
         """Create custom comb files from current comb."""
-        return self._exec_alcove(session, params, 'createCustomCombFilesFromCurrentComb')
+        return self._exec_alcove(session, params, 'createCustomCombFilesFromCurrentComb', arg_keys=['s'])
 
 
     # ======================================================================== #
@@ -338,10 +339,11 @@ class ReadoutAgent:
     @ocs_agent.param('com_to', default=None, type=str)
     @ocs_agent.param('silent', default=False, type=bool)
     @ocs_agent.param('bw', default=None, type=float)
+    @ocs_agent.param('sweep_steps', default=None, type=int)
     @with_lock
     def customSweep(self, session, params):
         """Perform sweep with custom comb."""
-        return self._exec_alcove(session, params, 'customSweep', arg_keys=['bw'])
+        return self._exec_alcove(session, params, 'customSweep', arg_keys=['bw', 'sweep_steps'])
 
 
     # ======================================================================== #
@@ -588,7 +590,7 @@ class ReadoutAgent:
     @ocs_agent.param('on', default=True, type=bool)
     @with_lock
     def timestreamOn(self, session, params):
-        """Turn the boards date timestream on/off."""
+        """Turn the boards data timestream on/off."""
         return self._exec_alcove(session, params, 'timestreamOn', arg_keys=['on'])
 
 
