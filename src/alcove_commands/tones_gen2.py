@@ -870,7 +870,9 @@ def writeTargCombFromVnaSweep():
 
     print("2")
 
-    freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(f_center, freqs_rf)
+    # _writeTargComb(f_center, freqs_rf, amps=None, phis=None)
+    freqs_rf_comb, amps_comb, phis_comb = _writeTargComb(
+        f_center, freqs_rf, amps, phis)
 
     print("3")
 
