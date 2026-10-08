@@ -547,12 +547,18 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         Note that this will force new_amps_and_phis=True.
     """
 
+    print("a")
+
     if not isinstance(cal_tones, bool):
         cal_tones = cal_tones == "True" # force to bool; Redis args are strings
 
     chan = cfg_b.drid
 
+    print("b")
+
     freqs_bb = freqs_rf - f_center
+
+    print("c")
 
     if cal_tones:
         f_cal_tones_rf = io.load(io.file.f_cal_tones).real
@@ -561,14 +567,20 @@ def _writeTargComb(f_center, freqs_rf, amps=None, phis=None, cal_tones=False):
         amps = None # force recalculation of amps and phis with cal tones
         phis = None
 
+    print("d")
+
     if amps is None:
         if phis is None:
             phis = genPhis(freqs_bb, amps)
         else:
             amps, phis = genAmpsAndPhis(freqs_bb)
 
+    print("e")
+
     freqs_bb_actual = _writeComb(chan, freqs_bb, amps, phis)
     freqs_rf_actual = freqs_bb_actual + f_center 
+
+    print("f")
 
     return freqs_rf_actual, amps, phis
 

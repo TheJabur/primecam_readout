@@ -104,8 +104,8 @@ def performFullVnaSweep(**kwargs):
     print("VNA: Setting appropriate scale factors.")
     alcove_base.setScaleFactors(IFFT_scale=7, PSB_scale=1.0, FFT_scale=3)
 
-    print("VNA: Writing a 1000 tone VNA comb.")
-    freqs_bb = np.array(np.arange(-512e6, 512e6, 1024e3))
+    print("VNA: Writing a 1024 tone VNA comb.")
+    freqs_bb = np.array(np.arange(-512e6, 512e6, 1000e3))
     tones.writeNewVnaComb(freqs_bb)
 
     print("VNA: Running a 1000 step VNA sweep.")
