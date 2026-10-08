@@ -1,8 +1,8 @@
 # ============================================================================ #
 # analysis.py
 # Signal processing functions and commands.
-# James Burgoyne jburgoyne@phas.ubc.ca 
-# CCAT Prime 2023  
+# James Burgoyne jamesrburgoyne@icloud.com 
+# CCAT Prime 2026  
 # ============================================================================ #
 
 import alcove_commands.board_io as io
@@ -60,93 +60,6 @@ def _stitchS21m(S21m, bw=500, sw=100):
     a_n = a - f                            # misalignment correction (stitch)
     
     return a_n.flatten()                   # reshape to 1D and return
-
-
-# ============================================================================ #
-# _findResonators_alt
-def _findResonators_alt(
-        f, Z, 
-        peak_prom_std=15, 
-        peak_prom_db=0, 
-        peak_dis=500, 
-        width_min=5, 
-        width_max=1000,
-        stitch=True, 
-        stitch_sw=100, 
-        remove_cont=True, 
-        continuum_wn=300, 
-        remove_noise=True, 
-        noise_wn=30_000,
-        stitch_bw=None
-    ):
-    '''
-    
-    f:   (1D array of floats) Frequency of S21 samples.
-    Z: (1D array of complex) Forward transmission S_21 as complex.
-    peak_prom_std: (float) Peak height from surroundings, in noise std multiples.
-                    Uses larger of peak_prom_db or peak_prom_std.
-    peak_prom_db:  (float) Peak height from surroundings, in Db.
-                    Uses larger of peak_prom_db or peak_prom_std.
-    peak_dis:      (int) Min distance between peaks [bins].
-    width_min      (int) Peak width minimum. [bins]
-    width_max      (int) Peak width maximum. [bins]
-    stitch:        (bool) Whether to stitch (comb discontinuities).
-    stitch_sw:     (int) Discontinuity edge size for alignment [bins].
-    remove_cont:   (bool) Whether to subtract the continuum.
-    continuum_wn:  (int) Continuum filter cutoff frequency [Hz].
-    remove_noise:  (bool) Whether to subtract noise.
-    noise_wn:      (int) Noise filter cutoff frequency [Hz].
-    stitch_bw:     (int) Bins width of the stitch channels.
-    '''
-    
-    from scipy.signal import find_peaks
-    import numpy as np
-    
-    # type enforcement
-    # required since parameters can get passed as strings
-    peak_prom_std = float(peak_prom_std)
-    peak_prom_db  = float(peak_prom_db)
-    peak_dis      = int(peak_dis)
-    peak_width    = (int(width_min), int(width_max))
-    stitch_sw     = int(stitch_sw)
-    continuum_wn  = int(continuum_wn)
-    noise_wn      = int(noise_wn)
-
-    try:
-        stitch_bw = int(stitch_bw)
-    except:
-        stitch_bw = cfg_b.sweep_steps # bins bw <- steps
-    
-    x = f
-    y = np.abs(Z)
-    
-    # convert Db input to linear
-    peak_prom_lin = np.amax(y)*(1 - 10**(-peak_prom_db/20))
-    
-    # stitch discontinuities
-    if stitch:
-        y = _stitchS21m(y, bw=stitch_bw, sw=stitch_sw)
-        
-    # remove continuum
-    if remove_cont:
-        y -= _butterFilter(y, x, 'low', continuum_wn, order=3)
-        
-    # remove noise
-    y_noise = _butterFilter(y, x, 'high', noise_wn, order=3)
-    noise_std = np.std(y_noise)
-    if remove_noise:
-        y -= y_noise
-        
-    # prominence
-    prom = max(peak_prom_std*noise_std, peak_prom_lin)
-    
-    # find peaks
-    i_peaks, peak_properties = find_peaks(
-        x=-y, prominence=prom, distance=peak_dis, width=peak_width) 
-        
-    f_res = f[i_peaks]
-
-    return f_res
 
 
 # ============================================================================ #
@@ -334,7 +247,6 @@ def findVnaResonators(**kwargs):
     """
 
     f, Z = io.load(io.file.s21_vna)
-    # f_res = _findResonators_alt(f, Z, **kwargs)
     f_res = _findResonatorsVna(f, Z, **kwargs)
     print(f"findVnaResonators: Found resonators: {len(f_res)}")
 
