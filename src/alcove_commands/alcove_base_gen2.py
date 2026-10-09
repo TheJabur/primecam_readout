@@ -691,7 +691,7 @@ def getAtten(direction):
 
 # ============================================================================ #
 # findScaleFactors
-def findScaleFactors(N):
+def findScaleFactors(N=None):
     """Find the optimal scaling factors for N tones.
     These determine the relationship between amps and output power,
     as well as floating point resolution within waveform generation.
