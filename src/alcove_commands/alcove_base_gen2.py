@@ -712,9 +712,9 @@ def findScaleFactors(N):
 
     scale = _findOptimalScaleFactors(N) # (IFFT, PSB, FFT)
 
-    print(f"Optimal scales (N={N}): \
-            IFFT={scale[0]}, PSB={scale[1]}, FFT={scale[2]}. \
-            Set scales in board config!")
+    print((f"Optimal scales (N={N}): "
+          f"IFFT={scale[0]}, PSB={scale[1]}, FFT={scale[2]}. "
+          f"Set scales in board config!"))
     
     return {'IFFT':scale[0], 'PSB':scale[1], 'FFT':scale[2]}
 

@@ -44,7 +44,6 @@ def sys_info_v():
         _getRecentSysLogEvents(),    # recent sys log entries
         _getRecentDmesgEvents(),     # recent dmesg entries
         _getVersApt(),               # apt list
-        _getNetwork(),               # network connections info
     ]
 
     merged_dict = {}
