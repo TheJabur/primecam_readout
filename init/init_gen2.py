@@ -183,14 +183,13 @@ try:
     atten_list = getattr(cfg_b, 'atten_set_at_init', None)
     if atten_list is not None:
         try:
-            print("Setting warm variable attenuation.")
+            print("Setting warm variable attenuation to config values.")
             from alcove_commands.transceiver_serialdriver import Primecamfe as D # type: ignore
             
-            driver = D(cfg_b.atten_device)
+            dev = D(cfg_b.atten_device)
             for atten_id, v in enumerate(atten_list):
-                print(f"Should set atten: {atten_id}:{v}")
-                # driver.set_atten(atten_id, float(v)) # TODO:
-                # time.wait(1) # requires serial commands
+                with D(cfg_b.atten_device) as dev:
+                    dev.set_atten(atten_id, float(v))
 
         except Exception as e:
             print(f"init attenuation Error: {e}")

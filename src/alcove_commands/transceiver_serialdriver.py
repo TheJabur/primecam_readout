@@ -65,7 +65,8 @@ class Primecamfe:
             self.ser.write(b"get_id\n")
             resp = self.ser.read_until(b"\n")
             if resp.strip(b"\r\n ") == b"primecam_amp_frontend":
-                print("Connected")
+                pass
+                # print("Connected")
             else:
                 self.ser.close()
                 raise ConnectionError("Primecam RF Frontend Amp Controller didn't respond as expected to an id query")
@@ -170,7 +171,8 @@ class Transceiver:
             self.ser.write(b"get_id\n")
             resp = self.ser.read_until(b"\n")
             if resp.strip() == b"transceiver_3.2.1":
-                print("Connected")
+                pass
+                # print("Connected")
             else:
                 self.ser.close()
                 raise ConnectionError("IF Slice didn't respond as expected to an id query")
