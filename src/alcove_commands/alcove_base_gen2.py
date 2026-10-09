@@ -195,15 +195,26 @@ def _checkWaveformOverflow() -> bool:
 # ============================================================================ #
 # _findOptimalScaleFactors
 def _findOptimalScaleFactors(N):
-    """Find optimal scale factors for N resonators.
+    """Find optimal scale factors for N resonators. [1,1024]
     """
 
-    # TODO: find the optimal values for N
-    # LUT?
-
-    IFFT_scale = 7
-    PSB_scale  = 1.0
+    # IFFT_scale = 7
+    # PSB_scale  = 1.0
     FFT_scale = 3
+
+    # silently clip to [1,1024]
+    N = max(min(int(N), 1024), 1)
+
+    filepath = "tx_scale_lut_median.dat"
+    data = np.loadtxt(filepath) # io load LUT on every call
+
+    row = data[data[:, 0] == N]
+    if row.size == 0:
+        raise ValueError(f"N = {N} not found in {filepath}")
+    
+    median_peak = float(row[0, 1])
+    IFFT_scale = int(row[0, 2])
+    PSB_scale = float(row[0, 3])
 
     return (IFFT_scale, PSB_scale, FFT_scale)
 
