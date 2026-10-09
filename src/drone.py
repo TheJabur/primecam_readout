@@ -176,7 +176,7 @@ def _setupArgparse():
         description='Terminal interface to drone script.')
 
     # add arguments
-    parser.add_argument(                # positional, required, 1-4
+    parser.add_argument( # positional, required, 1-4
         "drid", type=int, help="drone id", choices=range(1,4+1))
    
     # return arguments values

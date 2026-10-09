@@ -781,7 +781,8 @@ def genAmpsAndPhis(freqs):
 
 # ============================================================================ #
 # writeTestTones
-def writeTestTones(N=1, freqs=None):
+# def writeTestTones(N=1, freqs=None):
+def writeTestTones(N=1): # lists cannot be sent as args yet
     """Write requested tones.
 
     N (int): Number of tones. Step size 1 MHz. [1,1024].

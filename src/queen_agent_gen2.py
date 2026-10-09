@@ -663,11 +663,12 @@ class ReadoutAgent:
     @ocs_agent.param('com_to', default=None, type=str)
     @ocs_agent.param('silent', default=False, type=bool)
     @ocs_agent.param('N', default=1, type=int)
-    @ocs_agent.param('freqs', default=None, type=list)
+    # @ocs_agent.param('freqs', default=None, type=list)
     @with_lock
     def writeTestTones(self, session, params):
         """Write N evenly spaced tones or at freqs."""
-        return self._exec_alcove(session, params, 'writeTestTones', arg_keys=['N', 'freqs'])
+        # return self._exec_alcove(session, params, 'writeTestTones', arg_keys=['N', 'freqs'])
+        return self._exec_alcove(session, params, 'writeTestTones', arg_keys=['N'])
 
 
 
