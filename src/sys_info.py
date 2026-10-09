@@ -31,7 +31,7 @@ def sys_info_v():
         _getDroneID(),               # board and drone ID, bid.drid
         _getTimestamp(),             # current timestamp, UTC
         _getConfigBoard(),           # config: board
-        _getConfigQueen(),           # config: queen
+        # _getConfigQueen(),           # config: queen
         _getUptime(),                # system uptime
         _getVersPrimecam_readout(),  # primecam_readout version
         _getVersGatewareRfsoc(),     # gateware version
@@ -64,7 +64,7 @@ def sys_info():
         _getDroneID(),               # board and drone ID, bid.drid
         _getTimestamp(),             # current timestamp, UTC
         _getConfigBoard(),           # config: board
-        _getConfigQueen(),           # config: queen
+        # _getConfigQueen(),           # config: queen
         _getUptime(),                # system uptime
         _getVersPrimecam_readout(),  # primecam_readout version
         _getVersGatewareRfsoc(),     # gateware version
@@ -205,7 +205,7 @@ def _getConfigQueen():
         attr: getattr(cfg_q, attr) 
         for attr in attributes 
         if not attr.startswith("__")
-        and isinstance(getattr(cfg_b, attr), (int, float, str))
+        and isinstance(getattr(cfg_q, attr), (int, float, str))
         }
 
     return {'config:queen':variables}
