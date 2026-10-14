@@ -790,6 +790,7 @@ def writeTestTones(N=1): # lists cannot be sent as args yet
     """
 
     chan = cfg_b.drid
+    freqs = None
 
     # build freqs for number of requested tones
     if freqs is None:
