@@ -384,7 +384,8 @@ def _resolveCombBinCollisions(chan, sig):
     nyquist = cfg_b.fs / 2
     
     # Calculate initial bins
-    bins = np.floor((sig['freqs'] + nyquist) / bin_size).astype(np.int32)
+    # bins = np.floor((sig['freqs'] + nyquist) / bin_size).astype(np.int32)
+    bins = np.floor((sig['freqs']) / bin_size).astype(np.int32)
     
     # Filter: Max 2 tones per bin
     _, first_idx, counts = np.unique(bins, return_index=True, return_counts=True)
@@ -461,7 +462,7 @@ def _writeComb(chan, freqs, amps, phis):
 
     # Truncate freqs to the Nyquist range 
     # and snap them to the valid FFT bin centers (fs_out).
-    # sig = _filterAndSnapCombTones(freqs, amps, phis)
+    sig = _filterAndSnapCombTones(freqs, amps, phis)
     if sig['freqs'].size == 0:
         return np.array([])
 
