@@ -461,7 +461,7 @@ def _writeComb(chan, freqs, amps, phis):
 
     # Truncate freqs to the Nyquist range 
     # and snap them to the valid FFT bin centers (fs_out).
-    sig = _filterAndSnapCombTones(freqs, amps, phis)
+    # sig = _filterAndSnapCombTones(freqs, amps, phis)
     if sig['freqs'].size == 0:
         return np.array([])
 
