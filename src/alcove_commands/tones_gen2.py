@@ -357,6 +357,27 @@ def _writeAllTones(chan, bin_num, dphi, init_re, init_im):
 
 
 # ============================================================================ #
+# clearTones
+def clearTones(chan):
+    '''
+    Writes zeros to all tone parameters.
+            
+    Notes: To keep a tone going while suppressing it's power,
+          simply write 0 amp to it while keeping dphi and init vector
+          There's another option to suppress tones in toneSelect
+    '''
+
+    gwc = gw.gw_chan(chan)
+    
+    gwc.GPIO.axi_gpio_2.write(0x00, 0)
+    gwc.GPIO.axi_gpio_2.write(0x08, 0)
+    for addr in range(256):
+        gwc.GPIO.axi_gpio_1.write(0x08, int(addr << 16))
+        gwc.GPIO.axi_gpio_1.write(0x00, 0xff)
+        gwc.GPIO.axi_gpio_1.write(0x00, 0)
+
+
+# ============================================================================ #
 # _filterAndSnapCombTones
 def _filterAndSnapCombTones(freqs, amps, phis):
     # Setup constants
@@ -459,6 +480,8 @@ def _writeComb(chan, freqs, amps, phis):
         (array of floats): The actual, snapped frequencies [Hz] successfully 
             written to the hardware.
     '''
+
+    clearTones(chan)
 
     # Truncate freqs to the Nyquist range 
     # and snap them to the valid FFT bin centers (fs_out).
