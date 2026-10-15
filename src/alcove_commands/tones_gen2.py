@@ -357,8 +357,8 @@ def _writeAllTones(chan, bin_num, dphi, init_re, init_im):
 
 
 # ============================================================================ #
-# clearTones
-def clearTones(chan):
+# _clearTones
+def _clearTones(chan):
     '''
     Writes zeros to all tone parameters.
             
@@ -407,6 +407,7 @@ def _resolveCombBinCollisions(chan, sig):
     # Calculate initial bins
     # bins = np.floor((sig['freqs'] + nyquist) / bin_size).astype(np.int32)
     bins = np.floor((sig['freqs']) / bin_size).astype(np.int32)
+    # TODO: [-1024, 1023]
     
     # Filter: Max 2 tones per bin
     _, first_idx, counts = np.unique(bins, return_index=True, return_counts=True)
@@ -481,7 +482,7 @@ def _writeComb(chan, freqs, amps, phis):
             written to the hardware.
     '''
 
-    clearTones(chan)
+    _clearTones(chan)
 
     # Truncate freqs to the Nyquist range 
     # and snap them to the valid FFT bin centers (fs_out).
@@ -809,7 +810,7 @@ def genAmpsAndPhis(freqs):
 def writeTestTones(N=1): # lists cannot be sent as args yet
     """Write requested tones.
 
-    N (int): Number of tones. Step size 1 MHz. [1,1024].
+    N (int): Number of tones. Step size 1 MHz. [0,1024].
     freqs (array of floats): Specific tone requests. Overrides N.
     """
 
@@ -819,12 +820,18 @@ def writeTestTones(N=1): # lists cannot be sent as args yet
     # build freqs for number of requested tones
     if freqs is None:
 
-        # Type enforcement and clip to [1,1024]
-        N = min(max(int(N), 1), 1024)
+        # Type enforcement and clip to [0,1024]
+        N = min(max(int(N), 0), 1024)
 
-        # Create a comb evenly spaced (1 MHz) around 0
-        # with preference for positive on odd N
-        freqs = 1e6*np.arange(-((N-1)//2), N//2+1, 1)
+        # clear waveform
+        if N == 0:
+            _clearTones(chan)
+            return []
+
+        else:
+            # Create a comb evenly spaced (1 MHz) around 0
+            # with preference for positive on odd N
+            freqs = 1e6*np.arange(-((N-1)//2), N//2+1, 1)
 
     # type enforcement
     freqs = np.asarray(freqs, float)
