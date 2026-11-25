@@ -272,9 +272,9 @@ def tls_array_test():
     t_start = time.time()
 
     # config
-    nclo = 600 # MHz
     fs = 512e6/1024/1024 # samples per second (~488 Hz) (single drone)
     timestream = TimeStream(host="192.168.3.40", port=4096)
+    timestream.sock.settimeout(5.0)
     bid = 1
     drid = 1
 
@@ -290,10 +290,6 @@ def tls_array_test():
     # setup the bluefors controller
     controller = _setupBlueforsController()
 
-    # startup the timestream
-    sendCom("setNCLO", nclo)
-    sendCom("timestreamOn", 1)
-
     # number of steps
     N_steps_T = len(steps_temp) # temp steps
     N_steps_P = len(steps_tone) # tone power steps
@@ -307,75 +303,81 @@ def tls_array_test():
     msg = f"Running: (max {N_steps_T*t_stabilize_max} s; {N_packets_total} packets):"
     _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
 
-    status = controller.toggle_mxc_heater('on')
+    T_stablized = True
 
-    for i_T,T in enumerate(steps_temp): # step in temperature
-        
-        # set step cryostat temperature
-        status = controller.set_mxc_heater_setpoint(T)
-        T_stablized = _waitForBlueforsTemperatureStable(
-            controller, T*1e-3, timeout=t_stabilize_max)
-        if not T_stablized: 
-            break # T didn't stabilise, end test
+    try:
+        # Startup the timestream. performFullVnaSweep sets the LO to 700 MHz.
+        sendCom("timestreamOn", 1)
 
-        for i_P,P in enumerate(steps_tone): # step in probe tone power
+        if not controller.toggle_mxc_heater('on'):
+            raise RuntimeError("Could not enable the mixing chamber heater.")
+
+        for i_T,T in enumerate(steps_temp): # step in temperature
             
-            # perform a vna sweep (roughly identfy resonances)
-            sendCom("writeNewVnaComb")
-            sendCom("vnaSweep") # ~ 15 s
-            sendCom("findVnaResonators")
-            # width_min, width_max, peak_prom_db, peak_dis
-            # min width: 5 bins. 1 bin is 500 MHz / (1000 tones * 500 steps) = 5 kHz
+            # set step cryostat temperature
+            if not controller.set_mxc_heater_setpoint(T):
+                raise RuntimeError(
+                    f"Could not set the mixing chamber heater setpoint to {T} mK.")
+            T_stablized = _waitForBlueforsTemperatureStable(
+                controller, T*1e-3, timeout=t_stabilize_max)
+            if not T_stablized: 
+                break # T didn't stabilise, end test
 
-            # perform a target sweep (higher resolution to find resonance)
-            sendCom("writeTargCombFromVnaSweep")
-            sendCom("targetSweep") # ~ 15 s
-            sendCom("findTargResonators")
-            sendCom("writeTargCombFromTargSweep")
+            for i_P,P in enumerate(steps_tone): # step in probe tone power
+                
+                # perform the current full VNA workflow
+                sendCom("performFullVnaSweep")
 
-            # create the custom comb files
-            if i_T == i_P == 0: # first temp and first tone power
-                # for very first test, create all custom comb files
-                sendCom("createCustomCombFilesFromCurrentComb", 'fap')
-            else:
-                # but for subsequent tests don't touch amplitudes
-                sendCom("createCustomCombFilesFromCurrentComb", 'fp')
+                # perform a target sweep (higher resolution to find resonance)
+                sendCom("targetSweep") # ~ 15 s
+                sendCom("findTargResonators")
+                sendCom("writeTargCombFromTargSweep")
 
-            # change tone amplitudes for this step
-            Pl = steps_tone[i_P-1] if i_P>0 else 0
-            factor = 10**((P - Pl)/20) # amp factor for last step to this step
-            sendCom("modifyCustomCombAmps", factor)
+                # create the custom comb files
+                if i_T == i_P == 0: # first temp and first tone power
+                    # for very first test, create all custom comb files
+                    sendCom("createCustomCombFilesFromCurrentComb", 'fap')
+                else:
+                    # but for subsequent tests don't touch amplitudes
+                    sendCom("createCustomCombFilesFromCurrentComb", 'fp')
 
-            # write custom comb
-            sendCom("writeCombFromCustomList")
-            # comb should now be on resonances
-            # with amplitudes adjusted for this step
-            # adjust initial tone power tuning to test max
+                # change tone amplitudes for this step
+                Pl = steps_tone[i_P-1] if i_P>0 else 0
+                factor = 10**((P - Pl)/20) # amp factor for last step to this step
+                sendCom("modifyCustomCombAmps", factor)
 
-            # take timestreams
-            packets = _captureTimestream(N_packets_tod, timestream)
+                # write custom comb
+                sendCom("writeCombFromCustomList")
+                # comb should now be on resonances
+                # with amplitudes adjusted for this step
+                # adjust initial tone power tuning to test max
 
-            # save timestreams as separate files
-            test_name = f"tls_{T}_{P}_"
-            packets_tod, packets_I, packets_Q, packets_count, packets_ts, packets_info, packets_chans, packets_ip = packets
-            io.saveToTmp(packets_ip, filename=f'{test_name}_ip_', use_timestamp=True)
-            io.saveToTmp(packets_I, filename=f'{test_name}_I_', use_timestamp=True)
-            io.saveToTmp(packets_Q, filename=f'{test_name}_Q_', use_timestamp=True)
-            io.saveToTmp(packets_info, filename=f'{test_name}_info_', use_timestamp=True)
-            io.saveToTmp(packets_count, filename=f'{test_name}_count_', use_timestamp=True)
-            io.saveToTmp(packets_chans, filename=f'{test_name}_chans_', use_timestamp=True)
-            io.saveToTmp(packets_ts, filename=f'{test_name}_ts_',  use_timestamp=True)
-            
-            _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
+                # take timestreams
+                packets = _captureTimestream(N_packets_tod, timestream)
 
-    status = controller.toggle_mxc_heater('off')
+                # save timestreams as separate files
+                test_name = f"tls_{T}_{P}_"
+                packets_tod, packets_I, packets_Q, packets_count, packets_ts, packets_info, packets_chans, packets_ip = packets
+                io.saveToTmp(packets_ip, filename=f'{test_name}_ip_', use_timestamp=True)
+                io.saveToTmp(packets_I, filename=f'{test_name}_I_', use_timestamp=True)
+                io.saveToTmp(packets_Q, filename=f'{test_name}_Q_', use_timestamp=True)
+                io.saveToTmp(packets_info, filename=f'{test_name}_info_', use_timestamp=True)
+                io.saveToTmp(packets_count, filename=f'{test_name}_count_', use_timestamp=True)
+                io.saveToTmp(packets_chans, filename=f'{test_name}_chans_', use_timestamp=True)
+                io.saveToTmp(packets_ts, filename=f'{test_name}_ts_',  use_timestamp=True)
+                
+                _progressBar(i_T*N_steps_P + i_P + 1, N_steps, msg)
 
-    if not T_stablized:
-        print(f"Test ended prematurely: (T={T} didn't stabilise).")
+        if not T_stablized:
+            print(f"Test ended prematurely: (T={T} didn't stabilise).")
 
-    print(f"TLS test complete. Elapsed time: {time.time() - t_start:.6f} seconds")
+        print(f"TLS test complete. Elapsed time: {time.time() - t_start:.6f} seconds")
 
-    sendCom("timestreamOn", 0)
+    finally:
+        try:
+            sendCom("timestreamOn", 0)
+        finally:
+            controller.toggle_mxc_heater('off')
 
 
 # ============================================================================ #
