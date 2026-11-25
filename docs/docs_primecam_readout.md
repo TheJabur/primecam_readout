@@ -4,11 +4,11 @@
 
 **James Burgoyne**  
 jburgoyne@phas.ubc.ca  
-December 2024
+Documentation updated: November 2026
 
 # Overview {#overview}
 
-`primecam_readout` is a versatile readout software suite for the Prime-Cam and Mod-Cam instruments on the CCAT Observatory's FYST telescope. It enables efficient control and data acquisition from kinetic inductor detector (KID) arrays, with a focus on scalability and adaptability. The software, primarily written in Python, leverages Redis for efficient and robust communication between the control computer and RFSoC boards. It offers both a command-line interface (CLI) for testing and development, and a control agent for integration with the Prime-Cam Control Software (PCS). Designed to be easily adaptable to future KID-based instruments, `primecam_readout` is poised to handle the demands of next-generation arrays with millions of detectors, thanks to its efficient resource utilization and linear scaling.
+`primecam_readout` is a Python readout and control suite for Prime-Cam and Mod-Cam on the CCAT Observatory's FYST telescope. A control computer (the "queen") sends commands to RFSoC boards over Redis; each board runs up to four independent drone processes, one per RF channel. The software provides a command-line interface (CLI) for development and a PCS agent for observatory control. Each drone handles RFSoC operations and can emit detector I/Q timestream packets over UDP to a separate data-acquisition (DAQ) computer.
 
 For motivation, background, context, and overview of `primecam_readout` see Burgoyne et al. 2024:
 
@@ -118,7 +118,7 @@ Arxiv: [https://doi.org/10.48550/arXiv.2406.01858](https://doi:10.48550/arXiv.24
 
 [Board commands	15](#board-commands)
 
-[findVnaResonators arguments	17](#findvnaresonators-arguments)
+[performFullVnaSweep arguments	17](#findvnaresonators-arguments)
 
 [Usage examples	17](#usage-examples)
 
@@ -136,11 +136,11 @@ Throughout this document the standard editor used in example commands is `nano`.
 
 ## `primecam_readout` directory {#primecam_readout-directory}
 
-It is assumed that `primecam_readout` is installed to the user home directory in both the control computer and the RFSoC boards, i.e. at \~/primecan\_readout. If this is not the case then not only will you need to modify the commands in this document to account for the difference, but some of the scripts in primecam\_readout/scripts/ will need to be updated.
+Several service files and shell scripts use fixed paths: board services expect `/home/xilinx/primecam_readout`, while `scripts/queen_monitor.service` expects `/home/player1/primecam_readout`. Update those paths, users, and any environment-specific settings if your installation differs. The repository directory name is `primecam_readout` (not `primecan_readout`).
 
 # Architecture {#architecture}
 
-The primary hardware components are the control computer, the control network, the parallel and independent RFSoC boards, the data acquisition (timestream) network, and the data acquisition (storage) computer. The control computer mediates tasks from the Prime-Cam Control Software (PCS), passing commands to the boards via the control network, and receiving relevant status and diagnostic data back from them. A single control computer can theoretically control an enormous number of boards, with the current default maximum set to 10,000. Each board also produces 4 timestreams on the timestream network, each composed of the forward transmission, S\_21, I and Q of a tone through the resonators. PCS is evolved directly from Simons Observatory observatory control software. Overall this arrangement resembles a distributed computing network and offers a high degree of scalability while eliminating the need for a high-performance user terminal to handle multiple simultaneous computation tasks. Notably, timestream generation is entirely offloaded to the RFSoC's field-programmable gate array (FPGA) fabric, eliminating processor intervention. The data-acquisition computer is primarily responsible for converting the raw packets into the G3 format and producing quick-look maps. The G3 format, developed by the South Pole Telescope, is being extended by Simons Observatory and CCAT for use with our system to take advantage of the structure of the underlying `spt3g` software file format.
+The primary components are the control computer, control network, RFSoC boards, timestream network, and DAQ computer. The control computer mediates PCS or CLI requests, sends commands to boards over Redis, receives return payloads, and can monitor drone connectivity. Each board supports four drone processes. Timestream packets contain I/Q data and metadata; the DAQ computer receives these packets and handles downstream storage and processing. The UDP packet layout is documented in [rfsoc_datagram.csv](rfsoc_datagram.csv). Timestream generation is implemented in FPGA gateware; the Python software configures the board and controls acquisition.
 
 # Hardware {#hardware}
 
@@ -166,7 +166,7 @@ The control network facilitates communication between the control computer and t
 
 ### Timestream network {#timestream-network}
 
-The timestream network facilitates high-throughput data transfer from the RFSoC boards to the data acquisition (DAQ) computer. The RFSoC boards continuously transmit a \`fire hose' of UDP packets containing raw KID *I* and *Q* data, among other information. Designed for high bandwidth, the network accommodates a continuous data stream of 4 MB/s per KID (using 8250-byte jumbo frames at 488 Hz sampling rate). For Prime-Cam, this translates to about half of a terabyte per second. Since this is raw *I* and *Q* S\_21 data, it could be compressed by converting to power, which is the normal unit for map making, but some potentially useful information is lost in the process. Fundamentally, this data is not very losslessly compressible because its primary component is noise.
+The timestream network carries UDP packets from the RFSoC boards to the DAQ computer. The packet payload contains 1024 I/Q pairs, followed by packet metadata, a channel count, packet count, and a PTP timestamp; see [rfsoc_datagram.csv](rfsoc_datagram.csv). Actual bandwidth depends on the configured sample rate and the number of active drones, so provision the network and receiver for the deployed configuration.
 
 UDP, a connectionless protocol, prioritizes speed over reliability by eliminating handshakes and acknowledgments. This makes it ideal for real-time data transfer in high-speed detector applications, where minimal latency is crucial and occasional packet loss is acceptable.
 
@@ -184,7 +184,7 @@ Prime-Cam operates on Cerro Chajnantor in an ambient-coupled controlled internal
 
 Prime-Cam control software (PCS) uses Docker to manage and contain all the various software components. The architecture of `primecam_readout` has been designed to be compatible with a Docker install. At present, there is no publicly available Docker image for `primecam_readout`, and instead images are built as needed, and the machinery to do so is included in the project repo. If you are familiar with building Docker images then this should be straightforward to use.
 
-In order for `primecam_readout` to run in a Docker container, the PCS Docker environment must be running. This can be setup locally following the following documentation:  
+In order for `primecam_readout` to run in a Docker container, the PCS Docker environment must be running. This can be set up locally following the documentation:
 [https://pcs.readthedocs.io/en/latest/](https://pcs.readthedocs.io/en/latest/)
 
 ### Software setup {#software-setup}
@@ -207,7 +207,7 @@ sudo apt install git
 
 ##### Redis {#redis}
 
-`Redis`, an in-memory database and messaging service, employs TCP (Transmission Control Protocol) to ensure reliable message exchange between clients and the server in a client-server model. Communication between clients and `Redis` utilizes the RESP (REdis Serialization Protocol), a text-based protocol specifically designed for efficient data exchange between applications. Despite being primarily written in C for high performance, `Redis` features Python bindings that we have seamlessly integrated with the PYNQ framework. 
+`Redis` is the TCP messaging service used by the control computer and boards. Queen and drone processes use the Python `redis` package.
 
 Install the `Redis` server, client, and python library.
 
@@ -219,10 +219,10 @@ The Redis configuration file needs to be edited.
 
 sudo nano /etc/redis/redis.conf
 
-Change the following parameters. Make sure you update the primecam\_readout configuration files for both the RFSoC board and the control computer with these settings.
+Configure Redis for the control-network interface and set an access password appropriate for your deployment. Make sure the Redis host, port, database, and password in the queen and board configuration files match the Redis server. Do not copy example credentials into a deployed system.
 
-- *bind \[your Redis server IP address\]*  
-- *requirepass \[your Redis password\]*  
+- *bind [Redis server IP address]*
+- *requirepass [Redis password]*
 - *tcp-keepalive 15*
 
 Start the Redis server.
@@ -325,24 +325,24 @@ After the software environment is set up on the control computer, install `prime
 
 cd \~  
 git clone https://github.com/TheJabur/primecam\_readout.git
-
-\-primecam\_readout installation  
-cp cfg/\_cfg\_queen.bak.py cfg/\_cfg\_queen.py
+cd \~/primecam\_readout
+python3 -m pip install -r requirements.txt
 
 #### Queen configuration file {#queen-configuration-file}
 
-`primecam_readout` needs to be configured after a fresh clone by updating the configuration file. This file is located in primecam\_readout/cfg/.
+`primecam_readout` needs a local configuration file after a fresh clone. The example is `cfg/_cfg_queen.bak.py`; copy it to `cfg/_cfg_queen.py` and edit the Redis connection and SSH settings:
 
 cd \~/primecam\_readout  
 cp cfg/\_cfg\_queen.bak.py cfg/\_cfg\_queen.py  
 nano cfg/\_cfg\_queen.py
 
-\- *Redis server configuration*. Default db=0. No password: pw=None.  
-*\- SSH credentials*: To login to the RFSoC boards.
+- *Redis server configuration*: set `host`, `port`, `db`, and `pw` to match Redis.
+- *SSH credentials*: configure the account used to start/restart board services. Prefer SSH keys over a shared password where possible.
+- `monitor_interval` controls drone health-check cadence; `command_return_timeout` controls how long queen waits for command returns.
 
 #### Master drone control {#master-drone-control}
 
-The RFSoC board drones (4 per board) that drive the RF networks on the arrays are managed by the control computer. The *master\_drone\_control.yaml* file is a human readable and editable exhaustive list of all the drones, their IP addresses, and whether they should be running or not. Copy the example file and edit it:
+The control computer manages up to four drones per board. The configured master drone list (default filename `master_drone_list.yaml`) specifies each board/drone ID, board IP address, and whether it should run. Copy the example file and edit it:
 
 cd \~/primecam\_readout  
 cp master\_drone\_list.example.yaml master\_drone\_list.yaml   
@@ -352,11 +352,11 @@ Add every drone you want running to the file with an entry that contains the boa
 
 *'1.1': {ip: "192.168.2.99", to\_run: true}*
 
-The SSH username and password is assumed to be consistent across all boards, and is set in the queen config file.
+The SSH username and password are shared across boards in the current configuration; these are set in the queen config file.
 
 ##### Automated drone monitoring {#automated-drone-monitoring}
 
-A drone control system service can perform automatic drone monitoring and control. It watches the *master\_drone\_list.yaml* file for changes and executes them accordingly, monitors drones connection via Redis, restarting via SSH if they drop, and also obeys temporary changes to a drone status through a stop or start command that was manually initiated.
+A drone control system can monitor Redis connectivity and start or restart drones over SSH. It reads the configured `master_drone_list_file` (default: `master_drone_list.yaml`) to determine which board/drone pairs should run. Queen `action` commands can temporarily override that desired state.
 
 Add the drone monitoring service on the control computer:
 
@@ -366,7 +366,7 @@ sudo systemctl daemon-reload
 sudo systemctl start queen\_monitor.service  
 sudo systemctl enable queen\_monitor.service
 
-You can check that it is running properly: 
+Before enabling the unit, edit its hardcoded username, repository path, and Python executable to match the control computer. Check that it is running with:
 
 sudo systemctl status queen\_monitor.service
 
@@ -389,6 +389,8 @@ If the container crashed, e.g. due to a bug etc., use the following:
 
 sudo docker ps \--filter "status=exited"
 
+The compose file mounts configuration, logs, and drone data from `/home/player1/primecam_readout`; edit these host paths for your installation before starting the container.
+
 ## `primecam_readout` RFSoC board installation {#primecam_readout-rfsoc-board-installation}
 
 ### RFSoC `primecam_readout` installation {#rfsoc-primecam_readout-installation}
@@ -398,30 +400,36 @@ Prime-Cam’s RFSoC boards are not directly connected to the internet, so the `p
 cd \~/primecam\_readout  
 git pull
 
-On an RFSoC board, clone the control computer repo. In the following command the user and IP address are for the control computer.
+On an RFSoC board, clone the control-computer repository over SSH. Replace the user and address with the control computer's account and control-network IP:
 
 cd \~  
 git clone user@192.168.2.80:\~/primecam\_readout
 
 #### Board configuration file {#board-configuration-file}
 
-`primecam_readout` needs to be configured after a fresh clone. The bare minimum is to create and update the configuration file. This file is located in primecam\_readout/cfg/.
+`primecam_readout` needs a local board configuration file after a fresh clone. Copy the example and configure the board ID, gateware image, Redis connection, PTP interface, timestream addresses, and any board-specific hardware settings:
 
 cd \~/primecam\_readout  
 cp cfg/\_cfg\_board.bak.py cfg/\_cfg\_board.py  
 nano cfg/\_cfg\_board.py
 
-\- *bid*: This is the unique integer ID of this RFSoC board.  
-\- *Redis server configuration*. Default db=0. No password: pw=None.  
-\- *PTP interface*. Update the PTP servers mac and ip. Default ptp\_interface=”eth0”.  
-\- *Timestream configuration*: Destination ip and mac. Drones ip.
+- `bid`: unique integer board ID.
+- `gateware_file`: gateware image to load; it must exist on the board and match the board setup.
+- Redis connection settings: must match the control computer's Redis server.
+- PTP interface and peer addresses: configure for the network actually connected to the board.
+- Timestream destination and per-drone source IP addresses/MAC addresses: configure for the DAQ network.
+- Sample-rate and waveform settings: `acc_factor`/`scale_factors` for Gen2 or `accum_len` for Gen1.
+- Sweep settings: `sweep_chan_bw` and `sweep_steps`; attenuator serial device: `atten_device`.
+- Set `asu_board` to match the installed breakout board and adjust `interval_feeds` for housekeeping updates.
+
+The board configuration is shared by the board's drone processes; the drone ID (1-4) is supplied when each process starts.
 
 #### Startup script {#startup-script}
 
 Each RFSoC needs to run a startup script for `primecam_readout` to operate properly, for example for the fabric gateware file to be loaded. This startup script is run as a systemd service.
 
 cd \~/primecam\_readout/scripts  
-sudo chmod \+x startup\_board.bs  
+sudo chmod \+x startup\_board.sh
 sudo cp startup\_board.service /etc/systemd/system/  
 sudo systemctl daemon-reload  
 sudo systemctl start startup\_board.service  
@@ -433,7 +441,7 @@ sudo systemctl status startup\_board.service
 
 #### Drone daemons {#drone-daemons}
 
-Each board supports up to four drones (each operating one RF network of up to 1024 KIDs). Drones are managed by systemd. Before setting up the drone services, we need to make sure they can run with root privileges.
+Each board supports up to four drones. Drones are managed by systemd. Before setting up the drone services, the `xilinx` account needs permission to start, stop, and restart those services through the queen's SSH connection.
 
 sudo visudo
 
@@ -446,7 +454,7 @@ xilinx ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart drone@\*.service
 Now add the drone services:
 
 cd \~/primecam\_readout/scripts  
-sudo chmod \+x start\_drone.bs  
+sudo chmod \+x start\_drone.sh
 sudo cp drone@.service /etc/systemd/system/  
 sudo systemctl daemon-reload  
 sudo systemctl enable drone@1.service  
@@ -456,7 +464,7 @@ sudo systemctl enable drone@4.service
 
 You can start the drones now, or let the control computer start them after drone control is enabled on it. The available control commands for systemd services are: *start*, *stop*, *restart*, *status*. For example to start drone 1:
 
-sudo systemctl start [drone@1.service](mailto:drone@1.service)
+sudo systemctl start drone@1.service
 
 To monitor drone messages for drones that are running as system services, use the log file:
 
@@ -464,78 +472,27 @@ tail \-f \~/primecam\_readout/logs/board.log
 
 # `primecam_readout` file structure {#primecam_readout-file-structure}
 
-**.github/:** Github directory.  
-**cfg/:** Configuration information.  
-**\_cfg\_board.bak.py:** The RFSoC board configuration options example file. Copy and customize to \_cfg\_board.py.  
-**\_cfg\_queen.bak.py:** The control computer configuration options example file. Copy and customize to \_cfg\_queen.py.  
-**docs/:** Documentation.  
-**drones/:** The board runs four drones which each have a subdirectory (drone\[n\], \[n\]={1,2,3,4}).  
-**drone\[n\]/:** Configuration and data files specific to drone \[n\].  
-**cal\_tones/:** Directory to hold calibration tone files.  
-**comb/:** Directory containing last comb files.  
-**targ/:** Directory to hold target sweep files.  
-**vna/:** Directory to hold VNA sweep files.  
-**init/:** RFSoC board initialization resources, including gateware files.  
-**activate:** Python environment source activate file for the board env.  
-**gPTP.cfg:** Global PTP configuration file.  
-**init.py:** Main board initialization script which needs to be run on startup.  
-**run\_phc2sys.sh:** PTP to system clock synchronization script.  
-**run\_ptp4l.sh:** PTP initialization script.  
-**logs/:** Log files.  
-**ocs\_docker\_files/:** Docker environment files.  
-**scripts/:** Service and bash scripts for automating tasks.  
-**clean\_board.py:** Python script to clean out files in the tmp, log, and drone directories.  
-**drone@.service:** Board system service file for drone control.  
-**queen\_monitor.service:** Control computer system service file for drone monitoring.  
-**start\_drone.sh:** Board bash script used by the drone@.service to start drones.  
-**startup\_board.service:** Board system service for startup.  
-**startup\_board.sh:** Board bash script called by startup\_board.service.  
-**src/:** primecam\_readout source files.  
-**alcove\_commands/:**  
-**alcove\_base.py:** Common alcove functionality.  
-**analysis.py:** Data processing and analysis.  
-**board\_io.py:** Extends base\_io.py on the boards.  
-**board\_utilities.py:** Board utility tools, e.g. temp.  
-**loops.py:** Command loops and chains.  
-**sweeps.py:** High level sweep functions.  
-**test\_functions.py:** Test functions.  
-**tones.py:** Tone comb functionality used in sweeps.  
-**transceiver\_serialdriver.py:** Common attenuation driver.  
-**queen\_commands/:**  
-**control\_io.py:** Extends base\_io.py on the control computer.  
-**test\_functions.py:** Testing and automation functions which run on the control computer.  
-**alcove\_tui.py:**  A terminal interface to alcove.py. This is used only to directly interact with alcove.py when locally on the board.  
-**alcove.py:** Provides an API to the board functionality functions (commands).  
-**base\_io.py:** Base file management, including file histories etc. See IO files in alcove\_commands/ and queen\_commands/.  
-**config.py:** Config file management. See cfg/ for customizable config files.  
-**drone\_control.py:** Drone instance control commands and functionality.  
-**drone.py:** Runs on each of the boards (4 instances) and listens for commands from the control server (via Redis). Upon receiving a command it asks alcove.py to execute it and publishes returns. Must be running to receive commands.  
-**ip\_addr.py:** IP address centralization and functionality.  
-**pcs\_client\_test.py:** PCS agent testing and examples.  
-**queen\_agent.py:** PCS agent.  
-**queen\_cli.py:** Command line interface to queen.py.  
-**queen.py:** Runs on the command server to publish commands (via Redis) to remote boards, and to listen for messages from the boards.  
-**quickDataViewer.ipynb:** A simple Jupyter notebook to inspect data in tmp/ (which are payloads from the board functions).  
-**redis\_channels.py:** Information and functions on the Redis channels used by the queen and drones.  
-**sys\_info.py:** Functionality to gather system wide info.  
-**timestream.py:** Timestream functions for capturing and processing.  
-**.gitignore:** Files that git ignores.  
-**docker-compose.yaml:** The Docker environment.  
-**Dockerfile:** Main Docker file.  
-**master\_drone\_list.example.yaml:** The example file showing how to build the drone master list.  
-**requirements.txt:** Docker requirements file.  
-**VERSION:** This is an autogenerated software version tag, based on the last digits of the Github commit version hash. It is autogenerated after each commit.
+- **cfg/:** Example configuration templates. Copy them to `_cfg_queen.py` on the control computer and `_cfg_board.py` on each board; the active files are intentionally not tracked.
+- **docs/:** Markdown documentation, packet layout, and supporting reference material.
+- **drones/:** Per-drone persisted data directories (for example VNA sweeps, target sweeps, and tone files); temporary runtime data is kept under `/tmp`.
+- **init/:** Board initialization scripts, PTP configuration, and gateware images.
+- **scripts/:** Board startup/drone service units and scripts, queen monitor service, and maintenance utilities.
+- **src/queen.py:** Control-computer Redis command publisher and return handler.
+- **src/queen_cli.py:** Command-line interface for queen and board commands.
+- **src/queen_agent.py:** Selects the PCS agent implementation for the installed gateware generation.
+- **src/queen_agent_gen1.py, src/queen_agent_gen2.py:** PCS readout agent implementations.
+- **src/drone.py:** Board-side command listener; run one process for each drone ID (1-4).
+- **src/alcove.py:** Board command registry and dispatcher.
+- **src/alcove_commands/:** Gateware-specific RF control, tone, sweep, analysis, I/O, and utility modules.
+- **src/queen_commands/:** Control-computer test and automation commands.
+- **src/redis_channels.py:** Redis pub/sub channel construction and subscriptions.
+- **src/timestream.py:** UDP timestream packet capture and parsing helpers.
+- **Dockerfile, docker-compose.yml:** PCS agent container build and run configuration.
+- **requirements.txt:** Python dependencies for the container/control software.
 
 # Redis channels {#redis-channels}
 
-**all\_boards:** Channel to send commands to all boards at once.  
-**board\_\[bid\]:** Drones will listen to all channels that begin with this.  
-**board\_\[bid\].\[drid\]\_\[cid\]:** Each board has its own command channels. A new channel is created every time a command is issued with a random cid generated string suffix. \[bid\] and \[drid\] are the board and drone identifiers respectively (contained in \_cfg\_board.py) and \[cid\] is the command identifier which is a unique id generated when the command is sent.  
-**rets\_:** Boards send returns on the channel they received the command on, modified with the prefix 'rets\_'.
-
-\[bid\]: Board identifier (contained in \_cfg\_board.py).    
-\[drid\]: Drone identifier (1-4) (contained in \_cfg\_drone.py).    
-\[cid\]: Command identifier which is a unique id generated when the command is sent. 
+Commands are published on Redis channels named `board_all_<cid>`, `board_<bid>_<cid>`, or `board_<bid>.<drid>_<cid>`, depending on whether the command targets all drones, a board, or one drone. Each command ID (`cid`) is a generated UUID. Drones subscribe to the applicable board/drone patterns, including the all-board channel. A response is published on the matching channel prefixed with `rets_` (for example, `rets_board_1.2_<cid>`). The board ID comes from `_cfg_board.py`; the drone ID is passed to `drone.py` and is in the range 1-4.
 
 # `primecam_readout` usage {#primecam_readout-usage}
 
@@ -553,7 +510,7 @@ The basic startup routine on the control computer is to start the `Redis` server
 
 ## Control computer / queen usage {#control-computer-/-queen-usage}
 
-The primary job of the control computer is to facilitate requests through an interface, send commands to the boards, receive relevant status and diagnostic data, and monitor the drones. The main control computer script is *queen.py*, and this is utilized by the CLI interface script, *queen\_cli.py*, or the PCS agent script, *queen\_agent.py*. This API is potentially attached from any observatory control software. The commands can further be wrapped into workflows by the controlling interface. Commands are divided into controller computer (queen) commands and board commands. Queen commands are executed locally on the control computer. Board commands are sent to any/all boards to be executed on the board\[s\].
+The primary job of the control computer is to send commands to boards, receive return payloads, and monitor drone connectivity. `queen.py` is used by `queen_cli.py` and by the PCS agent selected through `queen_agent.py`. Queen commands execute on the control computer; board commands are sent to one or more drone processes. Run the CLI from the repository root with `python3 src/queen_cli.py`. Its `--help` output lists the command numbers and names available in the checked-out software.
 
 queen.py also contains functionality not directly exposed by the current interfaces, but usable by them. This includes functionality to retrieve a list of commands and convert between command numbers and names, plus low-level functions used by exposed commands.
 
@@ -569,79 +526,79 @@ queen.py also contains functionality not directly exposed by the current interfa
 | 6 | getClientListLight | Similar to getClientList, but with fewer parameters returned.  *6 \-q* |
 | 7 | action | Drone control action. Possible arguments are {start, stop, restart, status, startAllDrones, stopAllDrones, restartAllDrones}. These commands will temporarily override the master drone list status.  *7 bid\[.drid\] \-q \-a ‘action=\[action\]’* |
 | 8 | monitorMode | Continuously run and monitor drones for connectivity to Redis. If a drone drops, will attempt to SSH restart.  *8 \-q* |
-| 10-20 |  | Reserved for testing and development functions. |
+| 9 | pollFeeds | Poll board feeds and pass them to an optional handler. |
+| 14-18 | Test commands | Loopback/timestream monitoring and array tests. |
 
-A range of command numbers is reserved for testing functions. The current software includes a number of automated testing functions which were used in the development and characterization of the instrument, and which serve as examples for further testing function development. These functions can be exposed as commands to be used by an interface, or used directly by a purpose-built interface.
+Use `python3 src/queen_cli.py --help` to see the live command list. Some registered queen commands are development/test functions and are not intended as routine observing commands.
 
 ### Board commands {#board-commands}
 
 | Board Commands |  |  |
 | :---- | :---- | :---- |
 | **Number** | **Name** | **Short description** |
-| 20 | setNCLO | Set the LO frequency. This is the centre of the RF bandwidth.  20 \[bid\[.drid\]\] \-a ‘\[LO\]’ |
-| 21 | setFineNCLO | Fine adjustments to the LO. Useful for shifting the comb.  21 \[bid\[.drid\]\] \-a ‘\[LO\]’ |
-| 25 | getSnapData | Capture data from the ADC. Allowable values for mux\_sel are ints in the range {0, 4}. 0: adc parsing; 1: pfb; 2: ddc; 3: accum.  25 \[bid\[.drid\]\] \-a ‘\[mux\_sel\]’ |
+| 20 | setNCLO | Set the center LO frequency in MHz. |
+| 21 | setFineNCLO | Set a fine LO adjustment in MHz. |
+| 25 | getSnapData | Capture a hardware snapshot using `mux_sel`; available selections depend on gateware. |
 | 26 | getADCrms | Convenience function to quickly determine the ADC RMS.  26 \[bid\[.drid\]\] |
+| 27 | findScaleFactors | Calculate waveform scale factors for the configured tone count. |
+| 29 | checkWaveformOverflow | Check the generated waveform for overflow. |
 | 30 | writeTestTone | Send a single tone (at 50 MHz).  30 \[bid\[.drid\]\] |
-| 31 | writeNewVnaComb | Write a comb with evenly spaced tones across the full bandwidth, designed for blindly finding resonators.  31 \[bid\[.drid\]\] |
 | 32 | writeTargCombFromVnaSweep | Write a comb with tones targeted at resonators found from findVnaResonators.  32 \[bid\[.drid\]\] |
 | 33 | writeTargCombFromTargSweep | Write a comb with tones targeted at resonators found from findTargResonators.  33 \[bid\[.drid\]\] |
 | 34 | writeCombFromCustomList | Write a comb loaded from custom comb file.  34 \[bid\[.drid\]\] |
 | 35 | createCustomCombFilesFromCurrentComb | Save current comb out to custom comb file.  35 \[bid\[.drid\]\] |
 | 36 | modifyCustomCombAmps | Modify custom comb amplitudes file values by multiplicative factor.  36 \[bid\[.drid\]\] \-a ‘\[factor\]’ |
 | 37 | writeTargCombFromCustomList | Calls 34 and also writes required targeted sweep files.  37 \[bid\[.drid\]\] |
-| 40 | vnaSweep | Perform a blind sweep after writing a VNA comb.  40 \[bid\[.drid\]\] |
+| 38 | writeTestTones | Write a test comb; accepts `N` (default 1). |
+| 41 | performFullVnaSweep | Write a VNA comb, sweep, find resonators, and write a target comb. Accepts resonator-finding keyword arguments. |
 | 42 | targetSweep | Perform a targeted sweep after writing a target comb.  42 \[bid\[.drid\]\] |
 | 44 | customSweep | Perform a sweep after writing a custom comb.  44 \[bid\[.drid\]\] |
-| 50 | findVnaResonators | Analyse VNA sweep for resonators. See arguments below.  50 \[bid\[.drid\]\] \-a ‘\[args\]’ |
 | 51 | findTargResonators | Analyse target sweep for resonators.  51 \[bid\[.drid\]\] |
-| 55 | findCalTones | Analyse targeted sweep to find good calibration tone placement. Attempts to place in largest gaps.  55 \[bid\[.drid\]\] \-a ‘max\_tones=\[max\_tones\]’ |
+| 55 | findCalTones | Analyse the VNA sweep to place calibration tones in large gaps. |
 | 60 | sys\_info | Get combined board/drone info, including config files, software versions, log events, etc.  60 \[bid\[.drid\]\] |
 | 61 | sys\_info\_v | Similar to sys\_info, but less info is returned.  61 \[bid\[.drid\]\] |
+| 62 | board\_temps | Return board temperature readings. |
+| 65 | cleanBoardDroneDirs | Remove board/drone data directories. Use with care. |
 | 70 | timestreamOn | Turn the data timestream on or off.  70 \[bid\[.drid\]\] \-a ‘\[True/False\]’ |
-| 71 | userPacket | Set some data into each timestream packet.  71 \[bid\[.drid\]\] \-a ‘\[data\]’ |
-| 80 | setAtten | Set the drive or sense attenuation. Allowable values are floats in the range {0, 31.75} dB.  80 \[bid\[.drid\]\] \-a ‘direction=\[sense/drive\], atten=\[atten\]’ |
+| 71 | userPacketInfo | Set user data in timestream packet metadata. |
+| 80 | setAtten2024 | Set attenuation using `direction` and `atten` with the 2024 hardware interface. |
+| 81 | setAtten2025 | Set attenuation using `direction` and `atten` with the 2025 hardware interface. |
+| 82 | getAtten | Read attenuation for the requested `direction`. |
 
-#### findVnaResonators arguments {#findvnaresonators-arguments}
+The board registry is defined in `src/alcove.py`; the implementation of several operations is selected by the installed gateware generation. For the authoritative command list on a given checkout, use the CLI `--help` output. The VNA resonator finder is called internally by command 41 and is not a separately registered command.
 
-**peak\_prom\_std**\=10: (float) \[std\] Peak height from surroundings, in noise std multiples. Uses larger of peak\_prom\_db or peak\_prom\_std.  
-**peak\_prom\_db**\=0: (float) \[dB\] Peak height from surroundings, in Db. Uses larger of **peak\_prom\_db** or peak\_prom\_std.  
-**peak\_dis**\=100: (int) \[bins\] Min distance between peaks.  
-**width\_min**\=5: (int) \[bins\] Peak width minimum.  
-**width\_max**\=100: (int) \[bins\] Peak width maximum.  
-**stitch**: (bool) Whether to stitch (comb discontinuities).  
-**stitch\_sw**: (int) \[bins\] Discontinuity edge size for alignment.  
-**remove\_cont**: (bool) Whether to subtract the continuum.  
-**continuum\_wn**: (int) \[Hz\] Continuum filter cutoff frequency.  
-**remove\_noise**: (bool) Whether to subtract noise.  
-**noise\_wn**: (int) \[Hz\] Noise filter cutoff frequency.
+#### `performFullVnaSweep` arguments {#findvnaresonators-arguments}
+
+The command accepts the keyword arguments of the VNA resonator finder in `src/alcove_commands/analysis.py`, including `peak_prom_std`, `peak_prom_db`, `peak_dis`, `width_min`, `width_max`, `stitch`, `stitch_sw`, `remove_cont`, `continuum_wn`, `remove_noise`, `noise_wn`, and the `_hz` distance/width overrides. Defaults and additional options are defined in `_findResonatorsVna`; the full VNA sweep fixes `stitch_bw=1000`.
 
 ## Usage examples {#usage-examples}
 
 ### Start a drone manually {#start-a-drone-manually}
 
-Each drone (up to 4\) on every board needs a separate running instance. These should be started automatically if the system services are setup. They can be started/stopped etc. using systemctl. The python script can also be run directly on the board:
+Each board can run up to four drone services. Start or inspect a drone using systemd on the board:
 
-python drone.py \[drid\]
+sudo systemctl start drone@1.service
+sudo systemctl status drone@1.service
 
 ### Send a command to board\[s\] {#send-a-command-to-board[s]}
 
-Commands can be sent to drones individually by appending its board and drone identifier, to all drones on a board by only including \[bid\], or en masse by leaving \[bid.drid\] blank. On the control computer:
+From the repository root on the control computer, commands target one drone with `bid.drid`, every drone on a board with `bid`, or all drones when the ID is omitted:
 
-python queen\_cli.py \[com\_num\] \[bid.drid\] \[-a ‘args\_str’\]
+python3 src/queen_cli.py [com_num] [bid[.drid]] [-a 'arg=value']
 
-\[-a ‘args\_str’\] are the arguments to send as parameters for the command in a string format similar to \`arg1=val1, arg2=val2'. 
+For a queen command, add `-q`. For example, `python3 src/queen_cli.py 8 -q` runs drone monitoring. Use square brackets in this documentation as placeholders only; do not type them unless they are part of a list ID.
 
 ### Typical usage scenario {#typical-usage-scenario}
 
-A typical usage scenario of sending the commands to all drones for setting the LO to 500 MHz, performing a full band sweep and roughly identifying the resonator locations, performing a targeted sweep on those locations to identify their resonances within the necessary frequency resolution, and finally setting the tone comb to produce time streams on those resonators, would be as follows:
+For the current Gen2 workflow, command 41 performs the full VNA comb/sweep/resonator search and writes a target comb. Then sweep that comb, refine resonator locations, write the updated target comb, and enable timestream output:
 
-python queen\_cli.py 20 \-a 500  
-python queen\_cli.py 31  
-python queen\_cli.py 40  
-python queen\_cli.py 50  
-python queen\_cli.py 32  
-python queen\_cli.py 42  
-python queen\_cli.py 51  
-python queen\_cli.py 33
+```sh
+python3 src/queen_cli.py 41
+python3 src/queen_cli.py 42
+python3 src/queen_cli.py 51
+python3 src/queen_cli.py 33
+python3 src/queen_cli.py 70 -a True
+```
+
+These commands target all drones by default. To target a specific drone, add its ID (for example, `1.2`) after the command number. Confirm the command list and behavior for the installed gateware with `python3 src/queen_cli.py --help` before running hardware operations.
 
